@@ -1,0 +1,16 @@
+supabase
+fastapi
+uvicorn
+pydantic-settings
+python-dotenv
+langchain
+langchain-community
+langchain-openai
+qdrant-client
+openai
+opencv-python
+pytesseract
+pandas
+docx2txt
+pypdf
+google-generativeai
