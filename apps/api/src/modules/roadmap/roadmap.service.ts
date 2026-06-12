@@ -1,0 +1,102 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+
+import { RoadmapRepository } from './roadmap.repository';
+import { RoadmapRow } from './roadmap.schema';
+import { CreateRoadmapInput } from './dto/create-roadmap.input';
+import { UpdateRoadmapInput } from './dto/update-roadmap.input';
+import { RoadmapType, DeleteRoadmapResult } from './roadmap.types';
+
+@Injectable()
+export class RoadmapService {
+  constructor(private readonly roadmapRepository: RoadmapRepository) { }
+
+  private mapRow(row: RoadmapRow): RoadmapType {
+    return {
+      id: row.id,
+      userId: row.userId,
+      learningProfileId: row.learningProfileId ?? null,
+      title: row.title,
+      description: row.description ?? null,
+      isPublished: row.isPublished,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    };
+  }
+
+  private async findOneOrFail(id: number): Promise<RoadmapRow> {
+    const row = await this.roadmapRepository.findById(id);
+
+    if (!row) {
+      throw new NotFoundException(`Roadmap with id ${id} not found`);
+    }
+
+    return row;
+  }
+
+  async findAll(): Promise<RoadmapType[]> {
+    const rows = await this.roadmapRepository.findAll();
+    return rows.map((r) => this.mapRow(r));
+  }
+
+  async findById(id: number): Promise<RoadmapType> {
+    const row = await this.findOneOrFail(id);
+    return this.mapRow(row);
+  }
+
+  async findByUserId(userId: number): Promise<RoadmapType[]> {
+    const rows = await this.roadmapRepository.findByUserId(userId);
+    return rows.map((r) => this.mapRow(r));
+  }
+
+  async findByLearningProfile(learningProfileId: number): Promise<RoadmapType[]> {
+    const rows = await this.roadmapRepository.findByLearningProfileId(learningProfileId);
+    return rows.map((r) => this.mapRow(r));
+  }
+
+
+  async create(input: CreateRoadmapInput): Promise<RoadmapType> {
+    const inserted = await this.roadmapRepository.create({
+      userId: input.userId,
+      title: input.title,
+      description: input.description ?? null,
+      learningProfileId: input.learningProfileId ?? null,
+      isPublished: input.isPublished ?? false,
+    });
+
+    return this.mapRow(inserted);
+  }
+
+  async update(input: UpdateRoadmapInput): Promise<RoadmapType> {
+    await this.findOneOrFail(input.id);
+
+    const updated = await this.roadmapRepository.update(input.id, {
+      title: input.title,
+      description: input.description,
+      learningProfileId: input.learningProfileId,
+      isPublished: input.isPublished,
+    });
+
+    return this.mapRow(updated);
+  }
+
+  async delete(id: number): Promise<DeleteRoadmapResult> {
+    await this.findOneOrFail(id);
+
+    await this.roadmapRepository.delete(id);
+
+    return {
+      success: true,
+      message: `Roadmap ${id} has been deleted successfully`,
+    };
+  }
+
+  async togglePublish(id: number): Promise<RoadmapType> {
+    const existing = await this.findOneOrFail(id);
+
+    const updated = await this.roadmapRepository.update(id, {
+      isPublished: !existing.isPublished,
+    });
+
+    return this.mapRow(updated);
+  }
+}
