@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Image from "next/image";
+import { authClient } from "@/lib/auth-client";
+import { Button } from "@/components/ui/button";
 
 export default function SignIn() {
   // const { signIn } = useAuthActions();
@@ -121,6 +123,15 @@ export default function SignIn() {
                 minLength={8}
                 required
               />
+              <Button
+                onClick={() =>
+                  authClient.signIn.social({
+                    provider: "google",
+                  })
+                }
+              >
+                Sign in with Google
+              </Button>
               {flow === "signUp" && (
                 <p className="text-xs text-zinc-500 mt-2">
                   Must be at least 8 characters

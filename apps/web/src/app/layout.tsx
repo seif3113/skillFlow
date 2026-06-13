@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   description:
     "Generate personalized learning roadmaps with AI. Answer a few questions and get a customized step-by-step guide for any topic.",
   icons: {
-    icon: "/favicon.svg",
+    icon: "/favicon.ico",
   },
 };
 
