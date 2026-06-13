@@ -15,8 +15,7 @@ export class NodeRepository {
   constructor(
     @Inject(databaseProvider.DATABASE_CLIENT)
     private readonly db: databaseProvider.DrizzleDB,
-  ) { }
-
+  ) {}
 
   async findById(id: number): Promise<NodeRow | null> {
     const [row] = await this.db
@@ -29,28 +28,11 @@ export class NodeRepository {
   }
 
   async findByRoadmapId(roadmapId: number): Promise<NodeRow[]> {
-    return this.db
-      .select()
-      .from(nodes)
-      .where(eq(nodes.roadmapId, roadmapId));
+    return this.db.select().from(nodes).where(eq(nodes.roadmapId, roadmapId));
   }
 
-
   async create(data: CreateNodeData): Promise<NodeRow> {
-    const now = new Date();
-
-    const [inserted] = await this.db
-      .insert(nodes)
-      .values({
-        roadmapId: data.roadmapId,
-        title: data.title,
-        description: data.description ?? null,
-        tags: data.tags ?? null,
-        resources: data.resources ?? null,
-        createdAt: now,
-        updatedAt: now,
-      })
-      .returning();
+    const [inserted] = await this.db.insert(nodes).values(data).returning();
 
     return inserted;
   }

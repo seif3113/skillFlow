@@ -21,8 +21,6 @@ async function bootstrap() {
     credentials: true,
   });
 
-  console.log(`envs: ${process.env.BETTER_AUTH_URL}`);
-
   await app.listen(process.env.PORT || 3001);
 }
 bootstrap();

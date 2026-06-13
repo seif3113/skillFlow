@@ -1,11 +1,10 @@
-// user.entity.ts
-import { ObjectType, Field, Int } from '@nestjs/graphql';
-
-@ObjectType()
-export class User {
-  @Field(() => Int)
+export interface User {
   id: number;
-
-  @Field()
-  name: string; // add whatever fields you need
+  name: string;
+  email: string;
+  emailVerified?: boolean;
+  image?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  preferences?: any;
 }

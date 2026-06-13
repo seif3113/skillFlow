@@ -1,0 +1,56 @@
+type Node {
+  id: Int!
+  roadmapId: Int!
+  title: String!
+  description: String
+  tags: JSON
+  resources: JSON
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  chats: [NodeExplanationChat!]
+  quiz: Quiz
+}
+
+type NodeExplanationChat {
+  id: Int!
+  nodeId: Int!
+  userId: Int!
+  sender: String!
+  message: JSON!
+  sentAt: DateTime!
+}
+
+type DeleteNodeResult {
+  success: Boolean!
+  message: String!
+}
+
+input CreateNodeInput {
+  roadmapId: Int!
+  title: String!
+  description: String
+  tags: JSON
+  resources: JSON
+}
+
+input UpdateNodeInput {
+  id: Int!
+  roadmapId: Int
+  title: String
+  description: String
+  tags: JSON
+  resources: JSON
+}
+
+extend type Query {
+  node(id: Int!): Node
+  nodesByRoadmap(roadmapId: Int!): [Node!]!
+  nodeChats(nodeId: Int!, userId: Int!): [NodeExplanationChat!]!
+}
+
+extend type Mutation {
+  createNode(input: CreateNodeInput!): Node!
+  updateNode(input: UpdateNodeInput!): Node!
+  deleteNode(id: Int!): DeleteNodeResult!
+  sendNodeChatMessage(nodeId: Int!, userId: Int!, sender: String!, message: JSON!): NodeExplanationChat!
+}

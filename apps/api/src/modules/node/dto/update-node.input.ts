@@ -1,8 +1,8 @@
-import { InputType, Field, Int, PartialType } from '@nestjs/graphql';
-import { CreateNodeInput } from './create-node.input';
-
-@InputType({ description: 'Input for updating an existing node.' })
-export class UpdateNodeInput extends PartialType(CreateNodeInput) {
-  @Field(() => Int, { description: 'ID of the node to update.' })
+export interface UpdateNodeInput {
   id: number;
+  roadmapId?: number;
+  title?: string;
+  description?: string;
+  tags?: string[];
+  resources?: Record<string, string>[];
 }

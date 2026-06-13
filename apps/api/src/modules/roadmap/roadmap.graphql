@@ -1,0 +1,72 @@
+type Roadmap {
+  id: Int!
+  userId: Int!
+  learningProfileId: Int
+  title: String!
+  description: String
+  isPublished: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  nodes: [Node!]
+  learningProfile: RoadmapLearningProfile
+  editLogs: [RoadmapEditLog!]
+}
+
+type RoadmapLearningProfile {
+  id: Int!
+  userId: Int!
+  goal: String
+  level: String
+  background: String
+  timeAvailability: String
+  preferences: JSON!
+  createdAt: DateTime!
+}
+
+type RoadmapEditLog {
+  id: Int!
+  roadmapId: Int!
+  sender: String!
+  intent: String!
+  message: JSON!
+  accept: Boolean
+  sentAt: DateTime!
+}
+
+type DeleteRoadmapResult {
+  success: Boolean!
+  message: String!
+}
+
+input CreateRoadmapInput {
+  userId: Int!
+  title: String!
+  description: String
+  learningProfileId: Int
+  isPublished: Boolean
+}
+
+input UpdateRoadmapInput {
+  id: Int!
+  userId: Int
+  title: String
+  description: String
+  learningProfileId: Int
+  isPublished: Boolean
+}
+
+extend type Query {
+  roadmaps: [Roadmap!]!
+  roadmap(id: Int!): Roadmap
+  roadmapsByUser(userId: Int!): [Roadmap!]!
+  roadmapsByLearningProfile(learningProfileId: Int!): [Roadmap!]!
+  roadmapLearningProfiles(userId: Int!): [RoadmapLearningProfile!]!
+}
+
+extend type Mutation {
+  createRoadmap(input: CreateRoadmapInput!): Roadmap!
+  updateRoadmap(input: UpdateRoadmapInput!): Roadmap!
+  deleteRoadmap(id: Int!): DeleteRoadmapResult!
+  publishRoadmap(id: Int!): Roadmap!
+  createRoadmapLearningProfile(userId: Int!, goal: String, level: String, background: String, timeAvailability: String, preferences: JSON): RoadmapLearningProfile!
+}

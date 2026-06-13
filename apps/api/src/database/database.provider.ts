@@ -16,6 +16,7 @@ export const databaseProvider = {
       idle_timeout: 20,
       connect_timeout: 10,
       ssl: 'require',
+      prepare: false,
     });
 
     return drizzle(client, { schema });

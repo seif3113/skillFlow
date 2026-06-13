@@ -1,59 +1,34 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
 import { NodeService } from './node.service';
-import { NodeType, DeleteNodeResult } from './types/node.types';
-import { CreateNodeInput } from './dto/create-node.input';
-import { UpdateNodeInput } from './dto/update-node.input';
+import { type CreateNodeInput } from './dto/create-node.input';
+import { type UpdateNodeInput } from './dto/update-node.input';
 
-@Resolver(() => NodeType)
+@Resolver('Node')
 export class NodeResolver {
-  constructor(private readonly nodeService: NodeService) { }
+  constructor(private readonly nodeService: NodeService) {}
 
-
-  @Query(() => NodeType, {
-    name: 'node',
-    description: 'Get a single node by id.',
-  })
-  getNode(
-    @Args('id', { type: () => Int }) id: number,
-  ): Promise<NodeType> {
+  @Query('node')
+  getNode(@Args('id') id: number) {
     return this.nodeService.findById(id);
   }
 
-  @Query(() => [NodeType], {
-    name: 'nodesByRoadmap',
-    description: 'Get all nodes belonging to a roadmap.',
-  })
-  getNodesByRoadmap(
-    @Args('roadmapId', { type: () => Int }) roadmapId: number,
-  ): Promise<NodeType[]> {
+  @Query('nodesByRoadmap')
+  getNodesByRoadmap(@Args('roadmapId') roadmapId: number) {
     return this.nodeService.findByRoadmapId(roadmapId);
   }
 
-
-  @Mutation(() => NodeType, {
-    description: 'Create a new node inside a roadmap.',
-  })
-  createNode(
-    @Args('input') input: CreateNodeInput,
-  ): Promise<NodeType> {
+  @Mutation('createNode')
+  createNode(@Args('input') input: CreateNodeInput) {
     return this.nodeService.create(input);
   }
 
-  @Mutation(() => NodeType, {
-    description: 'Update a node. Supports partial updates.',
-  })
-  updateNode(
-    @Args('input') input: UpdateNodeInput,
-  ): Promise<NodeType> {
+  @Mutation('updateNode')
+  updateNode(@Args('input') input: UpdateNodeInput) {
     return this.nodeService.update(input);
   }
 
-  @Mutation(() => DeleteNodeResult, {
-    description: 'Delete a node by id.',
-  })
-  deleteNode(
-    @Args('id', { type: () => Int }) id: number,
-  ): Promise<DeleteNodeResult> {
+  @Mutation('deleteNode')
+  deleteNode(@Args('id') id: number) {
     return this.nodeService.delete(id);
   }
 }

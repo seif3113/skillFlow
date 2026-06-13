@@ -1,0 +1,26 @@
+type Quiz {
+  id: Int!
+  title: String!
+  nodeId: Int!
+  questions: [Question!]
+}
+
+type Question {
+  id: Int!
+  quizId: Int!
+  question: String!
+  choices: JSON!
+  answer: Int!
+  explanation: String
+}
+
+extend type Query {
+  quizzes: [Quiz!]!
+  quiz(id: Int!): Quiz
+  questionsByQuiz(quizId: Int!): [Question!]!
+}
+
+extend type Mutation {
+  createQuiz(title: String!, nodeId: Int!): Quiz!
+  addQuestionToQuiz(quizId: Int!, question: String!, choices: JSON!, answer: Int!, explanation: String): Question!
+}

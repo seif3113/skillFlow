@@ -1,14 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { RoadmapRepository } from './roadmap.repository';
-import { RoadmapRow } from './roadmap.schema';
 import { CreateRoadmapInput } from './dto/create-roadmap.input';
 import { UpdateRoadmapInput } from './dto/update-roadmap.input';
 import { RoadmapType, DeleteRoadmapResult } from './types/roadmap.types';
+import { RoadmapRow } from './roadmap.schema';
 
 @Injectable()
 export class RoadmapService {
-  constructor(private readonly roadmapRepository: RoadmapRepository) { }
+  constructor(private readonly roadmapRepository: RoadmapRepository) {}
 
   private mapRow(row: RoadmapRow): RoadmapType {
     return {
@@ -48,11 +48,13 @@ export class RoadmapService {
     return rows.map((r) => this.mapRow(r));
   }
 
-  async findByLearningProfile(learningProfileId: number): Promise<RoadmapType[]> {
-    const rows = await this.roadmapRepository.findByLearningProfileId(learningProfileId);
+  async findByLearningProfile(
+    learningProfileId: number,
+  ): Promise<RoadmapType[]> {
+    const rows =
+      await this.roadmapRepository.findByLearningProfileId(learningProfileId);
     return rows.map((r) => this.mapRow(r));
   }
-
 
   async create(input: CreateRoadmapInput): Promise<RoadmapType> {
     const inserted = await this.roadmapRepository.create({

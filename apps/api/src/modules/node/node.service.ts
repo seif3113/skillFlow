@@ -21,8 +21,8 @@ export class NodeService {
       roadmapId: row.roadmapId,
       title: row.title,
       description: row.description ?? null,
-      tags: (row.tags as string[]) ?? null,
-      resources: (row.resources as Record<string, string>[]) ?? null,
+      tags: (row.tags as string[]) ?? [],
+      resources: (row.resources as Record<string, string>[]) ?? [],
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };
@@ -65,8 +65,8 @@ export class NodeService {
       roadmapId: input.roadmapId,
       title: input.title,
       description: input.description ?? null,
-      tags: input.tags ?? null,
-      resources: input.resources ?? null,
+      tags: input.tags ?? [],
+      resources: input.resources ?? [],
     });
 
     return this.mapRow(inserted);
