@@ -1,0 +1,11 @@
+chromium
+chromium-driver
+xvfb
+libnss3
+libxss1
+libasound2
+libatk-bridge2.0-0
+libgtk-3-0
+libfontconfig1
+fonts-liberation
+fonts-noto-color-emoji

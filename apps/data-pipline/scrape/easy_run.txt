@@ -1,0 +1,4 @@
+  python run.py --platform udemy --category development --max-pages 10
+  python run.py --platform coursera --category data-science -p 10
+  python run.py --platform w3schools --category python
+  python run.py --platform khan_academy --category computing

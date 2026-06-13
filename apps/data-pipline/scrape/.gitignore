@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Output data
+scrape_output/**/*.csv
+scrape_output/**/*.xlsx
+scrape_output/**/*.json
+!scrape_output/**/.gitkeep
+
+# Logs
+*.log
+
+# Debug files
+*.html
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
