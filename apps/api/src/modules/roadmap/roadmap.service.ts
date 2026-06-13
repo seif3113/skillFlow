@@ -4,7 +4,7 @@ import { RoadmapRepository } from './roadmap.repository';
 import { RoadmapRow } from './roadmap.schema';
 import { CreateRoadmapInput } from './dto/create-roadmap.input';
 import { UpdateRoadmapInput } from './dto/update-roadmap.input';
-import { RoadmapType, DeleteRoadmapResult } from './roadmap.types';
+import { RoadmapType, DeleteRoadmapResult } from './types/roadmap.types';
 
 @Injectable()
 export class RoadmapService {

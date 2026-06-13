@@ -7,6 +7,8 @@ import {
   timestamp,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+import { nodes } from '../node/node.schema';
+
 
 
 export const roadmaps = pgTable('roadmaps', {
@@ -24,15 +26,8 @@ export const roadmaps = pgTable('roadmaps', {
     .defaultNow(),
 });
 
-// ─── Relations ────────────────────────────────────────────────────────────────
-
-/**
- * Declares the one-to-many relationship: roadmap → roadmap_nodes.
- * The actual roadmap_nodes table is managed separately; we only declare
- * the relation here so Drizzle can handle relational queries when needed.
- */
 export const roadmapsRelations = relations(roadmaps, ({ many }) => ({
-  // nodes: many(roadmapNodes),  // Uncomment when roadmap_nodes module is added
+  nodes: many(nodes),
 }));
 
 

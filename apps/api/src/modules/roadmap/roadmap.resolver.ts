@@ -1,12 +1,22 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, Int, ResolveField, Parent } from '@nestjs/graphql';
 import { RoadmapService } from './roadmap.service';
-import { RoadmapType, DeleteRoadmapResult } from './roadmap.types';
+import { RoadmapType, DeleteRoadmapResult } from './types/roadmap.types';
 import { CreateRoadmapInput } from './dto/create-roadmap.input';
 import { UpdateRoadmapInput } from './dto/update-roadmap.input';
+import { NodeService } from '../node/node.service';
+import { NodeType } from '../node/types/node.types';
 
 @Resolver(() => RoadmapType)
 export class RoadmapResolver {
-  constructor(private readonly roadmapService: RoadmapService) { }
+  constructor(
+    private readonly roadmapService: RoadmapService,
+    private readonly nodeService: NodeService,
+  ) { }
+
+  @ResolveField('nodes', () => [NodeType], { nullable: true })
+  resolveNodes(@Parent() roadmap: RoadmapType): Promise<NodeType[]> {
+    return this.nodeService.findByRoadmapId(roadmap.id);
+  }
 
 
   @Query(() => [RoadmapType], {
