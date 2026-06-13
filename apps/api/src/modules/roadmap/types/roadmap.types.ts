@@ -1,5 +1,5 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
-
+import { NodeType } from '../../node/types/node.types';
 
 @ObjectType({ description: 'A learning roadmap owned by a user.' })
 export class RoadmapType {
@@ -26,6 +26,9 @@ export class RoadmapType {
 
   @Field(() => Date, { description: 'Last update timestamp (ISO 8601).' })
   updatedAt: Date;
+
+  @Field(() => [NodeType], { nullable: true, description: 'Nodes belonging to this roadmap.' })
+  nodes?: NodeType[] | null;
 }
 
 
