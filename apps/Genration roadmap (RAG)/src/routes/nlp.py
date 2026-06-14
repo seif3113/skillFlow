@@ -2,7 +2,7 @@ from fastapi import FastAPI, APIRouter, status, Request
 from fastapi.responses import JSONResponse
 from controllers.NLPController import NLPController
 from controllers.document_loader import load_chunks
-from models.schemes import SearchRequest , PushRequest, CategoryRequest
+from models.schemes import SearchRequest , PushRequest, CategoryRequest,ChatRequest
 import asyncio
 
 import logging
@@ -101,7 +101,9 @@ async def search_index(request: Request, search_request: SearchRequest):
         embedding_helper=request.app.embedding_helper,
     )
 
-    results = nlp_controller.search_vector_db_collection(text=search_request.text, limit=search_request.limit)
+    results = nlp_controller.search_vector_db_collection(text=search_request.text, 
+                                                         limit=search_request.limit,
+                                                         source=search_request.source)
 
     if not results:
         return JSONResponse(
@@ -189,8 +191,6 @@ async def answer_rag(request: Request, search_request: SearchRequest):
     )   
 
 
-
-### version 2.0 with RAG and category definition ###
 @nlp_router.post("/index/final-answer")
 async def get_final_answer(request: Request, category_request: CategoryRequest):
     
@@ -214,32 +214,118 @@ async def get_final_answer(request: Request, category_request: CategoryRequest):
                 }
         )    
 
-    # FIX 2: Filter out any empty lines from the LLM's response
     topics = [t.strip() for t in final_answer.split("\n") if t.strip()]
 
     for topic in topics:
-        answer, full_prompt, chat_history = nlp_controller.answer_rag_question(
-            query=topic,
-            limit=5,
-        )
 
-        if not answer:
-            answer = "Error: Could not generate an answer for this topic."
-            
-        results.append({
+        topic_resources = {
             "topic": topic,
-            "answer": answer,
-            # "full_prompt": full_prompt,
-            # "chat_history": chat_history
-        })
+            "course": "Error: Could not generate a course for this topic.",
+            "article": "Error: Could not generate an article for this topic.",
+            "video": "Error: Could not generate a video for this topic."
+        }
 
-        await asyncio.sleep(2)
+        for src in ["udemy", "coursera"]:
+            ans, _, _ = nlp_controller.get_article_resources(query=topic, limit=2, source=src)
+            if ans:
+                topic_resources["course"] = ans
+                break 
+
+        for src in ["khan_academy", "w3schools"]:
+            ans, _, _ = nlp_controller.get_article_resources(query=topic, limit=1, source=src)
+            if ans:
+                topic_resources["article"] = ans
+                break 
+
+        ans, _, _ = nlp_controller.get_video_resources(query=topic, limit=1, source="youtube")
+        if ans:
+            topic_resources["video"] = ans
+
+        results.append(topic_resources)
+        
     return JSONResponse(
         content={
-            "signal": "ResponseSignal.FINAL_ANSWER_SUCCESS.value", # Updated signal name
+            "signal": "ResponseSignal.FINAL_ANSWER_SUCCESS.value",
             "results": results
         }
-    )   
+    )
 
 
+
+@nlp_router.post("/chat")
+async def conversational_chat(request: Request, chat_request: ChatRequest):
     
+    # 1. FASTAPI MEMORY FIX: 
+    # Check if a chat controller already exists in the app's global state.
+    # If it doesn't exist yet, create it. If it does, reuse the exact same one to keep the memory!
+    if not hasattr(request.app.state, "chat_controller"):
+        logger.info("Initializing new stateful Chatbot memory...")
+        request.app.state.chat_controller = NLPController(
+            vectordb_client=request.app.vectordb_client,
+            generation_client=request.app.generation_client,
+            embedding_client=request.app.embedding_client,
+            template_parser=request.app.template_parser,
+            embedding_helper=request.app.embedding_helper,
+        )
+    
+    # 2. Retrieve the stateful controller (this holds your previous messages)
+    nlp_controller = request.app.state.chat_controller
+
+    # 3. Process the chat (We no longer pass chat_history in the function call)
+    # Note: Make sure `chat_request.message` is the correct field from your schema!
+    answer = nlp_controller.chat_with_user(user_prompt=chat_request.message)
+
+    if not answer:
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "signal": "error",
+                "message": "Chatbot failed to generate an answer."
+            }
+        )
+
+    # 4. Return ONLY the answer. The history stays safely hidden inside the backend!
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={
+            "signal": "success",
+            "answer": answer,
+
+            "chat_history": nlp_controller.chat_history  # Optional: You can return the chat history if you want
+        }
+    )
+
+
+
+@nlp_router.post("/explain-node")
+async def chat_explain_node(request: Request, chat_request: ChatRequest):
+    
+    nlp_controller = NLPController(
+        vectordb_client=request.app.vectordb_client,
+        generation_client=request.app.generation_client,
+        embedding_client=request.app.embedding_client,
+        template_parser=request.app.template_parser,
+        embedding_helper=request.app.embedding_helper,
+    )
+
+    answer = nlp_controller.explain_node(
+        node_name=chat_request.message, 
+        user_question=None # You can map this if the user asks a specific follow-up
+    )
+
+    if not answer:
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "signal": "error",
+                "message": "Node explainer failed to generate an answer."
+            }
+        )
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={
+            "signal": "success",
+            "answer": answer
+        }
+    )

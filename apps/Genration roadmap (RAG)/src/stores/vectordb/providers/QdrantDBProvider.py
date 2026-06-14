@@ -132,19 +132,26 @@ class QdrantDBProvider(VectorDBInterface):
         return True
         
 
-    def search_by_vector(self, collection_name: str, vector: list, limit: int = 5):
+    def search_by_vector(self, collection_name: str, vector: list, limit: int = 5,source : str = None  ):
         if self.client is None:
             self.logger.error("Qdrant client is not connected.")
             return []
+        
+        query_filter = None
 
+        if source:
+            query_filter = models.Filter(
+                must=[models.FieldCondition(key="metadata.source", match=models.MatchValue(value=source))]
+            )
         try:
             # Using the new query_points API to remove the DeprecationWarning
             result = self.client.query_points(
                 collection_name=collection_name,
-                query=vector,  # query_points uses 'query' instead of 'query_vector'
+                query=vector,  
+                query_filter=query_filter,
                 limit=limit,
                 with_payload=True,
-                with_vectors=False
+                with_vectors=False,
             )
             # query_points returns a different object structure, we want the 'points'
             return result.points 
@@ -153,20 +160,21 @@ class QdrantDBProvider(VectorDBInterface):
             self.logger.error(f"Search failed: {e}")
             return []
 
+    def create_payload_index(self, collection_name: str, field_name: str, field_schema: str):
+        """Creates an index on a metadata payload field for faster filtering."""
+        if self.client is None:
+            self.logger.error("Qdrant client is not connected.")
+            return False
+            
+        try:
+            self.client.create_payload_index(
+                collection_name=collection_name,
+                field_name=field_name,
+                field_schema=field_schema,
+            )
+            return True
+        except Exception as e:
+            self.logger.error(f"Failed to create payload index for {field_name}: {e}")
+            return False
 
 
-
-
-
-
-
-
-  # def search_by_vector(self, collection_name: str, vector: list, limit: int = 5):
-
-    #     return self.client.search(
-    #         collection_name=collection_name,
-    #         query_vector=vector,
-    #         limit=limit,
-    #         with_payload=True,    # Usually helpful to see your "text" field
-    #         with_vectors=False
-    #     )
