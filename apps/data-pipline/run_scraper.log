@@ -1,0 +1,103 @@
+2026-04-14 18:16:39,546  [MainThread]  run                     INFO     Starting 1 scraper thread(s): ['Coursera']
+2026-04-14 18:16:43,259  [Coursera]  numexpr.utils           INFO     NumExpr defaulting to 8 threads.
+2026-04-14 18:16:44,445  [Coursera]  shared.proxy_manager    INFO     Proxy manager initialized with 0 proxies
+2026-04-14 18:16:44,445  [Coursera]  coursera.scraper        INFO     Starting scrape for category: data-science
+2026-04-14 18:16:44,445  [Coursera]  shared.browser_factory  INFO     Docker environment detected — using Selenium + Xvfb
+2026-04-14 18:16:44,446  [Coursera]  shared.browser_factory  WARNING  Could not start Xvfb virtual display: No module named 'pyvirtualdisplay'
+2026-04-14 18:16:44,447  [Coursera]  coursera.scraper        WARNING  WebDriver error: Message: Unable to obtain driver for chrome; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors/driver_location
+
+2026-04-14 18:16:49,448  [Coursera]  shared.browser_factory  INFO     Docker environment detected — using Selenium + Xvfb
+2026-04-14 18:16:49,449  [Coursera]  shared.browser_factory  WARNING  Could not start Xvfb virtual display: No module named 'pyvirtualdisplay'
+2026-04-14 18:16:49,450  [Coursera]  coursera.scraper        WARNING  WebDriver error: Message: Unable to obtain driver for chrome; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors/driver_location
+
+2026-04-14 18:16:54,450  [Coursera]  shared.browser_factory  INFO     Docker environment detected — using Selenium + Xvfb
+2026-04-14 18:16:54,453  [Coursera]  shared.browser_factory  WARNING  Could not start Xvfb virtual display: No module named 'pyvirtualdisplay'
+2026-04-14 18:16:54,454  [Coursera]  coursera.scraper        WARNING  WebDriver error: Message: Unable to obtain driver for chrome; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors/driver_location
+
+2026-04-14 18:16:59,455  [Coursera]  coursera.scraper        ERROR    Failed to load category page: https://www.coursera.org/courses?query=data-science
+2026-04-14 18:16:59,455  [Coursera]  shared.exporter         INFO     Streaming export complete: 0 courses to scrape\scrape_output\coursera\coursera_data-science_20260414_181644.csv
+2026-04-14 18:16:59,455  [Coursera]  run                     INFO     [Coursera] Done — 0 courses -> scrape\scrape_output\coursera\coursera_data-science_20260414_181644.csv
+2026-04-14 18:17:30,732  [MainThread]  run                     INFO     Starting 1 scraper thread(s): ['Coursera']
+2026-04-14 18:17:31,126  [Coursera]  numexpr.utils           INFO     NumExpr defaulting to 8 threads.
+2026-04-14 18:17:31,430  [Coursera]  shared.proxy_manager    INFO     Proxy manager initialized with 0 proxies
+2026-04-14 18:17:31,431  [Coursera]  coursera.scraper        INFO     Starting scrape for category: data-science
+2026-04-14 18:17:31,445  [Coursera]  shared.browser_factory  INFO     Detected Chrome version: 145
+2026-04-14 18:17:35,174  [Coursera]  undetected_chromedriver.patcher  INFO     patching driver executable C:\Users\LAPTOP SHOP\appdata\roaming\undetected_chromedriver\undetected_chromedriver.exe
+2026-04-14 18:17:42,877  [Coursera]  coursera.scraper        WARNING  WebDriver error: Message: session not created: cannot connect to chrome at 127.0.0.1:59425
+from session not created: This version of ChromeDriver only supports Chrome version 145
+Current browser version is 147.0.7727.56; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#sessionnotcreatedexception
+Stacktrace:
+Symbols not available. Dumping unresolved backtrace:
+	0xc67dd3
+	0xc67e14
+	0xa71db0
+	0xaad462
+	0xaac49c
+	0xaa2555
+	0xaa2376
+	0xaeaa9f
+	0xaea2b7
+	0xade7d6
+	0xab0049
+	0xab0e04
+	0xec6924
+	0xec1bf7
+	0xedf5a0
+	0xc80f58
+	0xc8891d
+	0xc70648
+	0xc70812
+	0xc5a21a
+	0x75dbfcc9
+	0x77a182ae
+	0x77a1827e
+
+2026-04-14 18:17:51,209  [Coursera]  undetected_chromedriver.patcher  INFO     patching driver executable C:\Users\LAPTOP SHOP\appdata\roaming\undetected_chromedriver\undetected_chromedriver.exe
+2026-04-14 18:17:58,144  [Coursera]  coursera.scraper        WARNING  WebDriver error: Message: session not created: cannot connect to chrome at 127.0.0.1:59452
+from session not created: This version of ChromeDriver only supports Chrome version 145
+Current browser version is 147.0.7727.56; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#sessionnotcreatedexception
+Stacktrace:
+Symbols not available. Dumping unresolved backtrace:
+	0x1097dd3
+	0x1097e14
+	0xea1db0
+	0xedd462
+	0xedc49c
+	0xed2555
+	0xed2376
+	0xf1aa9f
+	0xf1a2b7
+	0xf0e7d6
+	0xee0049
+	0xee0e04
+	0x12f6924
+	0x12f1bf7
+	0x130f5a0
+	0x10b0f58
+	0x10b891d
+	0x10a0648
+	0x10a0812
+	0x108a21a
+	0x75dbfcc9
+	0x77a182ae
+	0x77a1827e
+
+2026-04-14 18:18:06,390  [Coursera]  undetected_chromedriver.patcher  INFO     patching driver executable C:\Users\LAPTOP SHOP\appdata\roaming\undetected_chromedriver\undetected_chromedriver.exe
+2026-04-14 18:18:35,987  [MainThread]  run                     INFO     Starting 1 scraper thread(s): ['Coursera']
+2026-04-14 18:18:38,786  [Coursera]  shared.proxy_manager    INFO     Proxy manager initialized with 0 proxies
+2026-04-14 18:18:38,787  [Coursera]  coursera.scraper        INFO     Starting scrape for category: data-science
+2026-04-14 18:18:38,787  [Coursera]  shared.browser_factory  INFO     Docker environment detected — using Selenium + Xvfb
+2026-04-14 18:18:38,789  [Coursera]  shared.browser_factory  WARNING  Could not start Xvfb virtual display: No module named 'pyvirtualdisplay'
+2026-04-14 18:18:38,789  [Coursera]  coursera.scraper        WARNING  WebDriver error: Message: Unable to obtain driver for chrome; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors/driver_location
+
+2026-04-14 18:18:43,790  [Coursera]  shared.browser_factory  INFO     Docker environment detected — using Selenium + Xvfb
+2026-04-14 18:18:43,792  [Coursera]  shared.browser_factory  WARNING  Could not start Xvfb virtual display: No module named 'pyvirtualdisplay'
+2026-04-14 18:18:43,793  [Coursera]  coursera.scraper        WARNING  WebDriver error: Message: Unable to obtain driver for chrome; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors/driver_location
+
+2026-04-14 18:18:48,794  [Coursera]  shared.browser_factory  INFO     Docker environment detected — using Selenium + Xvfb
+2026-04-14 18:18:48,796  [Coursera]  shared.browser_factory  WARNING  Could not start Xvfb virtual display: No module named 'pyvirtualdisplay'
+2026-04-14 18:18:48,797  [Coursera]  coursera.scraper        WARNING  WebDriver error: Message: Unable to obtain driver for chrome; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors/driver_location
+
+2026-04-14 18:18:53,798  [Coursera]  coursera.scraper        ERROR    Failed to load category page: https://www.coursera.org/courses?query=data-science
+2026-04-14 18:18:53,799  [Coursera]  shared.exporter         INFO     Streaming export complete: 0 courses to scrape\scrape_output\coursera\coursera_data-science_20260414_181838.csv
+2026-04-14 18:18:53,799  [Coursera]  run                     INFO     [Coursera] Done — 0 courses -> scrape\scrape_output\coursera\coursera_data-science_20260414_181838.csv
