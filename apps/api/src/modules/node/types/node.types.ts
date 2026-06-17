@@ -13,3 +13,12 @@ export interface DeleteNodeResult {
   success: boolean;
   message: string;
 }
+
+export interface FindResourcesResult {
+  signal: string;
+  result: {
+    id: string;
+    score: number;
+    payload: any;
+  }[];
+}

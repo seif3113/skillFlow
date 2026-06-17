@@ -17,6 +17,14 @@ export class NodeResolver {
     return this.nodeService.findByRoadmapId(roadmapId);
   }
 
+  @Query('searchNodeResources')
+  searchResources(
+    @Args('keyword') keyword: string,
+    @Args('limit', { defaultValue: 5 }) limit?: number,
+  ) {
+    return this.nodeService.findResources(keyword, limit);
+  }
+
   @Mutation('createNode')
   createNode(@Args('input') input: CreateNodeInput) {
     return this.nodeService.create(input);

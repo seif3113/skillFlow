@@ -79,6 +79,7 @@ export interface IQuery {
     node(id: number): Nullable<Node> | Promise<Nullable<Node>>;
     nodesByRoadmap(roadmapId: number): Node[] | Promise<Node[]>;
     nodeChats(nodeId: number, userId: number): NodeExplanationChat[] | Promise<NodeExplanationChat[]>;
+    searchNodeResources(keyword: string, limit?: Nullable<number>): Nullable<JSON>[] | Promise<Nullable<JSON>[]>;
     quizzes(): Quiz[] | Promise<Quiz[]>;
     quiz(id: number): Nullable<Quiz> | Promise<Nullable<Quiz>>;
     questionsByQuiz(quizId: number): Question[] | Promise<Question[]>;

@@ -46,11 +46,17 @@ extend type Query {
   node(id: Int!): Node
   nodesByRoadmap(roadmapId: Int!): [Node!]!
   nodeChats(nodeId: Int!, userId: Int!): [NodeExplanationChat!]!
+  searchNodeResources(keyword: String!, limit: Int): [JSON]!
 }
 
 extend type Mutation {
   createNode(input: CreateNodeInput!): Node!
   updateNode(input: UpdateNodeInput!): Node!
   deleteNode(id: Int!): DeleteNodeResult!
-  sendNodeChatMessage(nodeId: Int!, userId: Int!, sender: String!, message: JSON!): NodeExplanationChat!
+  sendNodeChatMessage(
+    nodeId: Int!
+    userId: Int!
+    sender: String!
+    message: JSON!
+  ): NodeExplanationChat!
 }

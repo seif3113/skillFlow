@@ -1,19 +1,27 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 
 import { NodeRepository } from './node.repository';
 import { RoadmapRepository } from '../roadmap/roadmap.repository';
 import { NodeRow } from './node.schema';
-import { NodeType, DeleteNodeResult } from './types/node.types';
+import {
+  NodeType,
+  DeleteNodeResult,
+  FindResourcesResult,
+} from './types/node.types';
 import { CreateNodeInput } from './dto/create-node.input';
 import { UpdateNodeInput } from './dto/update-node.input';
+import { tryCatch } from 'src/utils/try-catch';
 
 @Injectable()
 export class NodeService {
   constructor(
     private readonly nodeRepository: NodeRepository,
     private readonly roadmapRepository: RoadmapRepository,
-  ) { }
-
+  ) {}
 
   private mapRow(row: NodeRow): NodeType {
     return {
@@ -36,7 +44,6 @@ export class NodeService {
     return row;
   }
 
-
   async findById(id: number): Promise<NodeType> {
     const row = await this.findNodeOrFail(id);
     return this.mapRow(row);
@@ -52,6 +59,48 @@ export class NodeService {
     return rows.map((r) => this.mapRow(r));
   }
 
+  async findResources(
+    keyword: string,
+    limit = 5,
+  ): Promise<FindResourcesResult['result']> {
+    const cleanedKeyword = keyword.trim().toLowerCase();
+    const reqBody = { text: cleanedKeyword, limit };
+
+    console.log(
+      `Searching resources with keyword: "${cleanedKeyword}", limit: ${limit}`,
+    );
+
+    const { data: res, error } = await tryCatch(
+      fetch(`${process.env.RAG_URI}/nlp/index/search`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(reqBody),
+        signal: AbortSignal.timeout(5000),
+      }),
+    );
+
+    if (error) {
+      throw new InternalServerErrorException(
+        `Failed to reach RAG service: ${error.message}`,
+      );
+    }
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      throw new InternalServerErrorException(
+        `RAG service returned ${res.status}: ${body || res.statusText}`,
+      );
+    }
+
+    const { data: parsed, error: parseError } = await tryCatch(res.json());
+    if (parseError) {
+      throw new InternalServerErrorException(
+        `Failed to parse RAG response: ${parseError.message}`,
+      );
+    }
+
+    return (parsed as FindResourcesResult).result;
+  }
 
   async create(input: CreateNodeInput): Promise<NodeType> {
     const roadmap = await this.roadmapRepository.findById(input.roadmapId);

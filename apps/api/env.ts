@@ -15,6 +15,9 @@ const envSchema = z.object({
   DATABASE_URL: z.string(),
   DIRECT_DATABASE_URL: z.string(),
 
+  // RAG URI
+  RAG_URI: z.url(),
+
   // App
   PORT: z.string(),
 });
