@@ -1,15 +1,15 @@
 "use client";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import {
+  Clock,
+  CheckCircle2,
+  MoreVertical,
+  Trash2,
+  ArrowUpRight,
+  Zap,
+} from "lucide-react";
 
 interface Roadmap {
   _id: string;
@@ -30,19 +30,28 @@ export function RoadmapList({ roadmaps, onDelete }: RoadmapListProps) {
     switch (status) {
       case "questioning":
         return (
-          <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
-            In Progress
+          <Badge
+            variant="outline"
+            className="bg-amber-500/5 text-amber-500 border-amber-500/20 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider"
+          >
+            In Setup
           </Badge>
         );
       case "generating":
         return (
-          <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
-            Generating
+          <Badge
+            variant="outline"
+            className="bg-sky-500/5 text-sky-500 border-sky-500/20 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider animate-pulse"
+          >
+            AI Working
           </Badge>
         );
       case "ready":
         return (
-          <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/30">
+          <Badge
+            variant="outline"
+            className="bg-teal-500/5 text-teal-500 border-teal-500/20 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider"
+          >
             Ready
           </Badge>
         );
@@ -57,128 +66,134 @@ export function RoadmapList({ roadmaps, onDelete }: RoadmapListProps) {
 
   if (roadmaps.length === 0) {
     return (
-      <Card className="border-zinc-800 bg-transparent">
-        <CardContent className="flex flex-col items-center justify-center py-12">
-          <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center mb-4">
-            <svg
-              className="w-8 h-8 text-zinc-500"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M13 10V3L4 14h7v7l9-11h-7z"
-              />
-            </svg>
+      <div className="relative group overflow-hidden rounded-2xl border border-border bg-card/20 backdrop-blur-sm p-12 text-center">
+        <div className="absolute inset-0 bg-linear-to-b from-border/10 to-transparent pointer-events-none" />
+        <div className="relative z-10 flex flex-col items-center">
+          <div className="w-20 h-20 rounded-2xl bg-card border border-border flex items-center justify-center mb-8 rotate-3 group-hover:rotate-0 transition-transform duration-500">
+            <Zap className="w-10 h-10 text-muted-foreground" />
           </div>
-          <h3 className="text-zinc-200 font-semibold text-lg mb-2">
-            No roadmaps yet
+          <h3 className="text-2xl font-black text-foreground mb-3">
+            No Roadmaps Found
           </h3>
-          <p className="text-zinc-500 text-center max-w-sm mb-6">
-            Create your first learning roadmap to get started on your journey
+          <p className="text-muted-foreground max-w-sm mb-10 leading-relaxed font-medium">
+            Your learning journey is a blank canvas. Generate your first AI
+            roadmap to start mastering new skills today.
           </p>
           <Link href="/roadmap/new">
-            <Button
-              className="text-white shadow-lg shadow-sky-500/20"
-              style={{
-                background: "linear-gradient(90deg, #0284c7 0%, #0d9488 100%)",
-              }}
-            >
-              Create Your First Roadmap
-            </Button>
+            <button className="px-8 py-3.5 bg-primary text-primary-foreground rounded-xl font-bold transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-primary/20">
+              Start Your First Journey
+            </button>
           </Link>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
       {roadmaps.map((roadmap) => {
         const progress = getProgress(roadmap.nodes);
+        const completedCount = roadmap.nodes.filter(
+          (n) => n.data.completed,
+        ).length;
+
         return (
-          <Card
+          <div
             key={roadmap._id}
-            className="border-zinc-800 bg-zinc-900 hover:border-zinc-700 transition-colors group"
+            className="group relative flex flex-col bg-card/40 border border-border rounded-xl overflow-hidden hover:border-muted-foreground/30 hover:bg-card/60 transition-all duration-300 hover:-translate-y-1 shadow-sm hover:shadow-2xl hover:shadow-black/50"
           >
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
-                  <CardTitle className="text-zinc-100 text-lg truncate whitespace-normal">
+            {/* Gradient Header Detail */}
+            <div
+              className={`h-1 w-full bg-linear-to-r ${
+                roadmap.status === "ready"
+                  ? "from-teal-500 to-sky-500"
+                  : "from-amber-500 to-orange-500"
+              } opacity-40 group-hover:opacity-100 transition-opacity`}
+            />
+
+            <div className="p-7 flex flex-col flex-1">
+              <div className="flex items-start justify-between mb-6">
+                <div className="min-w-0">
+                  <h3 className="text-xl font-bold text-foreground mb-1 group-hover:text-primary transition-colors truncate">
                     {roadmap.title}
-                  </CardTitle>
-                  <CardDescription className="text-zinc-500 truncate mt-1">
+                  </h3>
+                  <p className="text-sm text-muted-foreground font-medium truncate">
                     {roadmap.topic}
-                  </CardDescription>
+                  </p>
                 </div>
                 {getStatusBadge(roadmap.status)}
               </div>
-            </CardHeader>
-            <CardContent>
-              {roadmap.status === "ready" && roadmap.nodes.length > 0 && (
-                <div className="mb-4">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-zinc-400">Progress</span>
-                    <span className="text-zinc-300">{progress}%</span>
+
+              {roadmap.status === "ready" && (
+                <div className="mt-auto space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center text-xs font-bold tracking-widest uppercase text-muted-foreground">
+                      <span>Progress</span>
+                      <span
+                        className={
+                          progress === 100 ? "text-teal-400" : "text-foreground"
+                        }
+                      >
+                        {progress}%
+                      </span>
+                    </div>
+                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-1000 ease-out relative ${
+                          progress === 100 ? "bg-teal-500" : "bg-sky-500"
+                        }`}
+                        style={{ width: `${progress}%` }}
+                      >
+                        <div className="absolute top-0 right-0 bottom-0 w-8 bg-linear-to-r from-transparent to-white/20" />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px] font-bold text-muted-foreground uppercase tracking-tighter">
+                      <CheckCircle2
+                        className={`w-3 h-3 ${progress === 100 ? "text-teal-500" : ""}`}
+                      />
+                      <span>
+                        {completedCount} / {roadmap.nodes.length} Steps Mastered
+                      </span>
+                    </div>
                   </div>
-                  <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        background:
-                          "linear-gradient(90deg, #0284c7 0%, #2dd4bf 100%)",
-                        width: `${progress}%`,
-                      }}
-                    />
+
+                  <div className="flex gap-2 pt-2">
+                    <Link href={`/roadmap/${roadmap._id}`} className="flex-1">
+                      <button className="w-full flex items-center justify-center gap-2 py-3 bg-muted hover:bg-accent text-foreground rounded-xl font-bold text-sm transition-all">
+                        <span>Open Canvas</span>
+                        <ArrowUpRight className="w-4 h-4" />
+                      </button>
+                    </Link>
+                    {onDelete && (
+                      <button
+                        onClick={() => onDelete(roadmap._id)}
+                        className="p-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl transition-all"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    )}
                   </div>
-                  <p className="text-xs text-zinc-500 mt-1">
-                    {roadmap.nodes.filter((n) => n.data.completed).length} of{" "}
-                    {roadmap.nodes.length} steps completed
-                  </p>
                 </div>
               )}
 
-              <div className="flex gap-2">
-                <Link href={`/roadmap/${roadmap._id}`} className="flex-1">
-                  <Button
-                    variant="outline"
-                    className="w-full border-zinc-700 text-zinc-300 hover:bg-zinc-800"
-                  >
-                    {roadmap.status === "ready" ? "View" : "Continue"}
-                  </Button>
-                </Link>
-                {onDelete && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onDelete(roadmap._id)}
-                    className="text-zinc-500 hover:text-red-400 hover:bg-red-500/10"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      />
-                    </svg>
-                  </Button>
-                )}
-              </div>
-
-              <p className="text-xs text-zinc-600 mt-3">
-                Created {new Date(roadmap._creationTime).toLocaleDateString()}
-              </p>
-            </CardContent>
-          </Card>
+              {roadmap.status !== "ready" && (
+                <div className="mt-auto pt-6 flex flex-col gap-4">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>
+                      Created{" "}
+                      {new Date(roadmap._creationTime).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <Link href={`/roadmap/${roadmap._id}`} className="w-full">
+                    <button className="w-full py-3.5 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground border border-primary/20 rounded-xl font-bold text-sm transition-all">
+                      Continue Setup
+                    </button>
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
         );
       })}
     </div>

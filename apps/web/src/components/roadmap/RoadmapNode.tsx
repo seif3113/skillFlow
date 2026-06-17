@@ -3,6 +3,7 @@
 import { memo } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { Badge } from "@/components/ui/badge";
+import { CheckCircle2, BookOpen } from "lucide-react";
 
 export interface RoadmapNodeData {
   label: string;
@@ -17,52 +18,85 @@ function RoadmapNodeComponent({ data, selected }: NodeProps) {
   return (
     <div
       className={`
-        roadmap-node px-4 py-3 rounded-xl border-2 bg-zinc-900
-        min-w-[200px] max-w-[280px] cursor-pointer transition-all duration-200
-        ${selected
-          ? "border-sky-400 shadow-lg shadow-sky-500/20"
-          : "border-zinc-700 hover:border-zinc-500"
-        }
-        ${nodeData.completed
-          ? "bg-sky-950/50 border-sky-600"
-          : ""
-        }
+        relative group transition-all duration-300
+        ${selected ? "scale-105" : "hover:scale-[1.02]"}
       `}
     >
-      <Handle
-        type="target"
-        position={Position.Top}
-        className="w-3! h-3! bg-zinc-600! border-2! border-zinc-400!"
-      />
-
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="font-semibold text-zinc-100 text-sm leading-tight">
-          {nodeData.label}
-        </h3>
-        {nodeData.completed && (
-          <Badge className="bg-sky-500/20 text-sky-400 border-sky-500/30 text-xs shrink-0">
-            Done
-          </Badge>
-        )}
-      </div>
-
-      <p className="text-xs text-zinc-400 mt-1 line-clamp-2">
-        {nodeData.description}
-      </p>
-
-      {nodeData.resources.length > 0 && (
-        <div className="flex items-center gap-1 mt-2">
-          <span className="text-xs text-zinc-500">
-            {nodeData.resources.length} resource{nodeData.resources.length > 1 ? "s" : ""}
-          </span>
-        </div>
+      {/* Dynamic Glow Background for Selected/Completed */}
+      {selected && (
+        <div className="absolute -inset-4 bg-sky-500/20 blur-2xl rounded-2xl animate-pulse pointer-events-none" />
       )}
 
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className="w-3! h-3! bg-zinc-600! border-2! border-zinc-400!"
-      />
+      <div
+        className={`
+          relative w-[260px] rounded-xl border-2 p-5 overflow-hidden transition-all duration-300
+          ${
+            selected
+              ? "bg-background border-primary shadow-2xl shadow-primary/20"
+              : "bg-background/90 backdrop-blur-md border-border hover:border-muted-foreground/30 shadow-xl"
+          }
+          ${
+            nodeData.completed && !selected
+              ? "bg-teal-500/5 border-teal-500/40"
+              : ""
+          }
+        `}
+      >
+        {/* Progress Strip */}
+        <div
+          className={`absolute top-0 left-0 right-0 h-1 bg-linear-to-r ${
+            nodeData.completed
+              ? "from-teal-500 to-emerald-400"
+              : "from-sky-500 to-blue-400"
+          } opacity-50`}
+        />
+
+        <Handle
+          type="target"
+          position={Position.Top}
+          className="w-4! h-4! bg-muted! border-2! border-border! -top-2!"
+        />
+
+        <div className="flex flex-col gap-3">
+          <div className="flex items-start justify-between gap-3">
+            <h3
+              className={`font-black text-base leading-tight transition-colors ${
+                selected ? "text-primary" : "text-foreground"
+              }`}
+            >
+              {nodeData.label}
+            </h3>
+            {nodeData.completed && (
+              <CheckCircle2 className="w-5 h-5 text-teal-500 shrink-0" />
+            )}
+          </div>
+
+          <p className="text-xs text-muted-foreground font-medium line-clamp-2 leading-relaxed">
+            {nodeData.description}
+          </p>
+
+          <div className="flex items-center justify-between pt-2">
+            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>
+                {nodeData.resources.length} Source
+                {nodeData.resources.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+            {selected && (
+              <Badge className="bg-primary text-primary-foreground border-none rounded-lg text-[10px] px-2 py-0.5 animate-in fade-in zoom-in-50">
+                Editing
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          className="w-4! h-4! bg-muted! border-2! border-border! -bottom-2!"
+        />
+      </div>
     </div>
   );
 }

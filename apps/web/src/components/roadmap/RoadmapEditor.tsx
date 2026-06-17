@@ -42,12 +42,12 @@ export function RoadmapEditor({
     () => ({
       roadmapNode: RoadmapNode,
     }),
-    []
+    [],
   );
 
   const selectedNode = useMemo(
     () => nodes.find((n) => n.id === selectedNodeId),
-    [nodes, selectedNodeId]
+    [nodes, selectedNodeId],
   );
 
   const onNodesChange: OnNodesChange = useCallback(
@@ -55,7 +55,7 @@ export function RoadmapEditor({
       handleNodesChange(changes);
       // Notify parent of position changes after drag
       const dragChanges = changes.filter(
-        (c) => c.type === "position" && c.dragging === false
+        (c) => c.type === "position" && c.dragging === false,
       );
       if (dragChanges.length > 0 && onNodesChangeProp) {
         // Use setTimeout to get updated nodes state
@@ -67,14 +67,14 @@ export function RoadmapEditor({
         }, 0);
       }
     },
-    [handleNodesChange, onNodesChangeProp, setNodes]
+    [handleNodesChange, onNodesChangeProp, setNodes],
   );
 
   const onEdgesChange: OnEdgesChange = useCallback(
     (changes) => {
       handleEdgesChange(changes);
     },
-    [handleEdgesChange]
+    [handleEdgesChange],
   );
 
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
@@ -96,14 +96,14 @@ export function RoadmapEditor({
             };
           }
           return node;
-        })
+        }),
       );
 
       if (onNodeUpdate) {
         onNodeUpdate(nodeId, data);
       }
     },
-    [setNodes, onNodeUpdate]
+    [setNodes, onNodeUpdate],
   );
 
   return (
@@ -122,9 +122,7 @@ export function RoadmapEditor({
         proOptions={{ hideAttribution: true }}
         className="roadmap-flow"
       >
-        <Controls
-          className="bg-zinc-800! border-zinc-700! rounded-lg! [&>button]:bg-zinc-800! [&>button]:border-zinc-700! [&>button]:text-zinc-300! [&>button:hover]:bg-zinc-700!"
-        />
+        <Controls className="bg-zinc-800! border-zinc-700! rounded-lg! [&>button]:bg-zinc-800! [&>button]:border-zinc-700! [&>button]:text-zinc-300! [&>button:hover]:bg-zinc-700!" />
         <Background
           variant={BackgroundVariant.Dots}
           gap={20}
@@ -143,4 +141,3 @@ export function RoadmapEditor({
     </div>
   );
 }
-
