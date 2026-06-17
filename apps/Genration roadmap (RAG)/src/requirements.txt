@@ -13,4 +13,7 @@ pytesseract
 pandas
 docx2txt
 pypdf
+sentence-transformers
 google-generativeai
+torch==2.12.0
+
