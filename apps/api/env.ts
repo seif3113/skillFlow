@@ -3,7 +3,7 @@ import { config } from 'dotenv';
 
 const envSchema = z.object({
   // Better Auth
-  BETTER_AUTH_URL: z.string(),
+  BETTER_AUTH_URL: z.string(), 
   BETTER_AUTH_SECRET: z.string(),
   BETTER_AUTH_CALLBACK_URL: z.string(),
 

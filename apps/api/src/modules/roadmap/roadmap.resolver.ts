@@ -10,9 +10,9 @@ import { RoadmapService } from './roadmap.service';
 import { type CreateRoadmapInput } from './dto/create-roadmap.input';
 import { type UpdateRoadmapInput } from './dto/update-roadmap.input';
 import { NodeService } from '../node/node.service';
-import { type RoadmapType } from './types/roadmap.types';
 import { type PublicRoadmap } from '../../graphql';
 import { AllowAnonymous } from '@thallesp/nestjs-better-auth';
+import { type RoadmapType } from './types/roadmap.types';
 
 @Resolver('Roadmap')
 export class RoadmapResolver {
@@ -46,6 +46,11 @@ export class RoadmapResolver {
     @Args('learningProfileId') learningProfileId: number,
   ) {
     return this.roadmapService.findByLearningProfile(learningProfileId);
+  }
+
+  @Query('roadmapCustomizationQuestions')
+  getRoadmapCustomizationQuestions(@Args('message') message: string) {
+    return this.roadmapService.getCustomizationQuestions(message);
   }
 
   @Mutation('createRoadmap')

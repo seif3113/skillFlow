@@ -14,7 +14,7 @@ import {
 } from './types/node.types';
 import { CreateNodeInput } from './dto/create-node.input';
 import { UpdateNodeInput } from './dto/update-node.input';
-import { tryCatch } from 'src/utils/try-catch';
+import { genericFetch } from '@/utils/fetch';
 
 @Injectable()
 export class NodeService {
@@ -29,8 +29,8 @@ export class NodeService {
       roadmapId: row.roadmapId,
       title: row.title,
       description: row.description ?? null,
-      tags: (row.tags as string[]) ?? [],
-      resources: (row.resources as Record<string, string>[]) ?? [],
+      tags: row.tags ?? [],
+      resources: row.resources ?? [],
       isCompleted: row.isCompleted,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
@@ -76,61 +76,19 @@ export class NodeService {
       `Searching resources with keyword: "${cleanedKeyword}", limit: ${limit}, source: ${source}`,
     );
 
-    const { data: res, error } = await tryCatch(
-      fetch(`${process.env.RAG_URI}/nlp/index/search`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(reqBody),
-        signal: AbortSignal.timeout(5000),
-      }),
-    );
-
-    console.log(`RAG search response status: ${res?.status}`);
-
-    if (error) {
-      throw new InternalServerErrorException(
-        `Failed to reach RAG service: ${error.message}`,
-      );
+    const baseUrl = process.env.RAG_URI;
+    if (!baseUrl) {
+      throw new InternalServerErrorException('RAG_URI is not configured');
     }
 
-    if (!res.ok) {
-      const body = await res.text().catch(() => '');
-      throw new InternalServerErrorException(
-        `RAG service returned ${res.status}: ${body || res.statusText}`,
-      );
-    }
+    const url = `${baseUrl.replace(/\/$/, '')}/nlp/index/search`;
+    const parsed = await genericFetch<FindResourcesResult>(url, {
+      method: 'POST',
+      body: JSON.stringify(reqBody),
+      timeout: 5000,
+    });
 
-    const { data: parsed, error: parseError } = await tryCatch(res.json());
-    if (parseError) {
-      throw new InternalServerErrorException(
-        `Failed to parse RAG response: ${parseError.message}`,
-      );
-    }
-
-    const { results } = parsed as VectorDbSearchResponse;
-    const cleanedResults = results.map((result) => ({
-      ...result,
-      payload: {
-        ...result.payload,
-        text: (result.payload.text as string).split('\n').reduce(
-          (acc, line) => {
-            const separatorIndex = line.indexOf(':');
-
-            if (separatorIndex === -1) return acc;
-
-            const key = line.slice(0, separatorIndex).trim();
-            const value = line.slice(separatorIndex + 1).trim();
-
-            acc[key] = value;
-
-            return acc;
-          },
-          {} as Record<string, string>,
-        ),
-      },
-    }));
-
-    return cleanedResults;
+    return parsed.result;
   }
 
   async create(input: CreateNodeInput): Promise<NodeType> {

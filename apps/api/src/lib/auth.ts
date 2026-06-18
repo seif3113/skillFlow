@@ -3,7 +3,7 @@ import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import 'dotenv/config';
 import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
-import * as schema from 'src/database/schema';
+import * as schema from '@/database/schema';
 
 const client = postgres(process.env.DATABASE_URL, {
   max: 10,

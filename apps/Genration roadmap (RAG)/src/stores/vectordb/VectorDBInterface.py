@@ -49,6 +49,10 @@ class VectorDBInterface(ABC):
     def search_by_vector(self, collection_name: str, vector: list, limit: int):
         pass
 
+    @abstractmethod
+    def search_batch_by_vectors(self, collection_name: str, vectors: List[list], limit: int):
+        pass
+
 
 
 

@@ -1,10 +1,27 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 
 import { RoadmapRepository } from './roadmap.repository';
 import { CreateRoadmapInput } from './dto/create-roadmap.input';
 import { UpdateRoadmapInput } from './dto/update-roadmap.input';
 import { RoadmapType, DeleteRoadmapResult } from './types/roadmap.types';
 import { RoadmapRow } from './roadmap.schema';
+import { genericFetch } from '@/utils/fetch';
+
+type RoadmapCustomizationResponse = {
+  signal?: string;
+  message?: string;
+  questions?: RoadmapCustomizationQuestion[];
+};
+
+type RoadmapCustomizationQuestion = {
+  question: string;
+  choices: string[];
+};
 
 @Injectable()
 export class RoadmapService {
@@ -59,6 +76,36 @@ export class RoadmapService {
     const rows =
       await this.roadmapRepository.findByLearningProfileId(learningProfileId);
     return rows.map((r) => this.mapRow(r));
+  }
+
+  async getCustomizationQuestions(
+    message: string,
+  ): Promise<RoadmapCustomizationQuestion[]> {
+    const cleanedMessage = message.trim();
+
+    if (!cleanedMessage) {
+      throw new BadRequestException('message is required');
+    }
+
+    const baseUrl = process.env.RAG_URI;
+
+    if (!baseUrl) {
+      throw new InternalServerErrorException('RAG_URI is not configured');
+    }
+
+    const url = `${baseUrl.replace(/\/$/, '')}/api/v1/nlp/roadmap-customization`;
+    const payload = await genericFetch<RoadmapCustomizationResponse>(url, {
+      method: 'POST',
+      body: JSON.stringify({ message: cleanedMessage }),
+    });
+
+    if (!Array.isArray(payload.questions)) {
+      throw new InternalServerErrorException(
+        'RAG service response did not include questions',
+      );
+    }
+
+    return payload.questions;
   }
 
   async create(input: CreateRoadmapInput): Promise<RoadmapType> {

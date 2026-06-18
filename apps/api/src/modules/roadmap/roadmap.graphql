@@ -66,6 +66,11 @@ input UpdateRoadmapInput {
   isPublished: Boolean
 }
 
+type RoadmapCustomizationQuestion {
+  question: String!
+  choices: [String!]!
+}
+
 extend type Query {
   roadmaps: [Roadmap!]!
   roadmap(id: Int!): Roadmap
@@ -73,6 +78,9 @@ extend type Query {
   roadmapsByLearningProfile(learningProfileId: Int!): [Roadmap!]!
   roadmapLearningProfiles(userId: Int!): [RoadmapLearningProfile!]!
   publicRoadmaps: [PublicRoadmap!]!
+  roadmapCustomizationQuestions(
+    message: String!
+  ): [RoadmapCustomizationQuestion!]!
 }
 
 extend type Mutation {
