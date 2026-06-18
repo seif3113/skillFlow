@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 
 class RetrievedDocument(BaseModel):
@@ -21,6 +21,22 @@ class CategoryRequest(BaseModel):
 class RoadmapRequest(BaseModel):
     topic: str
     customization_answers: Optional[List[str]] = None
+
+class RoadmapResource(BaseModel):
+    title: str
+    source: Optional[str] = None
+    url: str
+    type: str
+
+class RoadmapNode(BaseModel):
+    title: str
+    description: str
+    tags: List[str] = Field(default_factory=list)
+    resources: List[RoadmapResource] = Field(default_factory=list)
+
+class RoadmapEditRequest(BaseModel):
+    prompt: str
+    roadmap: List[RoadmapNode]
     
 class ChatRequest(BaseModel):
     message: str

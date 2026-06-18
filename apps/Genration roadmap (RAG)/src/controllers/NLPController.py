@@ -565,6 +565,57 @@ class NLPController(BaseController):
             for resource in selected[:max_items]
         ]
 
+    def _make_chat_history(self, system_prompt: str) -> list:
+        return [
+            self.generation_client.construct_prompt(
+                prompt=system_prompt,
+                role=self.generation_client.enums.SYSTEM.value,
+            )
+        ]
+
+    def _generate_json(self, system_prompt: str, user_prompt: str):
+        raw_response = self.generation_client.generate_text(
+            prompt=user_prompt, chat_history=self._make_chat_history(system_prompt)
+        )
+        return self._extract_json_from_llm_response(raw_response)
+
+    def _retrieve_roadmap_resources(self, search_queries: list, limit: int = 8) -> list:
+        valid_queries = [
+            item
+            for item in search_queries
+            if isinstance(item, dict) and item.get("query")
+        ]
+        query_texts = [
+            f"{item.get('node_title', '')} {item.get('query', '')}".strip()
+            for item in valid_queries
+        ]
+
+        if not query_texts:
+            return []
+
+        vectors = self.embedding_helper.encode_texts(
+            texts=query_texts, collection="all-MiniLM-L6-v2"
+        )
+        batch_results = self.vectordb_client.search_batch_by_vectors(
+            collection_name=self.get_collection_name(), vectors=vectors, limit=limit
+        )
+
+        retrieved_resources = []
+        for idx, query_text in enumerate(query_texts):
+            query = valid_queries[idx]
+            results = batch_results[idx] if idx < len(batch_results) else []
+            retrieved_resources.append(
+                {
+                    "node_title": query.get("node_title", ""),
+                    "query": query.get("query", ""),
+                    "resources": self._select_roadmap_resources(
+                        results, query_text, min_items=2, max_items=3
+                    ),
+                }
+            )
+
+        return retrieved_resources
+
     def generate_customized_roadmap_rag(
         self, topic: str, customization_answers: list = None
     ):
@@ -695,6 +746,125 @@ class NLPController(BaseController):
         except Exception as e:
             logger.error(f"Failed to parse final roadmap: {e}")
             return None
+
+    def edit_roadmap_rag(self, prompt: str, roadmap: list):
+        """
+        Edits an existing roadmap. Simple structural edits return after one LLM call.
+        Resource-sensitive edits retrieve and rank vector DB candidates before a final LLM pass.
+        """
+        prompt = (prompt or "").strip()
+
+        if not prompt or not roadmap:
+            return None
+
+        roadmap_json = json.dumps(roadmap, ensure_ascii=False)
+
+        try:
+            decision_system_prompt = self.template_parser.get(
+                "roadmap_editor", "edit_decision_system_prompt"
+            )
+            decision_user_prompt = self.template_parser.get(
+                "roadmap_editor",
+                "edit_decision_user_prompt",
+                {"prompt": prompt, "roadmap": roadmap_json},
+            )
+        except Exception:
+            decision_system_prompt = (
+                "You are a strict roadmap edit planner. Return JSON only with "
+                "intent, roadmap, and search_queries. intent must be one of: "
+                "add_node, remove_node, update_node, general_edit. The roadmap must "
+                "not exceed 8 nodes."
+            )
+            decision_user_prompt = (
+                f"USER_CHANGE_REQUEST:\n{prompt}\n\n"
+                f"EXISTING_ROADMAP_JSON:\n{roadmap_json}"
+            )
+
+        try:
+            edit_plan = self._generate_json(decision_system_prompt, decision_user_prompt)
+            if not isinstance(edit_plan, dict):
+                raise ValueError("Edit planner did not return a JSON object.")
+        except Exception as e:
+            logger.error(f"Failed to parse roadmap edit decision: {e}")
+            return None
+
+        intent = edit_plan.get("intent")
+        allowed_intents = {"add_node", "remove_node", "update_node", "general_edit"}
+        if intent not in allowed_intents:
+            logger.error(f"Roadmap edit decision returned invalid intent: {intent}")
+            return None
+
+        if intent in {"remove_node", "general_edit"}:
+            updated_roadmap = edit_plan.get("roadmap")
+            if not isinstance(updated_roadmap, list):
+                logger.error("Roadmap edit decision omitted updated roadmap.")
+                return None
+
+            return {
+                "intent": intent,
+                "roadmap": updated_roadmap[:8],
+            }
+
+        search_queries = [
+            query
+            for query in edit_plan.get("search_queries", [])
+            if isinstance(query, dict) and query.get("query")
+        ]
+
+        if not search_queries:
+            search_queries = [{"node_title": "Roadmap update", "query": prompt}]
+
+        try:
+            retrieved_resources = self._retrieve_roadmap_resources(search_queries)
+        except Exception as e:
+            logger.error(f"Roadmap edit vector retrieval failed: {e}")
+            return None
+
+        try:
+            compilation_system_prompt = self.template_parser.get(
+                "roadmap_editor", "edit_compilation_system_prompt"
+            )
+            compilation_user_prompt = self.template_parser.get(
+                "roadmap_editor",
+                "edit_compilation_user_prompt",
+                {
+                    "prompt": prompt,
+                    "roadmap": roadmap_json,
+                    "intent": intent,
+                    "resources": json.dumps(
+                        retrieved_resources, ensure_ascii=False
+                    ),
+                },
+            )
+        except Exception:
+            compilation_system_prompt = (
+                "You are a curriculum editor. Return only the complete updated "
+                "roadmap JSON array. Use only provided retrieved resources."
+            )
+            compilation_user_prompt = "\n\n".join(
+                [
+                    f"USER_CHANGE_REQUEST:\n{prompt}",
+                    f"EXISTING_ROADMAP_JSON:\n{roadmap_json}",
+                    f"INTENT:\n{intent}",
+                    "RETRIEVED_RESOURCE_CANDIDATES_JSON:\n"
+                    f"{json.dumps(retrieved_resources, ensure_ascii=False)}",
+                ]
+            )
+
+        try:
+            final_roadmap = self._generate_json(
+                compilation_system_prompt, compilation_user_prompt
+            )
+            if not isinstance(final_roadmap, list):
+                raise ValueError("Final roadmap response is not a JSON array.")
+        except Exception as e:
+            logger.error(f"Failed to parse edited roadmap: {e}")
+            return None
+
+        return {
+            "intent": intent,
+            "roadmap": final_roadmap[:8],
+        }
 
     def change_roadmap(self, user_prompt: str):
 

@@ -8,6 +8,7 @@ from models.schemes import (
     CategoryRequest,
     ChatRequest,
     RoadmapRequest,
+    RoadmapEditRequest,
 )
 import asyncio
 import time
@@ -310,6 +311,57 @@ async def generate_roadmap_rag(request: Request, roadmap_request: RoadmapRequest
         content={
             "signal": "success",
             "results": roadmap,
+        }
+    )
+
+
+@nlp_router.post("/edit-roadmap-rag")
+async def edit_roadmap_rag(request: Request, edit_request: RoadmapEditRequest):
+    prompt = (edit_request.prompt or "").strip()
+
+    if not prompt:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"signal": "error", "message": "prompt is required."},
+        )
+
+    nlp_controller = NLPController(
+        vectordb_client=request.app.vectordb_client,
+        generation_client=request.app.generation_client,
+        embedding_client=request.app.embedding_client,
+        template_parser=request.app.template_parser,
+        embedding_helper=request.app.embedding_helper,
+    )
+
+    try:
+        edited_roadmap = nlp_controller.edit_roadmap_rag(
+            prompt=prompt,
+            roadmap=[node.dict() for node in edit_request.roadmap],
+        )
+    except Exception as e:
+        logger.error(f"Roadmap RAG edit failed: {str(e)}")
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "signal": "error",
+                "message": "Roadmap edit failed.",
+                "details": str(e),
+            },
+        )
+
+    if not edited_roadmap:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                "signal": "error",
+                "message": "Failed to edit roadmap.",
+            },
+        )
+
+    return JSONResponse(
+        content={
+            "roadmap": edited_roadmap["roadmap"],
+            "intent": edited_roadmap["intent"],
         }
     )
 
