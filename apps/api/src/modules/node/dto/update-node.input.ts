@@ -5,4 +5,5 @@ export interface UpdateNodeInput {
   description?: string;
   tags?: string[];
   resources?: Record<string, string>[];
+  isCompleted?: boolean;
 }

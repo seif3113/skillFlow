@@ -38,6 +38,11 @@ export class RoadmapService {
     return rows.map((r) => this.mapRow(r));
   }
 
+  async findAllPublic() {
+    const rows = await this.roadmapRepository.findAllPublic();
+    return rows;
+  }
+
   async findById(id: number): Promise<RoadmapType> {
     const row = await this.findOneOrFail(id);
     return this.mapRow(row);

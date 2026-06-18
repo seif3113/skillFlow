@@ -68,6 +68,9 @@ export default function Home() {
           >
             How it Works
           </a>
+          <Link href="/public-roadmaps" className="hover:text-foreground transition-colors">
+            Public Roadmaps
+          </Link>
           <div className="flex items-center gap-4 border-l border-border pl-8">
             <ThemeToggle />
             <Link href={`${isAuthenticated ? "/dashboard" : "/signin"}`}>

@@ -6,6 +6,7 @@ import {
   timestamp,
   jsonb,
   pgEnum,
+  boolean,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { roadmaps } from '../roadmap/roadmap.schema';
@@ -27,6 +28,7 @@ export const nodes = pgTable('nodes', {
     .default([])
     .notNull(),
   quizId: integer('quiz_id'),
+  isCompleted: boolean('is_completed').default(false).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true })
     .notNull()
     .defaultNow(),

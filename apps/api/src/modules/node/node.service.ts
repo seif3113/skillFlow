@@ -31,6 +31,7 @@ export class NodeService {
       description: row.description ?? null,
       tags: (row.tags as string[]) ?? [],
       resources: (row.resources as Record<string, string>[]) ?? [],
+      isCompleted: row.isCompleted,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };
@@ -62,12 +63,17 @@ export class NodeService {
   async findResources(
     keyword: string,
     limit = 5,
+    source?: string,
   ): Promise<VectorDbSearchResponse['results']> {
     const cleanedKeyword = keyword.trim().toLowerCase();
-    const reqBody = { text: cleanedKeyword, limit };
+    const reqBody = {
+      text: cleanedKeyword,
+      limit,
+      source: source?.toLowerCase(),
+    };
 
     console.log(
-      `Searching resources with keyword: "${cleanedKeyword}", limit: ${limit}`,
+      `Searching resources with keyword: "${cleanedKeyword}", limit: ${limit}, source: ${source}`,
     );
 
     const { data: res, error } = await tryCatch(
@@ -141,6 +147,7 @@ export class NodeService {
       description: input.description ?? null,
       tags: input.tags ?? [],
       resources: input.resources ?? [],
+      isCompleted: input.isCompleted ?? false,
     });
 
     return this.mapRow(inserted);
@@ -154,6 +161,7 @@ export class NodeService {
       description: input.description,
       tags: input.tags,
       resources: input.resources,
+      isCompleted: input.isCompleted,
     });
 
     return this.mapRow(updated);

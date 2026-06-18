@@ -14,6 +14,7 @@ export interface CreateNodeInput {
     description?: Nullable<string>;
     tags?: Nullable<JSON>;
     resources?: Nullable<JSON>;
+    isCompleted?: Nullable<boolean>;
 }
 
 export interface UpdateNodeInput {
@@ -23,6 +24,7 @@ export interface UpdateNodeInput {
     description?: Nullable<string>;
     tags?: Nullable<JSON>;
     resources?: Nullable<JSON>;
+    isCompleted?: Nullable<boolean>;
 }
 
 export interface CreateRoadmapInput {
@@ -55,6 +57,7 @@ export interface Node {
     description?: Nullable<string>;
     tags?: Nullable<JSON>;
     resources?: Nullable<JSON>;
+    isCompleted: boolean;
     createdAt: DateTime;
     updatedAt: DateTime;
     chats?: Nullable<NodeExplanationChat[]>;
@@ -79,7 +82,7 @@ export interface IQuery {
     node(id: number): Nullable<Node> | Promise<Nullable<Node>>;
     nodesByRoadmap(roadmapId: number): Node[] | Promise<Node[]>;
     nodeChats(nodeId: number, userId: number): NodeExplanationChat[] | Promise<NodeExplanationChat[]>;
-    searchNodeResources(keyword: string, limit?: Nullable<number>): Nullable<JSON>[] | Promise<Nullable<JSON>[]>;
+    searchNodeResources(keyword: string, limit?: Nullable<number>, source?: Nullable<string>): Nullable<JSON>[] | Promise<Nullable<JSON>[]>;
     quizzes(): Quiz[] | Promise<Quiz[]>;
     quiz(id: number): Nullable<Quiz> | Promise<Nullable<Quiz>>;
     questionsByQuiz(quizId: number): Question[] | Promise<Question[]>;
@@ -88,6 +91,7 @@ export interface IQuery {
     roadmapsByUser(userId: number): Roadmap[] | Promise<Roadmap[]>;
     roadmapsByLearningProfile(learningProfileId: number): Roadmap[] | Promise<Roadmap[]>;
     roadmapLearningProfiles(userId: number): RoadmapLearningProfile[] | Promise<RoadmapLearningProfile[]>;
+    publicRoadmaps(): PublicRoadmap[] | Promise<PublicRoadmap[]>;
     user(id: number): Nullable<User> | Promise<Nullable<User>>;
 }
 
@@ -135,6 +139,17 @@ export interface Roadmap {
     nodes?: Nullable<Node[]>;
     learningProfile?: Nullable<RoadmapLearningProfile>;
     editLogs?: Nullable<RoadmapEditLog[]>;
+}
+
+export interface PublicRoadmap {
+    id: number;
+    userName: string;
+    title: string;
+    description?: Nullable<string>;
+    isPublished: boolean;
+    createdAt: DateTime;
+    updatedAt: DateTime;
+    nodes?: Nullable<Node[]>;
 }
 
 export interface RoadmapLearningProfile {

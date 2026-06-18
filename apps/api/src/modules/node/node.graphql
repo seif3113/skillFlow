@@ -5,6 +5,7 @@ type Node {
   description: String
   tags: JSON
   resources: JSON
+  isCompleted: Boolean!
   createdAt: DateTime!
   updatedAt: DateTime!
   chats: [NodeExplanationChat!]
@@ -31,6 +32,7 @@ input CreateNodeInput {
   description: String
   tags: JSON
   resources: JSON
+  isCompleted: Boolean
 }
 
 input UpdateNodeInput {
@@ -40,13 +42,14 @@ input UpdateNodeInput {
   description: String
   tags: JSON
   resources: JSON
+  isCompleted: Boolean
 }
 
 extend type Query {
   node(id: Int!): Node
   nodesByRoadmap(roadmapId: Int!): [Node!]!
   nodeChats(nodeId: Int!, userId: Int!): [NodeExplanationChat!]!
-  searchNodeResources(keyword: String!, limit: Int): [JSON]!
+  searchNodeResources(keyword: String!, limit: Int, source: String): [JSON]!
 }
 
 extend type Mutation {

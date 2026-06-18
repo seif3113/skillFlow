@@ -3,19 +3,45 @@ import { eq } from 'drizzle-orm';
 
 import * as databaseProvider from '../../database/database.provider';
 import { roadmaps, NewRoadmapRow, RoadmapRow } from './roadmap.schema';
+import { user } from '../user/user.schema';
+import { PublicRoadmap } from 'src/graphql';
 
-export type CreateRoadmapData = Omit<NewRoadmapRow, 'id' | 'createdAt' | 'updatedAt'>;
-export type UpdateRoadmapData = Partial<Pick<RoadmapRow, 'title' | 'description' | 'learningProfileId' | 'isPublished'>>;
+export type CreateRoadmapData = Omit<
+  NewRoadmapRow,
+  'id' | 'createdAt' | 'updatedAt'
+>;
+export type UpdateRoadmapData = Partial<
+  Pick<
+    RoadmapRow,
+    'title' | 'description' | 'learningProfileId' | 'isPublished'
+  >
+>;
 
 @Injectable()
 export class RoadmapRepository {
   constructor(
     @Inject(databaseProvider.DATABASE_CLIENT)
     private readonly db: databaseProvider.DrizzleDB,
-  ) { }
+  ) {}
 
   async findAll(): Promise<RoadmapRow[]> {
-    return this.db.select().from(roadmaps);
+    return this.db.select().from(roadmaps).orderBy(roadmaps.id);
+  }
+
+  async findAllPublic(): Promise<PublicRoadmap[]> {
+    return this.db
+      .select({
+        id: roadmaps.id,
+        userName: user.name,
+        title: roadmaps.title,
+        description: roadmaps.description,
+        isPublished: roadmaps.isPublished,
+        createdAt: roadmaps.createdAt,
+        updatedAt: roadmaps.updatedAt,
+      })
+      .from(roadmaps)
+      .innerJoin(user, eq(roadmaps.userId, user.id))
+      .where(eq(roadmaps.isPublished, true));
   }
 
   async findById(id: number): Promise<RoadmapRow | null> {
@@ -29,13 +55,12 @@ export class RoadmapRepository {
   }
 
   async findByUserId(userId: number): Promise<RoadmapRow[]> {
-    return this.db
-      .select()
-      .from(roadmaps)
-      .where(eq(roadmaps.userId, userId));
+    return this.db.select().from(roadmaps).where(eq(roadmaps.userId, userId));
   }
 
-  async findByLearningProfileId(learningProfileId: number): Promise<RoadmapRow[]> {
+  async findByLearningProfileId(
+    learningProfileId: number,
+  ): Promise<RoadmapRow[]> {
     return this.db
       .select()
       .from(roadmaps)

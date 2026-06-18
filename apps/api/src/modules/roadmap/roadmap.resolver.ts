@@ -10,6 +10,9 @@ import { RoadmapService } from './roadmap.service';
 import { type CreateRoadmapInput } from './dto/create-roadmap.input';
 import { type UpdateRoadmapInput } from './dto/update-roadmap.input';
 import { NodeService } from '../node/node.service';
+import { type RoadmapType } from './types/roadmap.types';
+import { type PublicRoadmap } from '../../graphql';
+import { AllowAnonymous } from '@thallesp/nestjs-better-auth';
 
 @Resolver('Roadmap')
 export class RoadmapResolver {
@@ -19,7 +22,7 @@ export class RoadmapResolver {
   ) {}
 
   @ResolveField('nodes')
-  resolveNodes(@Parent() roadmap: any) {
+  resolveNodes(@Parent() roadmap: RoadmapType) {
     return this.nodeService.findByRoadmapId(roadmap.id);
   }
 
@@ -63,5 +66,24 @@ export class RoadmapResolver {
   @Mutation('publishRoadmap')
   publishRoadmap(@Args('id') id: number) {
     return this.roadmapService.togglePublish(id);
+  }
+}
+
+@Resolver('PublicRoadmap')
+export class PublicRoadmapResolver {
+  constructor(
+    private readonly nodeService: NodeService,
+    private readonly roadmapService: RoadmapService,
+  ) {}
+
+  @ResolveField('nodes')
+  resolveNodes(@Parent() roadmap: PublicRoadmap) {
+    return this.nodeService.findByRoadmapId(roadmap.id);
+  }
+
+  @AllowAnonymous()
+  @Query('publicRoadmaps')
+  getPublicRoadmaps() {
+    return this.roadmapService.findAllPublic();
   }
 }

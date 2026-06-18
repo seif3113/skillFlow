@@ -6,33 +6,29 @@ import { RoadmapCreator } from "@/components/roadmap/RoadmapCreator";
 import Link from "next/link";
 import Image from "next/image";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { authClient } from "@/lib/auth-client";
 
 export default function NewRoadmapPage() {
-  // const { isAuthenticated, isLoading } = useConvexAuth();
-  // const router = useRouter();
-  // const currentUser = useQuery(api.myFunctions.currentUser);
+  const router = useRouter();
+  const { data: session, isPending } = authClient.useSession();
 
-  // useEffect(() => {
-  //   if (!isLoading && !isAuthenticated) {
-  //     router.push("/signin");
-  //   }
-  // }, [isAuthenticated, isLoading, router]);
+  useEffect(() => {
+    if (!isPending && !session) {
+      router.push("/signin");
+    }
+  }, [isPending, session, router]);
 
-  // if (isLoading || currentUser === undefined) {
-  //   return (
-  //     <div className="min-h-screen bg-background flex items-center justify-center">
-  //       <div className="flex items-center gap-3">
-  //         <div className="w-2 h-2 bg-sky-400 rounded-full animate-bounce" />
-  //         <div className="w-2 h-2 bg-sky-500 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
-  //         <div className="w-2 h-2 bg-sky-600 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
-  //       </div>
-  //     </div>
-  //   );
-  // }
-
-  // if (!isAuthenticated || !currentUser) {
-  //   return null;
-  // }
+  if (isPending || !session) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 bg-sky-400 rounded-full animate-bounce" />
+          <div className="w-2 h-2 bg-sky-500 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
+          <div className="w-2 h-2 bg-sky-600 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -64,7 +60,7 @@ export default function NewRoadmapPage() {
         </div>
       </header>
       <main className="max-w-7xl mx-auto py-12 px-6">
-        {/* <RoadmapCreator userId={1} /> */}
+        <RoadmapCreator userId={parseInt(session.user.id, 10) || 1} />
       </main>
     </div>
   );

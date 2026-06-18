@@ -5,6 +5,7 @@ export interface NodeType {
   description?: string | null;
   tags?: string[] | null;
   resources?: Record<string, string>[] | null;
+  isCompleted: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

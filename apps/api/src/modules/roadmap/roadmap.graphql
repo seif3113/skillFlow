@@ -12,6 +12,17 @@ type Roadmap {
   editLogs: [RoadmapEditLog!]
 }
 
+type PublicRoadmap {
+  id: Int!
+  userName: String!
+  title: String!
+  description: String
+  isPublished: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  nodes: [Node!]
+}
+
 type RoadmapLearningProfile {
   id: Int!
   userId: Int!
@@ -61,6 +72,7 @@ extend type Query {
   roadmapsByUser(userId: Int!): [Roadmap!]!
   roadmapsByLearningProfile(learningProfileId: Int!): [Roadmap!]!
   roadmapLearningProfiles(userId: Int!): [RoadmapLearningProfile!]!
+  publicRoadmaps: [PublicRoadmap!]!
 }
 
 extend type Mutation {
@@ -68,5 +80,12 @@ extend type Mutation {
   updateRoadmap(input: UpdateRoadmapInput!): Roadmap!
   deleteRoadmap(id: Int!): DeleteRoadmapResult!
   publishRoadmap(id: Int!): Roadmap!
-  createRoadmapLearningProfile(userId: Int!, goal: String, level: String, background: String, timeAvailability: String, preferences: JSON): RoadmapLearningProfile!
+  createRoadmapLearningProfile(
+    userId: Int!
+    goal: String
+    level: String
+    background: String
+    timeAvailability: String
+    preferences: JSON
+  ): RoadmapLearningProfile!
 }

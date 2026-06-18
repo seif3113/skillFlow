@@ -6,3 +6,4 @@ export { NodeSheet } from "./NodeSheet";
 export { RoadmapEditor } from "./RoadmapEditor";
 export { RoadmapList } from "./RoadmapList";
 // export { RoadmapCreator } from "./RoadmapCreator";
+export { ManualRoadmapBuilder } from "./ManualRoadmapBuilder";

@@ -10,6 +10,7 @@ export interface RoadmapNodeData {
   description: string;
   resources: { title: string; url: string }[];
   completed: boolean;
+  isReadOnly?: boolean;
 }
 
 function RoadmapNodeComponent({ data, selected }: NodeProps) {
@@ -83,11 +84,18 @@ function RoadmapNodeComponent({ data, selected }: NodeProps) {
                 {nodeData.resources.length !== 1 ? "s" : ""}
               </span>
             </div>
-            {selected && (
-              <Badge className="bg-primary text-primary-foreground border-none rounded-lg text-[10px] px-2 py-0.5 animate-in fade-in zoom-in-50">
-                Editing
-              </Badge>
-            )}
+            <div className="flex gap-1.5">
+              {nodeData.completed && (
+                <Badge className="bg-teal-500/10 text-teal-400 border border-teal-500/20 rounded-lg text-[10px] px-2 py-0.5 animate-in fade-in zoom-in-50 font-bold uppercase tracking-wider">
+                  Completed
+                </Badge>
+              )}
+              {selected && !nodeData.isReadOnly && (
+                <Badge className="bg-primary text-primary-foreground border-none rounded-lg text-[10px] px-2 py-0.5 animate-in fade-in zoom-in-50">
+                  Editing
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
 

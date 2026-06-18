@@ -6,6 +6,8 @@ export interface LayoutNode {
   label: string;
   description: string;
   resources: { title: string; url: string }[];
+  completed?: boolean;
+  isReadOnly?: boolean;
 }
 
 export interface LayoutEdge {
@@ -63,7 +65,8 @@ export function getLayoutedElements(
         label: node.label,
         description: node.description,
         resources: node.resources,
-        completed: false,
+        completed: node.completed || false,
+        isReadOnly: node.isReadOnly || false,
       },
     };
   });

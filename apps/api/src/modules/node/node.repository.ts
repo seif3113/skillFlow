@@ -7,7 +7,7 @@ import { nodes, NodeRow, NewNodeRow } from './node.schema';
 export type CreateNodeData = Omit<NewNodeRow, 'id' | 'createdAt' | 'updatedAt'>;
 
 export type UpdateNodeData = Partial<
-  Pick<NodeRow, 'title' | 'description' | 'tags' | 'resources'>
+  Pick<NodeRow, 'title' | 'description' | 'tags' | 'resources' | 'isCompleted'>
 >;
 
 @Injectable()
@@ -44,6 +44,7 @@ export class NodeRepository {
     if (data.description !== undefined) patch.description = data.description;
     if (data.tags !== undefined) patch.tags = data.tags;
     if (data.resources !== undefined) patch.resources = data.resources;
+    if (data.isCompleted !== undefined) patch.isCompleted = data.isCompleted;
 
     patch.updatedAt = new Date();
 

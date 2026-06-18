@@ -4,4 +4,5 @@ export interface CreateNodeInput {
   description?: string;
   tags?: string[];
   resources?: Record<string, string>[];
+  isCompleted?: boolean;
 }
