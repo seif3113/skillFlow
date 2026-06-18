@@ -1,8 +1,8 @@
 # 1. Implement a class to handle diverse file formats (PDF, DOCX, JPG).
 from langchain_community.document_loaders import JSONLoader, PyPDFLoader,Docx2txtLoader,TextLoader
 from langchain_community.document_loaders.csv_loader import CSVLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.schema import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.documents import Document
 import cv2      
 import pytesseract
 import numpy as np
