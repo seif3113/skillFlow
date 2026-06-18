@@ -6,6 +6,8 @@ class LLMEnums(Enum):
     OLLAMA = "OLLAMA"
     OPENAI = "OPENAI"
     GEMINI = "GEMINI"
+    CEREBRAS = "CEREBRAS"
+    GROQ = "GROQ"
 
 class OpenAIEnums(Enum):
     SYSTEM = "system"

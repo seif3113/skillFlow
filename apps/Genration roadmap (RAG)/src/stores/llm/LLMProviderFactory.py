@@ -1,6 +1,6 @@
 #Add Gemini Provider implementation for Version 3
 
-from .providers import OpenAIProvider, GoogleGeminiProvider 
+from .providers import OpenAIProvider, GoogleGeminiProvider, CerebrasProvider, GroqProvider
 from .LLMEnums import LLMEnums
 import logging
 
@@ -35,6 +35,35 @@ class LLMProviderFactory:
             return GoogleGeminiProvider(
                 api_key = gemini_key,
                 api_url = None, # Gemini connects directly to Google's API, no custom URL needed
+                default_input_max_characters=self.config.INPUT_DAFAULT_MAX_CHARACTERS,
+                default_generation_max_output_tokens=self.config.GENERATION_DAFAULT_MAX_TOKENS,
+                default_generation_temperature=self.config.GENERATION_DAFAULT_TEMPERATURE
+            )
+        
+        # Cerebras branch
+        elif provider == LLMEnums.CEREBRAS.value:
+            cerebras_key = getattr(self.config, 'CEREBRAS_API_KEY', None)
+
+            if not cerebras_key:
+                logger.warning("CEREBRAS_API_KEY is missing from your configuration!")
+
+            return CerebrasProvider(
+                api_key = cerebras_key,
+                api_url = None,
+                default_input_max_characters=self.config.INPUT_DAFAULT_MAX_CHARACTERS,
+                default_generation_max_output_tokens=self.config.GENERATION_DAFAULT_MAX_TOKENS,
+                default_generation_temperature=self.config.GENERATION_DAFAULT_TEMPERATURE
+            )
+        
+        # Groq branch
+        elif provider == LLMEnums.GROQ.value:
+            groq_key = getattr(self.config, 'GROQ_API_KEY', None)
+
+            if not groq_key:
+                logger.warning("GROQ_API_KEY is missing from your configuration!")
+
+            return GroqProvider(
+                api_key = groq_key,
                 default_input_max_characters=self.config.INPUT_DAFAULT_MAX_CHARACTERS,
                 default_generation_max_output_tokens=self.config.GENERATION_DAFAULT_MAX_TOKENS,
                 default_generation_temperature=self.config.GENERATION_DAFAULT_TEMPERATURE
