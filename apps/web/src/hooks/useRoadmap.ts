@@ -25,6 +25,27 @@ const GET_ROADMAP = gql`
   }
 `;
 
+const GET_PUBLIC_ROADMAP = gql`
+  query GetPublicRoadmap($id: Int!) {
+    publicRoadmap(id: $id) {
+      id
+      title
+      description
+      isPublished
+      createdAt
+      updatedAt
+      nodes {
+        id
+        title
+        description
+        tags
+        resources
+        isCompleted
+      }
+    }
+  }
+`;
+
 const ROADMAPS_BY_USER = gql`
   query RoadmapsByUser($userId: Int!) {
     roadmapsByUser(userId: $userId) {
@@ -123,6 +144,16 @@ const PUBLISH_ROADMAP = gql`
   }
 `;
 
+const FORK_ROADMAP = gql`
+  mutation ForkRoadmap($id: Int!, $userId: Int!) {
+    forkRoadmap(id: $id, userId: $userId) {
+      id
+      title
+      description
+    }
+  }
+`;
+
 const PUBLIC_ROADMAPS = gql`
   query PublicRoadmaps {
     publicRoadmaps {
@@ -133,14 +164,6 @@ const PUBLIC_ROADMAPS = gql`
       isPublished
       createdAt
       updatedAt
-      nodes {
-        id
-        title
-        description
-        tags
-        resources
-        isCompleted
-      }
     }
   }
 `;
@@ -215,7 +238,11 @@ export function useRoadmapsByUser(userId?: number) {
   });
 }
 
-export function useSearchNodeResources(topic: string, limit: number = 5, type?: string) {
+export function useSearchNodeResources(
+  topic: string,
+  limit: number = 5,
+  type?: string,
+) {
   return useQuery({
     queryKey: ["searchNodeResources", topic, limit, type],
     queryFn: async () => {
@@ -306,6 +333,30 @@ export function usePublishRoadmap() {
       queryClient.invalidateQueries({
         queryKey: ["roadmap", data.publishRoadmap.id],
       });
+    },
+  });
+}
+
+export function useGetPublicRoadmap(id?: number) {
+  return useQuery({
+    queryKey: ["publicRoadmap", id],
+    queryFn: async () => {
+      if (!id) return null;
+      const data: any = await graphQLClient.request(GET_PUBLIC_ROADMAP, { id });
+      return data.publicRoadmap;
+    },
+    enabled: !!id,
+  });
+}
+
+export function useForkRoadmap() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, userId }: { id: number; userId: number }) => {
+      return await graphQLClient.request(FORK_ROADMAP, { id, userId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["roadmaps"] });
     },
   });
 }

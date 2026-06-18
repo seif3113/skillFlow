@@ -1,17 +1,26 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { ReactFlow, Controls, Background, BackgroundVariant, Node as FlowNode } from "@xyflow/react";
+import { useParams } from "next/navigation";
+import {
+  ReactFlow,
+  Controls,
+  Background,
+  BackgroundVariant,
+  Node as FlowNode,
+} from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronRight, ArrowLeft } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { useGetRoadmap } from "@/hooks/useRoadmap";
+import { useGetPublicRoadmap } from "@/hooks/useRoadmap";
 import { getLayoutedElements } from "@/lib/layout";
 import { RoadmapNode } from "@/components/roadmap/RoadmapNode";
-import { NodeViewerSidebar, NodeDraft } from "@/components/roadmap/NodeViewerSidebar";
+import {
+  NodeViewerSidebar,
+  NodeDraft,
+} from "@/components/roadmap/NodeViewerSidebar";
 
 const nodeTypes = {
   roadmapNode: RoadmapNode,
@@ -23,7 +32,7 @@ export default function PublicRoadmapDetailPage() {
   const roadmapId = parseInt(idStr, 10);
 
   // Load existing roadmap
-  const { data: roadmap, isLoading } = useGetRoadmap(roadmapId);
+  const { data: roadmap, isLoading } = useGetPublicRoadmap(roadmapId);
 
   // Canvas State
   const [nodes, setNodes] = useState<NodeDraft[]>([]);
@@ -36,16 +45,20 @@ export default function PublicRoadmapDetailPage() {
   // Initialize state from existing roadmap
   useEffect(() => {
     if (roadmap) {
-      const loadedNodes = roadmap.nodes?.map((n: any) => ({
-        ...n,
-        id: String(n.id),
-      })) || [];
+      const loadedNodes =
+        roadmap.nodes?.map((n: any) => ({
+          ...n,
+          id: String(n.id),
+        })) || [];
 
       setNodes(loadedNodes);
 
       const loadedEdges = [];
       for (let i = 0; i < loadedNodes.length - 1; i++) {
-        loadedEdges.push({ source: loadedNodes[i].id, target: loadedNodes[i + 1].id });
+        loadedEdges.push({
+          source: loadedNodes[i].id,
+          target: loadedNodes[i + 1].id,
+        });
       }
       setEdges(loadedEdges);
     }
@@ -84,7 +97,9 @@ export default function PublicRoadmapDetailPage() {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
         <h3 className="text-xl font-bold mb-2">Roadmap not found</h3>
-        <p className="text-muted-foreground mb-6">This learning path might have been deleted or is private.</p>
+        <p className="text-muted-foreground mb-6">
+          This learning path might have been deleted or is private.
+        </p>
         <Link
           href="/public-roadmaps"
           className="px-6 py-2.5 bg-sky-500 text-white font-medium rounded-xl hover:bg-sky-400 transition-colors"
@@ -160,7 +175,9 @@ export default function PublicRoadmapDetailPage() {
 
         {nodes.length === 0 ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10">
-            <h3 className="text-lg font-medium text-foreground">This roadmap is empty</h3>
+            <h3 className="text-lg font-medium text-foreground">
+              This roadmap is empty
+            </h3>
             <p className="text-sm text-muted-foreground max-w-sm mt-2">
               The author hasn't added any milestones to this learning path yet.
             </p>
@@ -177,7 +194,12 @@ export default function PublicRoadmapDetailPage() {
               minZoom={0.5}
               maxZoom={2}
             >
-              <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#3f3f46" />
+              <Background
+                variant={BackgroundVariant.Dots}
+                gap={20}
+                size={1}
+                color="#3f3f46"
+              />
               <Controls className="bg-accent border-border text-muted-foreground [&>button]:bg-accent [&>button]:border-border [&>button]:text-muted-foreground [&>button:hover]:bg-accent/80 rounded-xl" />
             </ReactFlow>
           </div>

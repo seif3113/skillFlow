@@ -72,8 +72,34 @@ export class RoadmapResolver {
   publishRoadmap(@Args('id') id: number) {
     return this.roadmapService.togglePublish(id);
   }
+
+  @Mutation('forkRoadmap')
+  async forkRoadmap(@Args('id') id: number, @Args('userId') userId: number) {
+    const original = await this.roadmapService.findById(id);
+    const forked = await this.roadmapService.create({
+      userId,
+      title: `${original.title} (Forked)`,
+      description: original.description ?? undefined,
+      isPublished: false,
+    });
+
+    const originalNodes = await this.nodeService.findByRoadmapId(id);
+    for (const node of originalNodes) {
+      await this.nodeService.create({
+        roadmapId: forked.id,
+        title: node.title,
+        description: node.description ?? undefined,
+        tags: node.tags ?? undefined,
+        resources: node.resources ?? undefined,
+        isCompleted: false,
+      });
+    }
+
+    return forked;
+  }
 }
 
+@AllowAnonymous()
 @Resolver('PublicRoadmap')
 export class PublicRoadmapResolver {
   constructor(
@@ -86,9 +112,13 @@ export class PublicRoadmapResolver {
     return this.nodeService.findByRoadmapId(roadmap.id);
   }
 
-  @AllowAnonymous()
   @Query('publicRoadmaps')
   getPublicRoadmaps() {
     return this.roadmapService.findAllPublic();
+  }
+
+  @Query('publicRoadmap')
+  getPublicRoadmap(@Args('id') id: number) {
+    return this.roadmapService.findById(id);
   }
 }

@@ -92,6 +92,7 @@ export interface IQuery {
     roadmapsByLearningProfile(learningProfileId: number): Roadmap[] | Promise<Roadmap[]>;
     roadmapLearningProfiles(userId: number): RoadmapLearningProfile[] | Promise<RoadmapLearningProfile[]>;
     publicRoadmaps(): PublicRoadmap[] | Promise<PublicRoadmap[]>;
+    publicRoadmap(id: number): Nullable<PublicRoadmap> | Promise<Nullable<PublicRoadmap>>;
     roadmapCustomizationQuestions(message: string): RoadmapCustomizationQuestion[] | Promise<RoadmapCustomizationQuestion[]>;
     user(id: number): Nullable<User> | Promise<Nullable<User>>;
 }
@@ -107,6 +108,7 @@ export interface IMutation {
     updateRoadmap(input: UpdateRoadmapInput): Roadmap | Promise<Roadmap>;
     deleteRoadmap(id: number): DeleteRoadmapResult | Promise<DeleteRoadmapResult>;
     publishRoadmap(id: number): Roadmap | Promise<Roadmap>;
+    forkRoadmap(id: number, userId: number): Roadmap | Promise<Roadmap>;
     createRoadmapLearningProfile(userId: number, goal?: Nullable<string>, level?: Nullable<string>, background?: Nullable<string>, timeAvailability?: Nullable<string>, preferences?: Nullable<JSON>): RoadmapLearningProfile | Promise<RoadmapLearningProfile>;
     updateUser(updateUserInput: UpdateUserInput): User | Promise<User>;
     removeUser(id: number): User | Promise<User>;

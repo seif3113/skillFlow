@@ -78,6 +78,7 @@ extend type Query {
   roadmapsByLearningProfile(learningProfileId: Int!): [Roadmap!]!
   roadmapLearningProfiles(userId: Int!): [RoadmapLearningProfile!]!
   publicRoadmaps: [PublicRoadmap!]!
+  publicRoadmap(id: Int!): PublicRoadmap
   roadmapCustomizationQuestions(
     message: String!
   ): [RoadmapCustomizationQuestion!]!
@@ -88,6 +89,7 @@ extend type Mutation {
   updateRoadmap(input: UpdateRoadmapInput!): Roadmap!
   deleteRoadmap(id: Int!): DeleteRoadmapResult!
   publishRoadmap(id: Int!): Roadmap!
+  forkRoadmap(id: Int!, userId: Int!): Roadmap!
   createRoadmapLearningProfile(
     userId: Int!
     goal: String
