@@ -4,6 +4,7 @@ from controllers.NLPController import NLPController
 from controllers.document_loader import load_chunks
 from models.schemes import SearchRequest , PushRequest, CategoryRequest,ChatRequest
 import asyncio
+import time
 
 import logging
 
@@ -193,7 +194,7 @@ async def answer_rag(request: Request, search_request: SearchRequest):
 
 @nlp_router.post("/index/final-answer")
 async def get_final_answer(request: Request, category_request: CategoryRequest):
-    
+    start_time = time.time()
     results = []
 
     nlp_controller = NLPController(
@@ -203,17 +204,15 @@ async def get_final_answer(request: Request, category_request: CategoryRequest):
         template_parser=request.app.template_parser,
         embedding_helper=request.app.embedding_helper,
     )
-    
-    # llm call 1
     final_answer = nlp_controller.define_answer_category_definition(category_prompt=category_request.category_name)
-    
+
     if not final_answer:
         return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 content={
                     "signal": "ResponseSignal.FINAL_ANSWER_ERROR.value"
                 }
-        )    
+        )
 
     topics = [t.strip() for t in final_answer.split("\n") if t.strip()]
 
@@ -231,24 +230,28 @@ async def get_final_answer(request: Request, category_request: CategoryRequest):
             ans, _, _ = nlp_controller.get_article_resources(query=topic, limit=2, source=src)
             if ans:
                 topic_resources["course"] = ans
-                break 
+                break
 
         for src in ["khan_academy", "w3schools"]:
             ans, _, _ = nlp_controller.get_article_resources(query=topic, limit=1, source=src)
             if ans:
                 topic_resources["article"] = ans
-                break 
+                break
 
         ans, _, _ = nlp_controller.get_video_resources(query=topic, limit=1, source="youtube")
         if ans:
             topic_resources["video"] = ans
 
         results.append(topic_resources)
-        
+
+    end_time = time.time()
+    response_time = round(end_time - start_time, 2)
+
     return JSONResponse(
         content={
             "signal": "ResponseSignal.FINAL_ANSWER_SUCCESS.value",
-            "results": results
+            "results": results,
+            "response_time": f"{response_time} seconds"
         }
     )
 
