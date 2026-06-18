@@ -229,7 +229,7 @@ class NLPController(BaseController):
 
         # step1: retrieve related documents
         retrieved_documents = self.search_vector_db_collection(
-            text=query,
+            text=query,  
             limit=limit,
             source=source
         )

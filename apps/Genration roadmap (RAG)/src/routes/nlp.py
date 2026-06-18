@@ -204,6 +204,7 @@ async def get_final_answer(request: Request, category_request: CategoryRequest):
         embedding_helper=request.app.embedding_helper,
     )
     
+    # llm call 1
     final_answer = nlp_controller.define_answer_category_definition(category_prompt=category_request.category_name)
     
     if not final_answer:
@@ -216,6 +217,7 @@ async def get_final_answer(request: Request, category_request: CategoryRequest):
 
     topics = [t.strip() for t in final_answer.split("\n") if t.strip()]
 
+    # 7 topics
     for topic in topics:
 
         topic_resources = {
