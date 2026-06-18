@@ -2,7 +2,7 @@ from fastapi import FastAPI, APIRouter, status, Request
 from fastapi.responses import JSONResponse
 from controllers.NLPController import NLPController
 from controllers.document_loader import load_chunks
-from models.schemes import SearchRequest , PushRequest, CategoryRequest,ChatRequest
+from models.schemes import SearchRequest , PushRequest, CategoryRequest, ChatRequest, RoadmapRequest
 import asyncio
 import time
 import json
@@ -193,10 +193,9 @@ async def answer_rag(request: Request, search_request: SearchRequest):
     )   
 
 
-@nlp_router.post("/index/final-answer")
-async def get_final_answer(request: Request, category_request: CategoryRequest):
+@nlp_router.post("/generate-roadmap-rag")
+async def generate_roadmap_rag(request: Request, roadmap_request: RoadmapRequest):
     start_time = time.time()
-    results = []
 
     nlp_controller = NLPController(
         vectordb_client=request.app.vectordb_client,
@@ -205,53 +204,28 @@ async def get_final_answer(request: Request, category_request: CategoryRequest):
         template_parser=request.app.template_parser,
         embedding_helper=request.app.embedding_helper,
     )
-    final_answer = nlp_controller.define_answer_category_definition(category_prompt=category_request.category_name)
 
-    if not final_answer:
+    roadmap = nlp_controller.generate_customized_roadmap_rag(
+        topic=roadmap_request.topic,
+        customization_answers=roadmap_request.customization_answers
+    )
+
+    if not roadmap:
         return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 content={
-                    "signal": "ResponseSignal.FINAL_ANSWER_ERROR.value"
+                    "signal": "error",
+                    "message": "Failed to generate customized roadmap."
                 }
         )
-
-    topics = [t.strip() for t in final_answer.split("\n") if t.strip()]
-
-    # 7 topics
-    for topic in topics:
-
-        topic_resources = {
-            "topic": topic,
-            "course": "Error: Could not generate a course for this topic.",
-            "article": "Error: Could not generate an article for this topic.",
-            "video": "Error: Could not generate a video for this topic."
-        }
-
-        for src in ["udemy", "coursera"]:
-            ans, _, _ = nlp_controller.get_article_resources(query=topic, limit=2, source=src)
-            if ans:
-                topic_resources["course"] = ans
-                break
-
-        for src in ["khan_academy", "w3schools"]:
-            ans, _, _ = nlp_controller.get_article_resources(query=topic, limit=1, source=src)
-            if ans:
-                topic_resources["article"] = ans
-                break
-
-        ans, _, _ = nlp_controller.get_video_resources(query=topic, limit=1, source="youtube")
-        if ans:
-            topic_resources["video"] = ans
-
-        results.append(topic_resources)
 
     end_time = time.time()
     response_time = round(end_time - start_time, 2)
 
     return JSONResponse(
         content={
-            "signal": "ResponseSignal.FINAL_ANSWER_SUCCESS.value",
-            "results": results,
+            "signal": "success",
+            "results": roadmap,
             "response_time": f"{response_time} seconds"
         }
     )

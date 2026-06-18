@@ -160,6 +160,33 @@ class QdrantDBProvider(VectorDBInterface):
             self.logger.error(f"Search failed: {e}")
             return []
 
+    def search_batch_by_vectors(self, collection_name: str, vectors: List[list], limit: int = 5):
+        if self.client is None:
+            self.logger.error("Qdrant client is not connected.")
+            return []
+            
+        try:
+            requests = [
+                models.QueryRequest(
+                    query=vector,
+                    limit=limit,
+                    with_payload=True,
+                )
+                for vector in vectors
+            ]
+            
+            results = self.client.query_batch_points(
+                collection_name=collection_name,
+                requests=requests,
+            )
+            
+            # Returns a list of lists of points
+            return [res.points for res in results]
+            
+        except Exception as e:
+            self.logger.error(f"Batch search failed: {e}")
+            return [[] for _ in vectors]
+
     def create_payload_index(self, collection_name: str, field_name: str, field_schema: str):
         """Creates an index on a metadata payload field for faster filtering."""
         if self.client is None:

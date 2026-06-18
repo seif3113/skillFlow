@@ -17,3 +17,11 @@ class EmbeddingHelper:
             return self.model_hugging_6.encode(text).tolist()
         else:
             return self.model_hugging_12.encode(text).tolist()
+
+    def encode_texts(self, texts: list, collection: Literal['all-MiniLM-L6-v2', 'all-MiniLM-L12-v2']) -> list:
+        """Encode a list of texts to vector embeddings using the appropriate model.
+        """
+        if collection == 'all-MiniLM-L6-v2':
+            return self.model_hugging_6.encode(texts).tolist()
+        else:
+            return self.model_hugging_12.encode(texts).tolist()

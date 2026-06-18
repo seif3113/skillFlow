@@ -16,6 +16,10 @@ class SearchRequest(BaseModel):
 
 class CategoryRequest(BaseModel):
     category_name: str
+
+class RoadmapRequest(BaseModel):
+    topic: str
+    customization_answers: Optional[List[str]] = None
     
 class ChatRequest(BaseModel):
     message: str

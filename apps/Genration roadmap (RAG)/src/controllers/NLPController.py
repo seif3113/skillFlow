@@ -396,6 +396,114 @@ class NLPController(BaseController):
             logger.error(f"Failed to parse LLM response as JSON: {answer}")
             return None
 
+    def generate_customized_roadmap_rag(self, topic: str, customization_answers: list = None):
+        """
+        Generates a comprehensive customized roadmap with resources in just 2 LLM calls.
+        """
+        from datetime import datetime
+        current_time = datetime.now().isoformat()
+        
+        customization_str = "None provided"
+        if customization_answers:
+            customization_str = "\n".join([f"- {ans}" for ans in customization_answers])
+
+        # Step 1: Get sub-topics (LLM Call 1)
+        try:
+            seg_system_prompt = self.template_parser.get("roadmap_generator", "topic_segmentation_system_prompt")
+            seg_user_prompt = self.template_parser.get("roadmap_generator", "topic_segmentation_user_prompt", {
+                "topic": topic,
+                "customization": customization_str
+            })
+        except Exception:
+            seg_system_prompt = "You are an educational architect. Break down a field into 5-8 sub-topics. Return JSON array of objects with 'title' and 'search_query'."
+            seg_user_prompt = f"Break down '{topic}' into 5-8 sub-topics considering these preferences: {customization_str}"
+
+        chat_history_1 = [
+            self.generation_client.construct_prompt(prompt=seg_system_prompt, role=self.generation_client.enums.SYSTEM.value)
+        ]
+        
+        topics_json_raw = self.generation_client.generate_text(prompt=seg_user_prompt, chat_history=chat_history_1)
+        
+        try:
+            cleaned_topics = topics_json_raw.strip()
+            if "```" in cleaned_topics:
+                import re
+                match = re.search(r"```(?:json)?\s*(.*?)\s*```", cleaned_topics, re.DOTALL)
+                if match: cleaned_topics = match.group(1).strip()
+            topic_objects = json.loads(cleaned_topics)
+            # Ensure it's a list of objects
+            if not isinstance(topic_objects, list) or not all(isinstance(obj, dict) for obj in topic_objects):
+                raise ValueError("LLM did not return a list of objects.")
+        except Exception as e:
+            logger.error(f"Failed to parse sub-topics: {e}")
+            return None
+
+        # Step 2: Batch Vector Search using 'search_query'
+        search_queries = [obj.get("search_query", obj.get("title", "")) for obj in topic_objects]
+        vectors = self.embedding_helper.encode_texts(texts=search_queries, collection="all-MiniLM-L6-v2")
+        collection_name = self.get_collection_name()
+        batch_results = self.vectordb_client.search_batch_by_vectors(
+            collection_name=collection_name,
+            vectors=vectors,
+            limit=10 
+        )
+
+        # Format context for the final LLM call
+        context_per_topic = []
+        for i, obj in enumerate(topic_objects):
+            topic_name = obj.get("title")
+            results = batch_results[i]
+            topic_context = f"### Topic: {topic_name}\n"
+            if not results:
+                topic_context += "No direct resources found in database for this specific sub-topic.\n"
+            else:
+                for res in results:
+                    payload = getattr(res, "payload", {})
+                    text = payload.get("text", "")
+                    meta = payload.get("metadata", {})
+                    source = meta.get("source", "Unknown").strip()
+                    url = meta.get("url", "No URL available").strip()
+                    
+                    res_type = "Course" 
+                    source_lower = source.lower()
+                    if any(x in source_lower for x in ["youtube", "video", "vimeo"]):
+                        res_type = "Video"
+                    elif any(x in source_lower for x in ["w3schools", "article", "documentation", "blog", "medium", "khan academy"]):
+                        res_type = "Article"
+                    
+                    topic_context += f"- [Type: {res_type}] [Source: {source}] [Title: {text}] [URL: {url}]\n"
+            context_per_topic.append(topic_context)
+        
+        full_context = "\n\n".join(context_per_topic)
+
+        # Step 3: Compile Final Roadmap (LLM Call 2)
+        try:
+            comp_system_prompt = self.template_parser.get("roadmap_generator", "roadmap_compilation_system_prompt", {"current_time": current_time})
+            comp_user_prompt = self.template_parser.get("roadmap_generator", "roadmap_compilation_user_prompt", {
+                "sub_topics": json.dumps([obj.get("title") for obj in topic_objects]),
+                "context": full_context
+            })
+        except Exception:
+            comp_system_prompt = f"Generate a JSON roadmap with topics and resources (Max 3 per topic). Current time: {current_time}."
+            comp_user_prompt = f"Topics: {[obj.get('title') for obj in topic_objects]}\nContext: {full_context}"
+
+        chat_history_2 = [
+            self.generation_client.construct_prompt(prompt=comp_system_prompt, role=self.generation_client.enums.SYSTEM.value)
+        ]
+
+        final_roadmap_raw = self.generation_client.generate_text(prompt=comp_user_prompt, chat_history=chat_history_2)
+
+        try:
+            cleaned_roadmap = final_roadmap_raw.strip()
+            if "```" in cleaned_roadmap:
+                import re
+                match = re.search(r"```(?:json)?\s*(.*?)\s*```", cleaned_roadmap, re.DOTALL)
+                if match: cleaned_roadmap = match.group(1).strip()
+            return json.loads(cleaned_roadmap)
+        except Exception as e:
+            logger.error(f"Failed to parse final roadmap: {e}")
+            return None
+
 
     def change_roadmap(self, user_prompt: str):
 
