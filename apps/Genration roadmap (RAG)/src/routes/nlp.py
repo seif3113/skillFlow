@@ -5,6 +5,7 @@ from controllers.document_loader import load_chunks
 from models.schemes import SearchRequest , PushRequest, CategoryRequest,ChatRequest
 import asyncio
 import time
+import json
 
 import logging
 
@@ -257,46 +258,33 @@ async def get_final_answer(request: Request, category_request: CategoryRequest):
 
 
 
-@nlp_router.post("/chat")
-async def conversational_chat(request: Request, chat_request: ChatRequest):
+@nlp_router.post("/roadmap-customization")
+async def roadmap_customization(request: Request, chat_request: ChatRequest):
     
-    # 1. FASTAPI MEMORY FIX: 
-    # Check if a chat controller already exists in the app's global state.
-    # If it doesn't exist yet, create it. If it does, reuse the exact same one to keep the memory!
-    if not hasattr(request.app.state, "chat_controller"):
-        logger.info("Initializing new stateful Chatbot memory...")
-        request.app.state.chat_controller = NLPController(
-            vectordb_client=request.app.vectordb_client,
-            generation_client=request.app.generation_client,
-            embedding_client=request.app.embedding_client,
-            template_parser=request.app.template_parser,
-            embedding_helper=request.app.embedding_helper,
-        )
-    
-    # 2. Retrieve the stateful controller (this holds your previous messages)
-    nlp_controller = request.app.state.chat_controller
+    nlp_controller = NLPController(
+        vectordb_client=request.app.vectordb_client,
+        generation_client=request.app.generation_client,
+        embedding_client=request.app.embedding_client,
+        template_parser=request.app.template_parser,
+        embedding_helper=request.app.embedding_helper,
+    )
 
-    # 3. Process the chat (We no longer pass chat_history in the function call)
-    # Note: Make sure `chat_request.message` is the correct field from your schema!
-    answer = nlp_controller.chat_with_user(user_prompt=chat_request.message)
+    questions_data = nlp_controller.get_roadmap_questions(topic=chat_request.message)
 
-    if not answer:
+    if not questions_data:
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
                 "signal": "error",
-                "message": "Chatbot failed to generate an answer."
+                "message": "Failed to generate roadmap questions."
             }
         )
 
-    # 4. Return ONLY the answer. The history stays safely hidden inside the backend!
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={
             "signal": "success",
-            "answer": answer,
-
-            "chat_history": nlp_controller.chat_history  # Optional: You can return the chat history if you want
+            "questions": questions_data.get("questions", [])
         }
     )
 

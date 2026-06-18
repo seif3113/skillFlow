@@ -14,7 +14,7 @@ import {
 } from './types/node.types';
 import { CreateNodeInput } from './dto/create-node.input';
 import { UpdateNodeInput } from './dto/update-node.input';
-import { tryCatch } from 'src/utils/try-catch';
+import { tryCatch } from '@/utils/try-catch';
 
 @Injectable()
 export class NodeService {

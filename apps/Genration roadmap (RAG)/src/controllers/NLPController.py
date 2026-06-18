@@ -348,6 +348,53 @@ class NLPController(BaseController):
 
         return answer
 
+    def get_roadmap_questions(self, topic: str):
+        """
+        Generates 5 highly targeted MCQs to help customize a roadmap for a given topic.
+        Does not maintain chat history.
+        """
+        try:
+            system_prompt = self.template_parser.get("roadmap_customization", "system_prompt", {"topic": topic})
+        except Exception:
+            system_prompt = (
+                f"You are an expert AI educational advisor. Generate 5 multiple choice questions with 4 choices each to customize a roadmap for {topic}. "
+                "Output as JSON object with 'questions' key containing list of objects with 'question' and 'choices' (list of strings)."
+            )
+
+        chat_history = [
+            self.generation_client.construct_prompt(
+                prompt=system_prompt,
+                role=self.generation_client.enums.SYSTEM.value,
+            )
+        ]
+
+        user_prompt = f"Please generate the 5 MCQ questions for the topic: {topic} in the requested JSON format."
+
+        answer = self.generation_client.generate_text(
+            prompt=user_prompt,
+            chat_history=chat_history
+        )
+
+        if not answer:
+            return None
+
+        # Robust cleaning of markdown code blocks
+        cleaned_answer = answer.strip()
+        if "```" in cleaned_answer:
+            # Extract content between triple backticks
+            import re
+            match = re.search(r"```(?:json)?\s*(.*?)\s*```", cleaned_answer, re.DOTALL)
+            if match:
+                cleaned_answer = match.group(1).strip()
+            else:
+                # If no pair of backticks found, fallback to simple strip
+                cleaned_answer = cleaned_answer.replace("```json", "").replace("```", "").strip()
+
+        try:
+            return json.loads(cleaned_answer)
+        except json.JSONDecodeError:
+            logger.error(f"Failed to parse LLM response as JSON: {answer}")
+            return None
 
 
     def change_roadmap(self, user_prompt: str):
