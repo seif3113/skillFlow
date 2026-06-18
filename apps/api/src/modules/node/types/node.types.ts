@@ -14,11 +14,23 @@ export interface DeleteNodeResult {
   message: string;
 }
 
-export interface FindResourcesResult {
+export interface VectorDbSearchResponse {
   signal: string;
-  result: {
-    id: string;
-    score: number;
-    payload: any;
-  }[];
+  results: SearchResult[];
+}
+
+export interface SearchResult {
+  id: string;
+  score: number;
+  payload: Payload;
+}
+
+export interface Payload {
+  text: string | Record<string, string>;
+  metadata: Metadata;
+}
+
+export interface Metadata {
+  source: string;
+  row: number;
 }

@@ -10,7 +10,7 @@ import { NodeRow } from './node.schema';
 import {
   NodeType,
   DeleteNodeResult,
-  FindResourcesResult,
+  VectorDbSearchResponse,
 } from './types/node.types';
 import { CreateNodeInput } from './dto/create-node.input';
 import { UpdateNodeInput } from './dto/update-node.input';
@@ -62,7 +62,7 @@ export class NodeService {
   async findResources(
     keyword: string,
     limit = 5,
-  ): Promise<FindResourcesResult['result']> {
+  ): Promise<VectorDbSearchResponse['results']> {
     const cleanedKeyword = keyword.trim().toLowerCase();
     const reqBody = { text: cleanedKeyword, limit };
 
@@ -78,6 +78,8 @@ export class NodeService {
         signal: AbortSignal.timeout(5000),
       }),
     );
+
+    console.log(`RAG search response status: ${res?.status}`);
 
     if (error) {
       throw new InternalServerErrorException(
@@ -99,7 +101,30 @@ export class NodeService {
       );
     }
 
-    return (parsed as FindResourcesResult).result;
+    const { results } = parsed as VectorDbSearchResponse;
+    const cleanedResults = results.map((result) => ({
+      ...result,
+      payload: {
+        ...result.payload,
+        text: (result.payload.text as string).split('\n').reduce(
+          (acc, line) => {
+            const separatorIndex = line.indexOf(':');
+
+            if (separatorIndex === -1) return acc;
+
+            const key = line.slice(0, separatorIndex).trim();
+            const value = line.slice(separatorIndex + 1).trim();
+
+            acc[key] = value;
+
+            return acc;
+          },
+          {} as Record<string, string>,
+        ),
+      },
+    }));
+
+    return cleanedResults;
   }
 
   async create(input: CreateNodeInput): Promise<NodeType> {
