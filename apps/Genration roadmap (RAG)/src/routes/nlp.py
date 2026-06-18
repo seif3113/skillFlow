@@ -11,10 +11,54 @@ import logging
 
 logger = logging.getLogger('uvicorn.error')
 
+ALLOWED_RESOURCE_TYPES = {"all", "video", "article", "course"}
+VIDEO_SOURCES = {"youtube"}
+
 nlp_router = APIRouter(
     prefix="/api/v1/nlp",
     tags=["api_v1", "nlp"],
 )
+
+
+def _parse_resource_text(text: str) -> dict:
+    resource = {}
+
+    for line in (text or "").splitlines():
+        if ":" not in line:
+            continue
+
+        key, value = line.split(":", 1)
+        resource[key.strip()] = value.strip()
+
+    return resource
+
+
+def _get_resource_type(source: str, requested_type: str = "all") -> str:
+    if requested_type != "all":
+        return requested_type
+
+    normalized_source = (source or "").strip().lower()
+
+    if normalized_source in VIDEO_SOURCES:
+        return "video"
+
+    return "course"
+
+
+def _format_search_result(result, requested_type: str = "all") -> dict:
+    payload = getattr(result, "payload", {}) or {}
+    resource_data = _parse_resource_text(payload.get("text", ""))
+    source = resource_data.get("source", "")
+
+    return {
+        "id": resource_data.get("course_sk") or getattr(result, "id", None),
+        "resource": {
+            "title": resource_data.get("title", ""),
+            "description": resource_data.get("description") or resource_data.get("headline", ""),
+            "url": resource_data.get("canonical_url") or resource_data.get("url", ""),
+            "type": _get_resource_type(source, requested_type),
+        }
+    }
 
 @nlp_router.post("/index/push/vector")
 async def index_project(request: Request,file_path:str,push_request: PushRequest):
@@ -94,6 +138,27 @@ async def get_project_index_info(request: Request):
 
 @nlp_router.post("/index/search")
 async def search_index(request: Request, search_request: SearchRequest):
+    topic = search_request.topic or search_request.text
+    resource_type = (search_request.type or "all").lower()
+    limit = search_request.limit or 5
+
+    if not topic:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                "signal": "ResponseSignal.VECTORDB_SEARCH_ERROR.value",
+                "message": "topic is required."
+            }
+        )
+
+    if resource_type not in ALLOWED_RESOURCE_TYPES:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                "signal": "ResponseSignal.VECTORDB_SEARCH_ERROR.value",
+                "message": "type must be one of: all, video, article, course."
+            }
+        )
 
     nlp_controller = NLPController(
         vectordb_client=request.app.vectordb_client,
@@ -103,9 +168,9 @@ async def search_index(request: Request, search_request: SearchRequest):
         embedding_helper=request.app.embedding_helper,
     )
 
-    results = nlp_controller.search_vector_db_collection(text=search_request.text, 
-                                                         limit=search_request.limit,
-                                                         source=search_request.source)
+    search_limit = limit if resource_type == "all" else max(limit * 5, limit)
+    results = nlp_controller.search_vector_db_collection(text=topic, 
+                                                         limit=search_limit)
 
     if not results:
         return JSONResponse(
@@ -115,18 +180,18 @@ async def search_index(request: Request, search_request: SearchRequest):
                 }
             )
     
-    # Safe serialization to ensure ScoredPoint objects are properly loaded into JSON
+    formatted_results = [_format_search_result(res, resource_type) for res in results]
+
+    if resource_type != "all":
+        formatted_results = [
+            res for res in formatted_results
+            if res["resource"]["type"] == resource_type
+        ]
+
     return JSONResponse(
         content={
             "signal": "ResponseSignal.VECTORDB_SEARCH_SUCCESS.value",
-            "results": [
-                {
-                    "id": getattr(res, "id", None),
-                    "score": getattr(res, "score", None),
-                    "payload": getattr(res, "payload", {})
-                }
-                for res in results
-            ]
+            "results": formatted_results[:limit]
         }
     )
 

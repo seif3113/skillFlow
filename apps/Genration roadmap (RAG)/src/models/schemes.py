@@ -10,9 +10,10 @@ class PushRequest(BaseModel):
     do_reset: Optional[int] = 0
 
 class SearchRequest(BaseModel):
-    text: str
+    text: Optional[str] = None
+    topic: Optional[str] = None
     limit: Optional[int] = 5
-    source: Optional[str] = ""
+    type: Optional[str] = "all"
 
 class CategoryRequest(BaseModel):
     category_name: str
