@@ -292,21 +292,21 @@ export function RoadmapCreator({ userId }: RoadmapCreatorProps) {
               />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-zinc-100 mb-2">
+          <h2 className="text-2xl font-bold text-foreground mb-2">
             Generating Your Roadmap
           </h2>
-          <p className="text-zinc-400 text-center max-w-md">
+          <p className="text-muted-foreground text-center max-w-md">
             AI is creating a personalized learning path based on your answers...
           </p>
 
           {/* Show partial roadmap while generating */}
           {roadmapObject?.title && (
-            <p className="text-sky-400 mt-4 font-medium">
+            <p className="text-primary mt-4 font-medium">
               {roadmapObject.title}
             </p>
           )}
           {generatedStepsCount > 0 && (
-            <p className="text-zinc-500 text-sm mt-2">
+            <p className="text-muted-foreground text-sm mt-2">
               {generatedStepsCount} steps generated...
             </p>
           )}
@@ -315,18 +315,18 @@ export function RoadmapCreator({ userId }: RoadmapCreatorProps) {
 
       {step === "editor" && layoutedNodes.length > 0 && (
         <div className="h-screen flex flex-col">
-          <div className="flex items-center justify-between p-4 border-b border-zinc-800 bg-zinc-900">
+          <div className="flex items-center justify-between p-4 border-b border-border bg-background">
             <div>
-              <h1 className="text-xl font-bold text-zinc-100">
+              <h1 className="text-xl font-bold text-foreground">
                 {roadmapObject?.title || topic}
               </h1>
-              <p className="text-sm text-zinc-400">
+              <p className="text-sm text-muted-foreground">
                 Click on any step to view details and edit
               </p>
             </div>
             <button
               onClick={() => router.push("/dashboard")}
-              className="px-4 py-2 text-sm text-zinc-400 hover:text-zinc-200 transition-colors"
+              className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors font-medium"
             >
               Back to Dashboard
             </button>

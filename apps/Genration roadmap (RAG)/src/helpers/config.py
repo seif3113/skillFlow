@@ -27,6 +27,15 @@ class Settings(BaseSettings):
     GEMINI_EMBEDDING_MODEL_SIZE : int = None
     GEMINI_API_KEY : str = None
 
+    # Cerebras configuration
+    CEREBRAS_GENERATION_CLIENT : str = None
+    CEREBRAS_GENERATION_MODEL_NAME : str = None
+    CEREBRAS_API_KEY : str = None
+
+    # Groq configuration
+    GROQ_GENERATION_MODEL_NAME : str = None
+    GROQ_API_KEY : str = None
+
     VECTOR_DB_CLIENT :str
     VECTOR_DB_PATH :str
     VECTOR_DB_DISTANCE_METHOD :str

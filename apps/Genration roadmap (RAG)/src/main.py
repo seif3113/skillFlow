@@ -17,8 +17,19 @@ async def startup_event():
     vectordb_provider_factory = VectorDBProviderFactory(settings)
     
     # generation client
-    app.generation_client = llm_provider_factory.create(provider=settings.GEMINI_GENERATION_CLIENT)
-    app.generation_client.set_generation_model(model_id = settings.GEMINI_GENERATION_MODEL_NAME)
+    generation_provider = settings.GENERATION_CLIENT
+    app.generation_client = llm_provider_factory.create(provider=generation_provider)
+    
+    if generation_provider == LLMEnums.GEMINI.value:
+        app.generation_client.set_generation_model(model_id = settings.GEMINI_GENERATION_MODEL_NAME)
+    elif generation_provider == LLMEnums.CEREBRAS.value:
+        app.generation_client.set_generation_model(model_id = settings.CEREBRAS_GENERATION_MODEL_NAME)
+    elif generation_provider == LLMEnums.GROQ.value:
+        app.generation_client.set_generation_model(model_id = settings.GROQ_GENERATION_MODEL_NAME)
+    elif generation_provider == LLMEnums.OPENAI.value:
+        # If OpenAI needs a specific model, it should be set here too. 
+        # For now, keeping it consistent with how it was (implicitly using defaults or handled elsewhere)
+        pass
 
     # embedding client
     app.embedding_client = llm_provider_factory.create(provider=settings.EMBEDDING_CLIENT)
