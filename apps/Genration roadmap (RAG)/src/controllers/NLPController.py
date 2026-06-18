@@ -396,16 +396,141 @@ class NLPController(BaseController):
             logger.error(f"Failed to parse LLM response as JSON: {answer}")
             return None
 
+    def _extract_json_from_llm_response(self, response: str):
+        if not response:
+            return None
+
+        cleaned_response = response.strip()
+        if "```" in cleaned_response:
+            import re
+            match = re.search(r"```(?:json)?\s*(.*?)\s*```", cleaned_response, re.DOTALL)
+            if match:
+                cleaned_response = match.group(1).strip()
+            else:
+                cleaned_response = cleaned_response.replace("```json", "").replace("```", "").strip()
+
+        return json.loads(cleaned_response)
+
+    def _parse_resource_text(self, text: str) -> dict:
+        resource = {}
+
+        for line in (text or "").splitlines():
+            if ":" not in line:
+                continue
+
+            key, value = line.split(":", 1)
+            resource[key.strip()] = value.strip()
+
+        return resource
+
+    def _get_resource_type(self, resource: dict) -> str:
+        source = resource.get("source", "").strip().lower()
+        url = resource.get("canonical_url", "").strip().lower()
+
+        if "youtube" in source or "youtube.com" in url or "youtu.be" in url:
+            return "Video"
+
+        if any(marker in url for marker in ["blog", "docs", "documentation", "article", "medium.com"]):
+            return "Article"
+
+        return "Course"
+
+    def _compact_resource(self, result) -> dict:
+        payload = getattr(result, "payload", {}) or {}
+        resource = self._parse_resource_text(payload.get("text", ""))
+        resource_type = self._get_resource_type(resource)
+
+        return {
+            "id": resource.get("course_sk") or str(getattr(result, "id", "")),
+            "title": resource.get("title", "")[:160],
+            "description": (resource.get("description") or resource.get("headline", ""))[:260],
+            "source": resource.get("source", ""),
+            "url": resource.get("canonical_url") or resource.get("url", ""),
+            "type": resource_type,
+            "score": float(getattr(result, "score", 0) or 0),
+        }
+
+    def _resource_relevance_score(self, resource: dict, query: str) -> float:
+        import re
+
+        query_terms = set(re.findall(r"[a-z0-9]+", (query or "").lower()))
+        resource_text = " ".join([
+            resource.get("title", ""),
+            resource.get("description", ""),
+            resource.get("source", ""),
+        ]).lower()
+
+        if not query_terms:
+            return resource.get("score", 0)
+
+        overlap = sum(1 for term in query_terms if term in resource_text)
+        return resource.get("score", 0) + (overlap / max(len(query_terms), 1))
+
+    def _select_roadmap_resources(self, results: list, query: str, min_items: int = 2, max_items: int = 3) -> list:
+        compact_resources = []
+        seen_urls = set()
+
+        for result in results or []:
+            resource = self._compact_resource(result)
+            url = resource.get("url")
+            title = resource.get("title")
+
+            if not url or not title or url in seen_urls:
+                continue
+
+            seen_urls.add(url)
+            resource["rank_score"] = self._resource_relevance_score(resource, query)
+            compact_resources.append(resource)
+
+        compact_resources.sort(key=lambda item: item.get("rank_score", 0), reverse=True)
+
+        selected = []
+        used_types = set()
+
+        for resource in compact_resources:
+            if resource["type"] in used_types:
+                continue
+            selected.append(resource)
+            used_types.add(resource["type"])
+            if len(selected) == max_items:
+                break
+
+        if len(selected) < min_items:
+            selected_urls = {resource["url"] for resource in selected}
+            for resource in compact_resources:
+                if resource["url"] in selected_urls:
+                    continue
+                selected.append(resource)
+                selected_urls.add(resource["url"])
+                if len(selected) == min_items:
+                    break
+
+        return [
+            {
+                "id": resource["id"],
+                "title": resource["title"],
+                "description": resource["description"],
+                "source": resource["source"],
+                "url": resource["url"],
+                "type": resource["type"],
+            }
+            for resource in selected[:max_items]
+        ]
+
     def generate_customized_roadmap_rag(self, topic: str, customization_answers: list = None):
         """
-        Generates a comprehensive customized roadmap with resources in just 2 LLM calls.
+        Generates a customized roadmap with compact RAG context and pre-selected resources.
         """
         from datetime import datetime
         current_time = datetime.now().isoformat()
+        topic = (topic or "").strip()
+
+        if not topic:
+            return None
         
         customization_str = "None provided"
         if customization_answers:
-            customization_str = "\n".join([f"- {ans}" for ans in customization_answers])
+            customization_str = "\n".join([f"- {str(ans)[:180]}" for ans in customization_answers if ans])
 
         # Step 1: Get sub-topics (LLM Call 1)
         try:
@@ -425,67 +550,58 @@ class NLPController(BaseController):
         topics_json_raw = self.generation_client.generate_text(prompt=seg_user_prompt, chat_history=chat_history_1)
         
         try:
-            cleaned_topics = topics_json_raw.strip()
-            if "```" in cleaned_topics:
-                import re
-                match = re.search(r"```(?:json)?\s*(.*?)\s*```", cleaned_topics, re.DOTALL)
-                if match: cleaned_topics = match.group(1).strip()
-            topic_objects = json.loads(cleaned_topics)
+            topic_objects = self._extract_json_from_llm_response(topics_json_raw)
             # Ensure it's a list of objects
             if not isinstance(topic_objects, list) or not all(isinstance(obj, dict) for obj in topic_objects):
                 raise ValueError("LLM did not return a list of objects.")
+            topic_objects = topic_objects[:8]
         except Exception as e:
             logger.error(f"Failed to parse sub-topics: {e}")
             return None
 
-        # Step 2: Batch Vector Search using 'search_query'
-        search_queries = [obj.get("search_query", obj.get("title", "")) for obj in topic_objects]
+        # Step 2: Batch vector search with concise, sub-topic specific queries.
+        search_queries = [
+            " ".join([
+                topic,
+                obj.get("title", ""),
+                obj.get("search_query", obj.get("title", "")),
+            ]).strip()
+            for obj in topic_objects
+        ]
         vectors = self.embedding_helper.encode_texts(texts=search_queries, collection="all-MiniLM-L6-v2")
         collection_name = self.get_collection_name()
         batch_results = self.vectordb_client.search_batch_by_vectors(
             collection_name=collection_name,
             vectors=vectors,
-            limit=10 
+            limit=8 
         )
 
-        # Format context for the final LLM call
-        context_per_topic = []
+        # Step 3: Pre-select 2-3 compact resources per sub-topic before the final LLM call.
+        roadmap_context = []
         for i, obj in enumerate(topic_objects):
-            topic_name = obj.get("title")
-            results = batch_results[i]
-            topic_context = f"### Topic: {topic_name}\n"
-            if not results:
-                topic_context += "No direct resources found in database for this specific sub-topic.\n"
-            else:
-                for res in results:
-                    payload = getattr(res, "payload", {})
-                    text = payload.get("text", "")
-                    meta = payload.get("metadata", {})
-                    source = meta.get("source", "Unknown").strip()
-                    url = meta.get("url", "No URL available").strip()
-                    
-                    res_type = "Course" 
-                    source_lower = source.lower()
-                    if any(x in source_lower for x in ["youtube", "video", "vimeo"]):
-                        res_type = "Video"
-                    elif any(x in source_lower for x in ["w3schools", "article", "documentation", "blog", "medium", "khan academy"]):
-                        res_type = "Article"
-                    
-                    topic_context += f"- [Type: {res_type}] [Source: {source}] [Title: {text}] [URL: {url}]\n"
-            context_per_topic.append(topic_context)
-        
-        full_context = "\n\n".join(context_per_topic)
+            query = search_queries[i]
+            results = batch_results[i] if i < len(batch_results) else []
+            roadmap_context.append({
+                "title": obj.get("title", "")[:120],
+                "search_query": obj.get("search_query", obj.get("title", ""))[:160],
+                "resources": self._select_roadmap_resources(results, query),
+            })
 
-        # Step 3: Compile Final Roadmap (LLM Call 2)
+        compact_context = json.dumps(roadmap_context, ensure_ascii=False)
+
+        # Step 4: Compile final roadmap with compact selected context only.
         try:
             comp_system_prompt = self.template_parser.get("roadmap_generator", "roadmap_compilation_system_prompt", {"current_time": current_time})
             comp_user_prompt = self.template_parser.get("roadmap_generator", "roadmap_compilation_user_prompt", {
-                "sub_topics": json.dumps([obj.get("title") for obj in topic_objects]),
-                "context": full_context
+                "sub_topics": json.dumps([obj.get("title") for obj in topic_objects], ensure_ascii=False),
+                "context": compact_context
             })
         except Exception:
-            comp_system_prompt = f"Generate a JSON roadmap with topics and resources (Max 3 per topic). Current time: {current_time}."
-            comp_user_prompt = f"Topics: {[obj.get('title') for obj in topic_objects]}\nContext: {full_context}"
+            comp_system_prompt = (
+                "Generate JSON only. Use only provided resources. "
+                f"Each topic must have 2 to 3 resources. Current time: {current_time}."
+            )
+            comp_user_prompt = f"Compact roadmap context: {compact_context}"
 
         chat_history_2 = [
             self.generation_client.construct_prompt(prompt=comp_system_prompt, role=self.generation_client.enums.SYSTEM.value)
@@ -494,12 +610,7 @@ class NLPController(BaseController):
         final_roadmap_raw = self.generation_client.generate_text(prompt=comp_user_prompt, chat_history=chat_history_2)
 
         try:
-            cleaned_roadmap = final_roadmap_raw.strip()
-            if "```" in cleaned_roadmap:
-                import re
-                match = re.search(r"```(?:json)?\s*(.*?)\s*```", cleaned_roadmap, re.DOTALL)
-                if match: cleaned_roadmap = match.group(1).strip()
-            return json.loads(cleaned_roadmap)
+            return self._extract_json_from_llm_response(final_roadmap_raw)
         except Exception as e:
             logger.error(f"Failed to parse final roadmap: {e}")
             return None

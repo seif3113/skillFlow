@@ -21,13 +21,13 @@ topic_segmentation_user_prompt = Template("\n".join([
 # Pass 2: Roadmap Compilation
 roadmap_compilation_system_prompt = Template("\n".join([
     "You are an expert curriculum designer and resource integrator.",
-    "You will be provided with a list of sub-topics and a collection of retrieved documents containing course and resource information.",
-    "Your task is to generate a comprehensive learning roadmap in a strict JSON format.",
+    "You will receive compact JSON context. Do not request or invent extra resources.",
+    "Generate a practical learning roadmap in strict JSON format.",
     "",
     "### CRITICAL RULES FOR RESOURCES:",
     "1. LIMIT: Provide between 2 to 3 resources per topic. No more, no less.",
-    "2. MANDATE: You MUST include AT LEAST 2 resources for every topic using the provided 'RETRIEVED CONTEXT'.",
-    "3. NO FABRICATION: Only use the URLs and titles provided in the context.",
+    "2. USE ONLY provided resource title, source, url, and type values.",
+    "3. Prefer resource type variety when the context provides it.",
     "",
     "### JSON STRUCTURE PER TOPIC:",
     "{",
@@ -52,11 +52,9 @@ roadmap_compilation_system_prompt = Template("\n".join([
 ]))
 
 roadmap_compilation_user_prompt = Template("\n".join([
-    "### SUB-TOPICS:",
-    "$sub_topics",
-    "",
-    "### RETRIEVED CONTEXT:",
+    "SUB_TOPICS: $sub_topics",
+    "COMPACT_CONTEXT_JSON:",
     "$context",
     "",
-    "Generate the final roadmap JSON based on the above information."
+    "Return the final roadmap JSON array."
 ]))

@@ -261,6 +261,16 @@ async def answer_rag(request: Request, search_request: SearchRequest):
 @nlp_router.post("/generate-roadmap-rag")
 async def generate_roadmap_rag(request: Request, roadmap_request: RoadmapRequest):
     start_time = time.time()
+    topic = (roadmap_request.topic or "").strip()
+
+    if not topic:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                "signal": "error",
+                "message": "topic is required."
+            }
+        )
 
     nlp_controller = NLPController(
         vectordb_client=request.app.vectordb_client,
@@ -270,10 +280,21 @@ async def generate_roadmap_rag(request: Request, roadmap_request: RoadmapRequest
         embedding_helper=request.app.embedding_helper,
     )
 
-    roadmap = nlp_controller.generate_customized_roadmap_rag(
-        topic=roadmap_request.topic,
-        customization_answers=roadmap_request.customization_answers
-    )
+    try:
+        roadmap = nlp_controller.generate_customized_roadmap_rag(
+            topic=topic,
+            customization_answers=roadmap_request.customization_answers
+        )
+    except Exception as e:
+        logger.error(f"Roadmap RAG generation failed: {str(e)}")
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "signal": "error",
+                "message": "Roadmap generation failed.",
+                "details": str(e)
+            }
+        )
 
     if not roadmap:
         return JSONResponse(
