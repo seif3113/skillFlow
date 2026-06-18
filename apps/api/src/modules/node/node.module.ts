@@ -5,12 +5,7 @@ import { NodeRepository } from './node.repository';
 import { RoadmapRepository } from '../roadmap/roadmap.repository';
 
 @Module({
-  providers: [
-    NodeResolver,
-    NodeService,
-    NodeRepository,
-    RoadmapRepository,
-  ],
+  providers: [NodeResolver, NodeService, NodeRepository, RoadmapRepository],
   exports: [NodeService],
 })
-export class NodeModule { }
+export class NodeModule {}

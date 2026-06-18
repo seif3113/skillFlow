@@ -88,6 +88,7 @@ export interface IQuery {
     roadmapsByUser(userId: number): Roadmap[] | Promise<Roadmap[]>;
     roadmapsByLearningProfile(learningProfileId: number): Roadmap[] | Promise<Roadmap[]>;
     roadmapLearningProfiles(userId: number): RoadmapLearningProfile[] | Promise<RoadmapLearningProfile[]>;
+    roadmapCustomizationQuestions(message: string): RoadmapCustomizationQuestion[] | Promise<RoadmapCustomizationQuestion[]>;
     user(id: number): Nullable<User> | Promise<Nullable<User>>;
 }
 
@@ -161,6 +162,11 @@ export interface RoadmapEditLog {
 export interface DeleteRoadmapResult {
     success: boolean;
     message: string;
+}
+
+export interface RoadmapCustomizationQuestion {
+    question: string;
+    choices: string[];
 }
 
 export interface User {

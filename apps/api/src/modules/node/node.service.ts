@@ -14,7 +14,7 @@ import {
 } from './types/node.types';
 import { CreateNodeInput } from './dto/create-node.input';
 import { UpdateNodeInput } from './dto/update-node.input';
-import { tryCatch } from '@/utils/try-catch';
+import { genericFetch } from '@/utils/fetch';
 
 @Injectable()
 export class NodeService {
@@ -29,8 +29,8 @@ export class NodeService {
       roadmapId: row.roadmapId,
       title: row.title,
       description: row.description ?? null,
-      tags: (row.tags as string[]) ?? [],
-      resources: (row.resources as Record<string, string>[]) ?? [],
+      tags: row.tags ?? [],
+      resources: row.resources ?? [],
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };
@@ -70,36 +70,19 @@ export class NodeService {
       `Searching resources with keyword: "${cleanedKeyword}", limit: ${limit}`,
     );
 
-    const { data: res, error } = await tryCatch(
-      fetch(`${process.env.RAG_URI}/nlp/index/search`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(reqBody),
-        signal: AbortSignal.timeout(5000),
-      }),
-    );
-
-    if (error) {
-      throw new InternalServerErrorException(
-        `Failed to reach RAG service: ${error.message}`,
-      );
+    const baseUrl = process.env.RAG_URI;
+    if (!baseUrl) {
+      throw new InternalServerErrorException('RAG_URI is not configured');
     }
 
-    if (!res.ok) {
-      const body = await res.text().catch(() => '');
-      throw new InternalServerErrorException(
-        `RAG service returned ${res.status}: ${body || res.statusText}`,
-      );
-    }
+    const url = `${baseUrl.replace(/\/$/, '')}/nlp/index/search`;
+    const parsed = await genericFetch<FindResourcesResult>(url, {
+      method: 'POST',
+      body: JSON.stringify(reqBody),
+      timeout: 5000,
+    });
 
-    const { data: parsed, error: parseError } = await tryCatch(res.json());
-    if (parseError) {
-      throw new InternalServerErrorException(
-        `Failed to parse RAG response: ${parseError.message}`,
-      );
-    }
-
-    return (parsed as FindResourcesResult).result;
+    return parsed.result;
   }
 
   async create(input: CreateNodeInput): Promise<NodeType> {

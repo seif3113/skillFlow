@@ -4,15 +4,23 @@ import { eq } from 'drizzle-orm';
 import * as databaseProvider from '../../database/database.provider';
 import { roadmaps, NewRoadmapRow, RoadmapRow } from './roadmap.schema';
 
-export type CreateRoadmapData = Omit<NewRoadmapRow, 'id' | 'createdAt' | 'updatedAt'>;
-export type UpdateRoadmapData = Partial<Pick<RoadmapRow, 'title' | 'description' | 'learningProfileId' | 'isPublished'>>;
+export type CreateRoadmapData = Omit<
+  NewRoadmapRow,
+  'id' | 'createdAt' | 'updatedAt'
+>;
+export type UpdateRoadmapData = Partial<
+  Pick<
+    RoadmapRow,
+    'title' | 'description' | 'learningProfileId' | 'isPublished'
+  >
+>;
 
 @Injectable()
 export class RoadmapRepository {
   constructor(
     @Inject(databaseProvider.DATABASE_CLIENT)
     private readonly db: databaseProvider.DrizzleDB,
-  ) { }
+  ) {}
 
   async findAll(): Promise<RoadmapRow[]> {
     return this.db.select().from(roadmaps);
@@ -29,13 +37,12 @@ export class RoadmapRepository {
   }
 
   async findByUserId(userId: number): Promise<RoadmapRow[]> {
-    return this.db
-      .select()
-      .from(roadmaps)
-      .where(eq(roadmaps.userId, userId));
+    return this.db.select().from(roadmaps).where(eq(roadmaps.userId, userId));
   }
 
-  async findByLearningProfileId(learningProfileId: number): Promise<RoadmapRow[]> {
+  async findByLearningProfileId(
+    learningProfileId: number,
+  ): Promise<RoadmapRow[]> {
     return this.db
       .select()
       .from(roadmaps)
