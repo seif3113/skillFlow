@@ -21,12 +21,12 @@ export function TopicInput({ onSubmit, isLoading }: TopicInputProps) {
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto border-zinc-800 bg-zinc-900">
+    <Card className="w-full max-w-2xl mx-auto border-border bg-card">
       <CardHeader className="text-center">
         <CardTitle className="text-3xl font-bold text-transparent" style={{ backgroundImage: 'linear-gradient(90deg, #38bdf8 0%, #2dd4bf 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text' }}>
           Create Your Learning Roadmap
         </CardTitle>
-        <CardDescription className="text-zinc-400 text-lg">
+        <CardDescription className="text-muted-foreground text-lg font-medium">
           Enter a topic you want to learn, and AI will create a personalized roadmap for you
         </CardDescription>
       </CardHeader>
@@ -36,13 +36,13 @@ export function TopicInput({ onSubmit, isLoading }: TopicInputProps) {
             placeholder="e.g., Machine Learning, Web Development, Rust Programming..."
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            className="flex-1 bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 focus-visible:ring-sky-500"
+            className="flex-1 bg-muted/50 border-border text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-primary"
             disabled={isLoading}
           />
           <Button
             type="submit"
             disabled={!topic.trim() || isLoading}
-            className="text-white font-semibold px-8"
+            className="text-white font-bold px-8 border-none"
             style={{ background: 'linear-gradient(90deg, #0284c7 0%, #0d9488 100%)' }}
           >
             {isLoading ? (

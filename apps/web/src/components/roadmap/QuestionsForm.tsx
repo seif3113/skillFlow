@@ -34,21 +34,21 @@ export function QuestionsForm({ topic, questions, onSubmit, isLoading }: Questio
   const allAnswered = questions.every((q) => answers[q.id]?.trim());
 
   return (
-    <Card className="w-full max-w-2xl mx-auto border-zinc-800 bg-zinc-900">
+    <Card className="w-full max-w-2xl mx-auto border-border bg-card">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl font-bold text-zinc-100">
+        <CardTitle className="text-2xl font-bold text-foreground">
           Let&apos;s Personalize Your Roadmap
         </CardTitle>
-        <CardDescription className="text-zinc-400">
-          Answer these questions about <span className="text-sky-400 font-medium">{topic}</span> to get a tailored learning path
+        <CardDescription className="text-muted-foreground font-medium">
+          Answer these questions about <span className="text-primary font-bold">{topic}</span> to get a tailored learning path
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           {questions.map((q, index) => (
             <div key={q.id} className="space-y-2">
-              <Label htmlFor={q.id} className="text-zinc-200 text-base flex items-start gap-2">
-                <span className="bg-sky-500/20 text-sky-400 px-2 py-0.5 rounded text-sm font-mono">
+              <Label htmlFor={q.id} className="text-foreground/80 text-base flex items-start gap-2">
+                <span className="bg-sky-500/10 text-sky-500 px-2 py-0.5 rounded text-sm font-mono font-bold border border-sky-500/20">
                   {index + 1}
                 </span>
                 {q.question}
@@ -58,7 +58,7 @@ export function QuestionsForm({ topic, questions, onSubmit, isLoading }: Questio
                 placeholder="Your answer..."
                 value={answers[q.id] || ""}
                 onChange={(e) => setAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))}
-                className="bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 focus-visible:ring-sky-500 min-h-[80px]"
+                className="bg-muted/50 border-border text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-primary min-h-[80px]"
                 disabled={isLoading}
               />
             </div>
@@ -66,7 +66,7 @@ export function QuestionsForm({ topic, questions, onSubmit, isLoading }: Questio
           <Button
             type="submit"
             disabled={!allAnswered || isLoading}
-            className="w-full text-white font-semibold py-6 text-lg"
+            className="w-full text-white font-bold py-6 text-lg border-none"
             style={{ background: 'linear-gradient(90deg, #0284c7 0%, #0d9488 100%)' }}
           >
             {isLoading ? (
