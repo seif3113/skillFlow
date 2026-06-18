@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm';
 import * as databaseProvider from '../../database/database.provider';
 import { roadmaps, NewRoadmapRow, RoadmapRow } from './roadmap.schema';
 import { user } from '../user/user.schema';
-import { PublicRoadmap } from 'src/graphql';
+import { PublicRoadmap } from '@/graphql';
 
 export type CreateRoadmapData = Omit<
   NewRoadmapRow,

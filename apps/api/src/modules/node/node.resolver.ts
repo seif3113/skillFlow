@@ -19,11 +19,11 @@ export class NodeResolver {
 
   @Query('searchNodeResources')
   searchResources(
-    @Args('keyword') keyword: string,
+    @Args('topic') topic: string,
     @Args('limit', { defaultValue: 5 }) limit?: number,
-    @Args('source', { nullable: true }) source?: string,
+    @Args('type', { nullable: true }) type?: string,
   ) {
-    return this.nodeService.findResources(keyword, limit, source);
+    return this.nodeService.findResources(topic, limit, type);
   }
 
   @Mutation('createNode')

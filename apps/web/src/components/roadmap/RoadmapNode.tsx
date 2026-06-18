@@ -8,7 +8,7 @@ import { CheckCircle2, BookOpen } from "lucide-react";
 export interface RoadmapNodeData {
   label: string;
   description: string;
-  resources: { title: string; url: string }[];
+  resources: { title: string; url: string; description?: string; type?: string; }[];
   completed: boolean;
   isReadOnly?: boolean;
 }
@@ -88,11 +88,6 @@ function RoadmapNodeComponent({ data, selected }: NodeProps) {
               {nodeData.completed && (
                 <Badge className="bg-teal-500/10 text-teal-400 border border-teal-500/20 rounded-lg text-[10px] px-2 py-0.5 animate-in fade-in zoom-in-50 font-bold uppercase tracking-wider">
                   Completed
-                </Badge>
-              )}
-              {selected && !nodeData.isReadOnly && (
-                <Badge className="bg-primary text-primary-foreground border-none rounded-lg text-[10px] px-2 py-0.5 animate-in fade-in zoom-in-50">
-                  Editing
                 </Badge>
               )}
             </div>

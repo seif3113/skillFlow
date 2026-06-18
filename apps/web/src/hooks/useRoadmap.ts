@@ -43,8 +43,8 @@ const ROADMAPS_BY_USER = gql`
 `;
 
 const SEARCH_NODE_RESOURCES = gql`
-  query SearchNodeResources($keyword: String!, $limit: Int, $source: String) {
-    searchNodeResources(keyword: $keyword, limit: $limit, source: $source)
+  query SearchNodeResources($topic: String!, $limit: Int, $type: String) {
+    searchNodeResources(topic: $topic, limit: $limit, type: $type)
   }
 `;
 
@@ -215,19 +215,19 @@ export function useRoadmapsByUser(userId?: number) {
   });
 }
 
-export function useSearchNodeResources(keyword: string, limit: number = 5, source?: string) {
+export function useSearchNodeResources(topic: string, limit: number = 5, type?: string) {
   return useQuery({
-    queryKey: ["searchNodeResources", keyword, limit, source],
+    queryKey: ["searchNodeResources", topic, limit, type],
     queryFn: async () => {
-      if (!keyword) return [];
+      if (!topic) return [];
       const data: any = await graphQLClient.request(SEARCH_NODE_RESOURCES, {
-        keyword,
+        topic,
         limit,
-        source: source || undefined,
+        type: type || undefined,
       });
       return data.searchNodeResources || [];
     },
-    enabled: !!keyword && keyword.length > 2, // Only run if we have a real keyword
+    enabled: !!topic && topic.length > 2, // Only run if we have a real topic
   });
 }
 

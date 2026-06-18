@@ -7,15 +7,28 @@ import {
   Plus,
   Trash2,
   BookOpen,
-  Star,
-  Users,
-  GraduationCap,
-  Clock3,
   ChevronDown,
   ChevronUp,
+  Video,
+  FileText,
+  GraduationCap,
 } from "lucide-react";
 import { useSearchNodeResources } from "@/hooks/useRoadmap";
 import { useDebounce } from "@/hooks/useDebounce";
+
+function ResourceIcon({ type, className }: { type?: string; className?: string }) {
+  const cn = className || "w-4 h-4 text-sky-500";
+  switch (type?.toLowerCase()) {
+    case "video":
+      return <Video className={cn} />;
+    case "article":
+      return <FileText className={cn} />;
+    case "course":
+      return <GraduationCap className={cn} />;
+    default:
+      return <BookOpen className={cn} />;
+  }
+}
 
 export interface NodeDraft {
   id?: string;
@@ -25,15 +38,8 @@ export interface NodeDraft {
   resources: {
     title: string;
     url: string;
-    source?: string;
-    headline?: string;
-    rating?: string;
-    level?: string;
-    isFree?: boolean;
-    duration?: string;
-    category?: string;
-    numEnrolled?: string;
-    hasCertificate?: boolean;
+    description?: string;
+    type?: string;
   }[];
   isCompleted?: boolean;
 }
@@ -65,14 +71,14 @@ export function NodeEditorSidebar({
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [searchLimit, setSearchLimit] = useState(10);
-  const [searchSource, setSearchSource] = useState<string>("");
+  const [searchType, setSearchType] = useState<string>("all");
   const debouncedSearch = useDebounce(searchQuery, 300);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const { data: searchResults, isFetching } = useSearchNodeResources(
     debouncedSearch,
     searchLimit,
-    searchSource,
+    searchType,
   );
 
   // Helper to reset state to initial data
@@ -92,7 +98,7 @@ export function NodeEditorSidebar({
     }
     setSearchQuery("");
     setSearchLimit(10);
-    setSearchSource("");
+    setSearchType("all");
     setShowSearch(false);
   };
 
@@ -255,6 +261,9 @@ export function NodeEditorSidebar({
                   key={i}
                   className="flex items-start justify-between gap-3 p-3 rounded-xl bg-zinc-900 border border-zinc-800 group transition-all hover:bg-zinc-900/80"
                 >
+                  <div className="mt-1 shrink-0 bg-sky-500/5 p-2 rounded-xl border border-sky-500/10">
+                    <ResourceIcon type={res.type} />
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
                       <p
@@ -263,15 +272,15 @@ export function NodeEditorSidebar({
                       >
                         {res.title}
                       </p>
-                      {res.source && (
+                      {res.type && (
                         <span className="px-1.5 py-0.5 bg-zinc-800 text-zinc-400 text-[9px] rounded uppercase font-bold tracking-wider shrink-0 border border-zinc-700">
-                          {res.source}
+                          {res.type}
                         </span>
                       )}
                     </div>
-                    {res.headline && (
+                    {res.description && (
                       <p className="text-[11px] text-zinc-500 mb-1 line-clamp-1 italic">
-                        {res.headline}
+                        {res.description}
                       </p>
                     )}
 
@@ -284,22 +293,6 @@ export function NodeEditorSidebar({
                       >
                         View Resource
                       </a>
-                      {res.rating && res.rating !== "0.0" && (
-                        <div className="flex items-center gap-0.5 text-[10px] text-amber-500 font-bold">
-                          <Star className="w-2.5 h-3 fill-amber-500" />{" "}
-                          {res.rating}
-                        </div>
-                      )}
-                      {res.numEnrolled && res.numEnrolled !== "0" && (
-                        <div className="flex items-center gap-0.5 text-[10px] text-zinc-500">
-                          <Users className="w-2.5 h-3" /> {res.numEnrolled}
-                        </div>
-                      )}
-                      {res.hasCertificate && (
-                        <div className="flex items-center gap-0.5 text-[10px] text-emerald-500 font-medium">
-                          <GraduationCap className="w-3 h-3" /> Cert
-                        </div>
-                      )}
                     </div>
                   </div>
                   <button
@@ -330,19 +323,17 @@ export function NodeEditorSidebar({
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
-                    Source
+                    Type
                   </label>
                   <select
-                    value={searchSource}
-                    onChange={(e) => setSearchSource(e.target.value)}
+                    value={searchType}
+                    onChange={(e) => setSearchType(e.target.value)}
                     className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-zinc-300 focus:outline-none focus:ring-2 focus:ring-sky-500"
                   >
-                    <option value="">All Sources</option>
-                    <option value="Udemy">Udemy</option>
-                    <option value="Coursera">Coursera</option>
-                    <option value="W3Schools">W3Schools</option>
-                    <option value="Khan Academy">Khan Academy</option>
-                    <option value="Youtube">Youtube</option>
+                    <option value="all">All Types</option>
+                    <option value="course">Course</option>
+                    <option value="video">Video</option>
+                    <option value="article">Article</option>
                   </select>
                 </div>
                 <div className="space-y-1">
@@ -386,20 +377,11 @@ export function NodeEditorSidebar({
                   {!isFetching && searchResults && searchResults.length > 0 && (
                     <div className="divide-y divide-zinc-800/50">
                       {searchResults.map((res: any, i: number) => {
-                        const payloadText = res?.payload?.text || res;
-                        const resTitle =
-                          payloadText.title || "Untitled Resource";
-                        const resUrl =
-                          payloadText.canonical_url || payloadText.url || "";
-                        const resSource = payloadText.source || "";
-                        const resHeadline = payloadText.headline || "";
-                        const resLevel = payloadText.level_normalized || "";
-                        const resDuration = payloadText.duration_hours || "";
-                        const resRating = payloadText.rating || "";
-                        const resEnrolled = payloadText.num_enrolled || "";
-                        const resCert = payloadText.has_certificate === "True";
-                        const resCat = payloadText.category || "";
-                        const isFree = payloadText.is_free === "True";
+                        const item = res?.resource || res;
+                        const resTitle = item.title || "Untitled Resource";
+                        const resUrl = item.url || "";
+                        const resDescription = item.description || "";
+                        const resType = item.type || "";
 
                         const isAdded = resources.some((r) => r.url === resUrl);
 
@@ -409,7 +391,7 @@ export function NodeEditorSidebar({
                             className="p-4 flex items-start gap-4 hover:bg-zinc-800/30 transition-colors group/item"
                           >
                             <div className="mt-1 shrink-0 bg-sky-500/5 p-2 rounded-xl border border-sky-500/10 group-hover/item:border-sky-500/30 transition-colors">
-                              <BookOpen className="w-4 h-4 text-sky-500" />
+                              <ResourceIcon type={resType} />
                             </div>
                             <div className="flex-1 min-w-0 flex flex-col gap-1">
                               <div className="flex items-center justify-between gap-2">
@@ -421,51 +403,20 @@ export function NodeEditorSidebar({
                                 </p>
                               </div>
 
-                              {resHeadline && (
+                              {resDescription && (
                                 <p
                                   className="text-[11px] text-zinc-400 line-clamp-1 italic font-medium"
-                                  title={resHeadline}
+                                  title={resDescription}
                                 >
-                                  {resHeadline}
+                                  {resDescription}
                                 </p>
                               )}
 
                               <div className="flex flex-wrap gap-x-3 gap-y-1.5 mt-2">
                                 <div className="flex items-center gap-1.5">
-                                  {resSource && (
+                                  {resType && (
                                     <span className="px-1.5 py-0.5 bg-zinc-800 text-zinc-300 text-[9px] rounded uppercase font-black tracking-tighter border border-zinc-700">
-                                      {resSource}
-                                    </span>
-                                  )}
-                                  {resLevel && resLevel !== "Not specified" && (
-                                    <span className="px-1.5 py-0.5 bg-sky-500/10 text-sky-400 text-[9px] rounded uppercase font-bold tracking-wider border border-sky-500/20">
-                                      {resLevel}
-                                    </span>
-                                  )}
-                                  {isFree && (
-                                    <span className="px-1.5 py-0.5 bg-emerald-500/10 text-emerald-400 text-[9px] rounded uppercase font-bold tracking-wider border border-emerald-500/20">
-                                      Free
-                                    </span>
-                                  )}
-                                </div>
-
-                                <div className="flex items-center gap-2.5">
-                                  {resRating && resRating !== "0.0" && (
-                                    <span className="flex items-center gap-1 text-[10px] font-bold text-amber-500">
-                                      <Star className="w-2.5 h-2.5 fill-amber-500" />{" "}
-                                      {resRating}
-                                    </span>
-                                  )}
-                                  {resDuration && resDuration !== "0.0" && (
-                                    <span className="flex items-center gap-1 text-[10px] font-medium text-zinc-500">
-                                      <Clock3 className="w-2.5 h-2.5" />{" "}
-                                      {resDuration}h
-                                    </span>
-                                  )}
-                                  {resEnrolled && resEnrolled !== "0" && (
-                                    <span className="flex items-center gap-1 text-[10px] font-medium text-zinc-500">
-                                      <Users className="w-2.5 h-2.5" />{" "}
-                                      {resEnrolled}
+                                      {resType}
                                     </span>
                                   )}
                                 </div>
@@ -476,15 +427,8 @@ export function NodeEditorSidebar({
                                 addResource({
                                   title: resTitle,
                                   url: resUrl,
-                                  source: resSource,
-                                  headline: resHeadline,
-                                  level: resLevel,
-                                  isFree,
-                                  duration: resDuration,
-                                  rating: resRating,
-                                  numEnrolled: resEnrolled,
-                                  hasCertificate: resCert,
-                                  category: resCat,
+                                  description: resDescription,
+                                  type: resType,
                                 })
                               }
                               disabled={isAdded || !resUrl}

@@ -1,7 +1,21 @@
 "use client";
 
-import { X, BookOpen, Star, Users, GraduationCap, Clock3 } from "lucide-react";
+import { X, BookOpen, Star, Users, GraduationCap, Clock3, Video, FileText } from "lucide-react";
 import { useEffect } from "react";
+
+function ResourceIcon({ type, className }: { type?: string; className?: string }) {
+  const cn = className || "w-4 h-4 text-sky-500";
+  switch (type?.toLowerCase()) {
+    case "video":
+      return <Video className={cn} />;
+    case "article":
+      return <FileText className={cn} />;
+    case "course":
+      return <GraduationCap className={cn} />;
+    default:
+      return <BookOpen className={cn} />;
+  }
+}
 
 export interface NodeDraft {
   id?: string;
@@ -11,15 +25,8 @@ export interface NodeDraft {
   resources: {
     title: string;
     url: string;
-    source?: string;
-    headline?: string;
-    rating?: string;
-    level?: string;
-    isFree?: boolean;
-    duration?: string;
-    category?: string;
-    numEnrolled?: string;
-    hasCertificate?: boolean;
+    description?: string;
+    type?: string;
   }[];
   isCompleted?: boolean;
 }
@@ -106,7 +113,7 @@ export function NodeViewerSidebar({
                   className="flex items-start gap-3 p-4 rounded-xl bg-zinc-900 border border-zinc-800 group hover:border-zinc-700 transition-all"
                 >
                   <div className="mt-1 shrink-0 bg-sky-500/5 p-2 rounded-xl border border-sky-500/10">
-                    <BookOpen className="w-4 h-4 text-sky-500" />
+                    <ResourceIcon type={res.type} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -116,15 +123,15 @@ export function NodeViewerSidebar({
                       >
                         {res.title}
                       </p>
-                      {res.source && (
+                      {res.type && (
                         <span className="px-1.5 py-0.5 bg-zinc-800 text-zinc-400 text-[9px] rounded uppercase font-bold tracking-wider shrink-0 border border-zinc-700">
-                          {res.source}
+                          {res.type}
                         </span>
                       )}
                     </div>
-                    {res.headline && (
+                    {res.description && (
                       <p className="text-[11px] text-zinc-500 mb-1.5 line-clamp-2 italic">
-                        {res.headline}
+                        {res.description}
                       </p>
                     )}
 
@@ -137,21 +144,6 @@ export function NodeViewerSidebar({
                       >
                         View Link →
                       </a>
-                      {res.rating && res.rating !== "0.0" && (
-                        <div className="flex items-center gap-0.5 text-[10px] text-amber-500 font-bold">
-                          <Star className="w-2.5 h-3 fill-amber-500" /> {res.rating}
-                        </div>
-                      )}
-                      {res.numEnrolled && res.numEnrolled !== "0" && (
-                        <div className="flex items-center gap-0.5 text-[10px] text-zinc-500">
-                          <Users className="w-2.5 h-3" /> {res.numEnrolled}
-                        </div>
-                      )}
-                      {res.hasCertificate && (
-                        <div className="flex items-center gap-0.5 text-[10px] text-emerald-500 font-medium">
-                          <GraduationCap className="w-3 h-3" /> Cert
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>

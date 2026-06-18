@@ -61,19 +61,18 @@ export class NodeService {
   }
 
   async findResources(
-    keyword: string,
+    topic: string,
     limit = 5,
-    source?: string,
+    type?: string,
   ): Promise<VectorDbSearchResponse['results']> {
-    const cleanedKeyword = keyword.trim().toLowerCase();
     const reqBody = {
-      text: cleanedKeyword,
+      topic: topic.trim().toLowerCase(),
       limit,
-      source: source?.toLowerCase(),
+      type,
     };
 
     console.log(
-      `Searching resources with keyword: "${cleanedKeyword}", limit: ${limit}, source: ${source}`,
+      `Searching resources with topic: "${topic}", limit: ${limit}, type: ${type}`,
     );
 
     const baseUrl = process.env.RAG_URI;
@@ -82,13 +81,13 @@ export class NodeService {
     }
 
     const url = `${baseUrl.replace(/\/$/, '')}/nlp/index/search`;
-    const parsed = await genericFetch<FindResourcesResult>(url, {
+    const parsed = await genericFetch<VectorDbSearchResponse>(url, {
       method: 'POST',
       body: JSON.stringify(reqBody),
       timeout: 5000,
     });
 
-    return parsed.result;
+    return parsed.results;
   }
 
   async create(input: CreateNodeInput): Promise<NodeType> {

@@ -22,8 +22,14 @@ export interface VectorDbSearchResponse {
 
 export interface SearchResult {
   id: string;
-  score: number;
-  payload: Payload;
+  resource: ResourceResult;
+}
+
+export interface ResourceResult {
+  title: string;
+  description: string;
+  url: string;
+  type: string;
 }
 
 export interface Payload {

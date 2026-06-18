@@ -49,7 +49,7 @@ extend type Query {
   node(id: Int!): Node
   nodesByRoadmap(roadmapId: Int!): [Node!]!
   nodeChats(nodeId: Int!, userId: Int!): [NodeExplanationChat!]!
-  searchNodeResources(keyword: String!, limit: Int, source: String): [JSON]!
+  searchNodeResources(topic: String!, limit: Int, type: String): [JSON]!
 }
 
 extend type Mutation {

@@ -27,7 +27,7 @@ interface NodeSheetProps {
 export function NodeSheet({ open, onOpenChange, nodeId, nodeData, onSave }: NodeSheetProps) {
   const [label, setLabel] = useState("");
   const [description, setDescription] = useState("");
-  const [resources, setResources] = useState<{ title: string; url: string }[]>([]);
+  const [resources, setResources] = useState<{ title: string; url: string; description?: string; type?: string; }[]>([]);
   const [completed, setCompleted] = useState(false);
   const [newResourceTitle, setNewResourceTitle] = useState("");
   const [newResourceUrl, setNewResourceUrl] = useState("");
