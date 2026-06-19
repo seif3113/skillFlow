@@ -21,7 +21,8 @@ export function RoadmapCard({
   onDelete,
 }: {
   roadmap: RoadmapListItem
-  onDelete: (roadmap: RoadmapListItem) => void
+  // Optional: when omitted (e.g. on the dashboard) the card is view-only.
+  onDelete?: (roadmap: RoadmapListItem) => void
 }) {
   const nodes = roadmap.nodes ?? []
   const total = nodes.length
@@ -36,20 +37,22 @@ export function RoadmapCard({
           {roadmap.isPublished ? (
             <Badge variant="secondary">Public</Badge>
           ) : null}
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Delete roadmap"
-            className="relative z-10 text-muted-foreground"
-            onClick={(e) => {
-              // Sits above the stretched link below; don't navigate.
-              e.preventDefault()
-              e.stopPropagation()
-              onDelete(roadmap)
-            }}
-          >
-            <HugeiconsIcon icon={Delete02Icon} />
-          </Button>
+          {onDelete ? (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Delete roadmap"
+              className="relative z-10 text-muted-foreground"
+              onClick={(e) => {
+                // Sits above the stretched link below; don't navigate.
+                e.preventDefault()
+                e.stopPropagation()
+                onDelete(roadmap)
+              }}
+            >
+              <HugeiconsIcon icon={Delete02Icon} />
+            </Button>
+          ) : null}
         </CardAction>
       </CardHeader>
 
