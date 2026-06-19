@@ -90,6 +90,7 @@ export interface IQuery {
     nodeChats(nodeId: number, userId: number): NodeExplanationChat[] | Promise<NodeExplanationChat[]>;
     searchNodeResources(topic: string, limit?: Nullable<number>, type?: Nullable<string>): Nullable<JSON>[] | Promise<Nullable<JSON>[]>;
     nodeQuiz(nodeId: number): Nullable<Quiz> | Promise<Nullable<Quiz>>;
+    myQuizAttempts(): QuizAttempt[] | Promise<QuizAttempt[]>;
     roadmaps(): Roadmap[] | Promise<Roadmap[]>;
     roadmap(id: number): Nullable<Roadmap> | Promise<Nullable<Roadmap>>;
     roadmapsByUser(userId: number): Roadmap[] | Promise<Roadmap[]>;
@@ -133,6 +134,17 @@ export interface QuizQuestion {
     id: number;
     question: string;
     choices: JSON;
+}
+
+export interface QuizAttempt {
+    id: number;
+    score: number;
+    passed: boolean;
+    createdAt: DateTime;
+    nodeId: number;
+    nodeTitle: string;
+    roadmapId: number;
+    roadmapTitle: string;
 }
 
 export interface QuizQuestionResult {

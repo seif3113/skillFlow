@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { eq, asc } from 'drizzle-orm';
+import { eq, asc, desc } from 'drizzle-orm';
 
 import * as databaseProvider from '../../database/database.provider';
 import {
@@ -10,6 +10,8 @@ import {
   QuestionRow,
   QuizAttemptRow,
 } from './quiz.schema';
+import { nodes } from '../node/node.schema';
+import { roadmaps } from '../roadmap/roadmap.schema';
 
 export type NewQuestionData = {
   question: string;
@@ -72,5 +74,26 @@ export class QuizRepository {
   }): Promise<QuizAttemptRow> {
     const [row] = await this.db.insert(quizAttempts).values(data).returning();
     return row;
+  }
+
+  // A user's quiz attempts with node + roadmap context, newest first.
+  async findAttemptsByUser(userId: number) {
+    return this.db
+      .select({
+        id: quizAttempts.id,
+        score: quizAttempts.score,
+        passed: quizAttempts.passed,
+        createdAt: quizAttempts.createdAt,
+        nodeId: nodes.id,
+        nodeTitle: nodes.title,
+        roadmapId: roadmaps.id,
+        roadmapTitle: roadmaps.title,
+      })
+      .from(quizAttempts)
+      .innerJoin(quizzes, eq(quizAttempts.quizId, quizzes.id))
+      .innerJoin(nodes, eq(quizzes.nodeId, nodes.id))
+      .innerJoin(roadmaps, eq(nodes.roadmapId, roadmaps.id))
+      .where(eq(quizAttempts.userId, userId))
+      .orderBy(desc(quizAttempts.createdAt));
   }
 }

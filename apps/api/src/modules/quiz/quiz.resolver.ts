@@ -11,6 +11,11 @@ export class QuizResolver {
     return this.quizService.getNodeQuiz(nodeId, Number(session.user.id));
   }
 
+  @Query('myQuizAttempts')
+  myQuizAttempts(@Session() session: UserSession) {
+    return this.quizService.findMyAttempts(Number(session.user.id));
+  }
+
   @Mutation('generateNodeQuiz')
   generateNodeQuiz(
     @Args('nodeId') nodeId: number,

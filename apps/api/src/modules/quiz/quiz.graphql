@@ -13,6 +13,18 @@ type QuizQuestion {
   choices: JSON!
 }
 
+# A graded quiz attempt with node + roadmap context, for the progress page.
+type QuizAttempt {
+  id: Int!
+  score: Int!
+  passed: Boolean!
+  createdAt: DateTime!
+  nodeId: Int!
+  nodeTitle: String!
+  roadmapId: Int!
+  roadmapTitle: String!
+}
+
 # Per-question outcome, revealed only in the graded result.
 type QuizQuestionResult {
   questionId: Int!
@@ -33,6 +45,8 @@ type QuizResult {
 extend type Query {
   # The node's quiz, or null if one hasn't been generated yet.
   nodeQuiz(nodeId: Int!): Quiz
+  # The current user's quiz attempts (newest first) for progress analytics.
+  myQuizAttempts: [QuizAttempt!]!
 }
 
 extend type Mutation {

@@ -80,6 +80,11 @@ export class QuizService {
     };
   }
 
+  // All of the user's quiz attempts (newest first) for the progress page.
+  findMyAttempts(userId: number) {
+    return this.quizRepository.findAttemptsByUser(userId);
+  }
+
   async getNodeQuiz(nodeId: number, userId: number): Promise<SafeQuiz | null> {
     await this.assertNodeOwner(nodeId, userId);
     const quiz = await this.quizRepository.findByNodeId(nodeId);
