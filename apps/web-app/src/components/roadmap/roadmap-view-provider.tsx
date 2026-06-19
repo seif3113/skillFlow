@@ -54,7 +54,6 @@ export function RoadmapViewProvider({
   // Domain graph — source of truth; the xyflow flow state is derived from it.
   const [rmNodes, setRmNodes] = useState<RoadmapNode[]>([])
   const [rmEdges, setRmEdges] = useState<RoadmapEdge[]>([])
-  const [selectedId, setSelectedId] = useState<number | null>(null)
   const stableRef = useRef({ count: -1, ticks: 0 })
 
   useEffect(() => {
@@ -236,11 +235,6 @@ export function RoadmapViewProvider({
     })
   }, [])
 
-  const selectedNode = useMemo(
-    () => rmNodes.find((n) => n.id === selectedId) ?? null,
-    [rmNodes, selectedId],
-  )
-
   const value: RoadmapViewContextValue = useMemo(
     () => ({
       state: {
@@ -251,7 +245,6 @@ export function RoadmapViewProvider({
         nodeCount: rmNodes.length,
         flowNodes,
         flowEdges,
-        selectedNode,
       },
       actions: {
         onNodesChange,
@@ -260,7 +253,6 @@ export function RoadmapViewProvider({
         reconnect,
         deleteEdges,
         deleteNodes,
-        selectNode: setSelectedId,
         focusNode,
         markCompleted,
       },
@@ -273,7 +265,6 @@ export function RoadmapViewProvider({
       rmNodes.length,
       flowNodes,
       flowEdges,
-      selectedNode,
       onNodesChange,
       onEdgesChange,
       connect,

@@ -8,7 +8,6 @@ import type {
 } from "@xyflow/react"
 import type { GenerationStatus } from "@/hooks/use-roadmap-generation"
 import type {
-  RoadmapNode,
   RoadmapFlowNode,
   RoadmapFlowEdge,
 } from "@/lib/roadmap-graph"
@@ -34,7 +33,6 @@ export interface RoadmapViewState {
   nodeCount: number
   flowNodes: RoadmapFlowNode[]
   flowEdges: RoadmapFlowEdge[]
-  selectedNode: RoadmapNode | null
 }
 
 export interface RoadmapViewActions {
@@ -44,7 +42,6 @@ export interface RoadmapViewActions {
   reconnect: OnReconnect
   deleteEdges: (edges: Edge[]) => void
   deleteNodes: (nodes: { id: string }[]) => void
-  selectNode: (id: number | null) => void
   focusNode: (id: number) => void
   // Reflect a node's completion locally after a passing quiz attempt.
   markCompleted: (nodeId: number) => void

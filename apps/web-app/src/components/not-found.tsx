@@ -28,7 +28,7 @@ export function NotFoundPage() {
 						</EmptyHeader>
 						<EmptyContent>
 							<div className="flex gap-2">
-								<Button render={<a href="/" />} nativeButton={false}>
+								<Button render={<a href="/" />}>
 									<HugeiconsIcon
 										icon={Home01Icon}
 										strokeWidth={2}
@@ -39,7 +39,6 @@ export function NotFoundPage() {
 								<Button
 									variant="outline"
 									render={<a href="/explore" />}
-									nativeButton={false}
 								>
 									<HugeiconsIcon
 										icon={CompassIcon}

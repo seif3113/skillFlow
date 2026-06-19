@@ -29,7 +29,7 @@ export function AppHeader() {
 				<AppBreadcrumbs page={activeItem} />
 			</div>
 			<div className="flex items-center gap-3">
-				<Button render={<Link to="/roadmaps/new" />} nativeButton={false}>
+				<Button render={<Link to="/roadmaps/new" />}>
 					<HugeiconsIcon icon={MagicWand01Icon} data-icon="inline-start" />
 					New Roadmap
 				</Button>

@@ -83,7 +83,7 @@ function RoadmapsPage() {
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <Button render={<Link to="/roadmaps/new" />} nativeButton={false}>
+            <Button render={<Link to="/roadmaps/new" />}>
               <HugeiconsIcon icon={PlusSignIcon} data-icon="inline-start" />
               Create a roadmap
             </Button>

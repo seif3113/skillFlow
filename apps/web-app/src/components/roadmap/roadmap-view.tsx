@@ -1,5 +1,10 @@
 import { useRef } from "react"
-import { ReactFlow, Background, Controls, type NodeMouseHandler } from "@xyflow/react"
+import {
+  ReactFlow,
+  Background,
+  Controls,
+  type NodeMouseHandler,
+} from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
@@ -18,18 +23,23 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import {
-  Drawer,
-  DrawerPopup,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerPanel,
-  DrawerFooter,
-} from "@/components/ui/drawer"
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetFooter,
+} from "@/components/ui/sheet"
 import { RoadmapFlowNodeCard } from "./roadmap-flow-node"
 import { useNodeQuiz, QuizQuestions, QuizResults } from "./node-quiz"
 import { RoadmapViewProvider } from "./roadmap-view-provider"
 import { useRoadmapView } from "./roadmap-view-context"
+import {
+  NodeSheetProvider,
+  useNodeSheetControls,
+  useNodeSheetState,
+} from "./use-node-sheet"
 
 // Stable reference — xyflow warns if nodeTypes is recreated each render.
 const nodeTypes = { roadmap: RoadmapFlowNodeCard }
@@ -39,8 +49,8 @@ function RoadmapViewHeader() {
   return (
     <div className="flex items-center justify-between">
       <div>
-        <h1 className="font-semibold text-xl">{state.title}</h1>
-        <p className="text-muted-foreground text-sm">
+        <h1 className="text-xl font-semibold">{state.title}</h1>
+        <p className="text-sm text-muted-foreground">
           {state.isStreaming
             ? "Generating your roadmap…"
             : `${state.nodeCount} topic${state.nodeCount === 1 ? "" : "s"}`}
@@ -69,7 +79,7 @@ function RoadmapCanvasSkeleton({ label }: { label: string }) {
       {/* Centered spinner + label over a subtle scrim. */}
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/40 backdrop-blur-[1px]">
         <Spinner className="size-7 text-primary" />
-        <p className="font-medium text-muted-foreground text-sm">{label}</p>
+        <p className="text-sm font-medium text-muted-foreground">{label}</p>
       </div>
     </div>
   )
@@ -77,10 +87,13 @@ function RoadmapCanvasSkeleton({ label }: { label: string }) {
 
 function RoadmapViewCanvas() {
   const { state, actions, meta } = useRoadmapView()
+  const sheet = useNodeSheetControls()
 
   const onNodeClick: NodeMouseHandler<RoadmapFlowNode> = (_, n) => {
-    actions.selectNode(Number(n.id))
     actions.focusNode(Number(n.id))
+    // Open the far-away sheet via the external store, carrying the node
+    // snapshot + a completion callback that updates this canvas on pass.
+    sheet.open(n.data.node, () => actions.markCompleted(Number(n.id)))
   }
 
   // Show a skeleton before the first nodes exist — whether we're loading an
@@ -121,9 +134,9 @@ function RoadmapViewCanvas() {
 
 function RoadmapViewHint() {
   return (
-    <p className="text-muted-foreground text-xs">
-      Drag a node's bottom dot onto another to set a prerequisite. Select an edge
-      or node and press Delete to remove it.
+    <p className="text-xs text-muted-foreground">
+      Drag a node's bottom dot onto another to set a prerequisite. Select an
+      edge or node and press Delete to remove it.
     </p>
   )
 }
@@ -134,81 +147,88 @@ function RoadmapViewHint() {
 function NodeDetailContent({
   node,
   onPassed,
+  onClose,
 }: {
   node: RoadmapNode
   onPassed: () => void
+  onClose: () => void
 }) {
   const quiz = useNodeQuiz(node.id, onPassed)
 
   return (
     <>
-      <DrawerHeader>
-        <DrawerTitle>{node.title}</DrawerTitle>
-      </DrawerHeader>
+      <SheetHeader>
+        <SheetTitle>{node.title}</SheetTitle>
+      </SheetHeader>
 
-      <DrawerPanel>
-        {quiz.mode === "idle" ? (
-          <div className="flex flex-col gap-4">
-            {node.description ? (
-              <p className="text-muted-foreground text-sm">
-                {node.description}
-              </p>
-            ) : null}
+      <ScrollArea className="min-h-0 flex-1" scrollFade>
+        <div className="px-6 pb-6">
+          {quiz.mode === "idle" ? (
+            <div className="flex flex-col gap-4">
+              {node.description ? (
+                <p className="text-sm text-muted-foreground">
+                  {node.description}
+                </p>
+              ) : null}
 
-            {asTags(node.tags).length > 0 ? (
-              <div className="flex flex-wrap gap-1.5">
-                {asTags(node.tags).map((tag) => (
-                  <Badge key={tag} variant="secondary">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            ) : null}
+              {asTags(node.tags).length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {asTags(node.tags).map((tag) => (
+                    <Badge key={tag} variant="secondary">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              ) : null}
 
-            {asResources(node.resources).length > 0 ? (
-              <div className="flex flex-col gap-2">
-                <p className="font-medium text-sm">Resources</p>
-                {asResources(node.resources).map((r, i) => (
-                  <a
-                    key={i}
-                    href={r.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm hover:bg-muted"
-                  >
-                    <HugeiconsIcon
-                      icon={LinkSquare02Icon}
-                      className="size-4 shrink-0 text-muted-foreground"
-                    />
-                    <span className="truncate">{r.title ?? r.url}</span>
-                  </a>
-                ))}
-              </div>
-            ) : null}
+              {asResources(node.resources).length > 0 ? (
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm font-medium">Resources</p>
+                  {asResources(node.resources).map((r, i) => (
+                    <a
+                      key={i}
+                      href={r.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm hover:bg-muted"
+                    >
+                      <HugeiconsIcon
+                        icon={LinkSquare02Icon}
+                        className="size-4 shrink-0 text-muted-foreground"
+                      />
+                      <span className="truncate">{r.title ?? r.url}</span>
+                    </a>
+                  ))}
+                </div>
+              ) : null}
 
-            {node.isCompleted ? (
-              <div className="flex items-center gap-2 font-medium text-primary text-sm">
-                <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-4" />
-                Completed
-              </div>
-            ) : null}
-          </div>
-        ) : quiz.mode === "taking" && quiz.quiz ? (
-          <QuizQuestions
-            quiz={quiz.quiz}
-            answers={quiz.answers}
-            onAnswer={quiz.setAnswer}
-          />
-        ) : quiz.mode === "result" && quiz.quiz && quiz.result ? (
-          <QuizResults
-            quiz={quiz.quiz}
-            result={quiz.result}
-            answers={quiz.answers}
-          />
-        ) : null}
-      </DrawerPanel>
+              {node.isCompleted ? (
+                <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                  <HugeiconsIcon
+                    icon={CheckmarkCircle02Icon}
+                    className="size-4"
+                  />
+                  Completed
+                </div>
+              ) : null}
+            </div>
+          ) : quiz.mode === "taking" && quiz.quiz ? (
+            <QuizQuestions
+              quiz={quiz.quiz}
+              answers={quiz.answers}
+              onAnswer={quiz.setAnswer}
+            />
+          ) : quiz.mode === "result" && quiz.quiz && quiz.result ? (
+            <QuizResults
+              quiz={quiz.quiz}
+              result={quiz.result}
+              answers={quiz.answers}
+            />
+          ) : null}
+        </div>
+      </ScrollArea>
 
-      <DrawerFooter>
+      <SheetFooter>
         {quiz.mode === "idle" ? (
           <Button
             className="w-full"
@@ -241,7 +261,7 @@ function NodeDetailContent({
             </Button>
           </>
         ) : quiz.result?.passed ? (
-          <Button className="w-full" onClick={quiz.reset}>
+          <Button className="w-full" onClick={onClose}>
             Done
           </Button>
         ) : (
@@ -249,50 +269,50 @@ function NodeDetailContent({
             Try again
           </Button>
         )}
-      </DrawerFooter>
+      </SheetFooter>
     </>
   )
 }
 
-function RoadmapViewNodeDetail() {
-  const { state, actions } = useRoadmapView()
-  const node = state.selectedNode
+// Mounted far from the canvas/provider (a sibling of RoadmapView.Provider) and
+// driven by the external node-sheet store, so it re-renders ONLY on open/close
+// — never during the canvas's churn — letting base-ui's transition run.
+function RoadmapNodeSheet() {
+  const { node, onPassed, close } = useNodeSheetState()
 
-  // `open` alone drives the drawer's enter/exit animation. We keep rendering
-  // the last selected node so the content doesn't blank out mid-close; it's
-  // hidden once the drawer has animated away.
-  const lastNodeRef = useRef<RoadmapNode | null>(node)
+  // Keep rendering the last node through the close animation so the content
+  // doesn't blank out mid-transition.
+  const lastNodeRef = useRef<RoadmapNode | null>(null)
   if (node) lastNodeRef.current = node
   const shown = node ?? lastNodeRef.current
 
   return (
-    <Drawer
-      open={node !== null}
-      onOpenChange={(open) => !open && actions.selectNode(null)}
-      position="right"
-    >
-      {/* keepMounted: the drawer stays in the DOM and animates purely off the
-          open/closed state, instead of mounting/unmounting (which skipped the
-          enter/exit transition). */}
-      <DrawerPopup portalProps={{ keepMounted: true }}>
+    <Sheet open={node !== null} onOpenChange={(open) => !open && close()}>
+      <SheetContent
+        side="right"
+        className="w-full data-[side=right]:sm:max-w-md"
+      >
         {shown ? (
           <NodeDetailContent
             key={shown.id}
             node={shown}
-            onPassed={() => actions.markCompleted(shown.id)}
+            onPassed={() => onPassed?.()}
+            onClose={close}
           />
         ) : null}
-      </DrawerPopup>
-    </Drawer>
+      </SheetContent>
+    </Sheet>
   )
 }
 
-// Compound component: a provider that lifts all state + composable UI parts that
-// consume it through context. Compose only the pieces a given screen needs.
+// Compound component. `SheetProvider` + `Sheet` are mounted as siblings of
+// `Provider` so the node detail sheet is decoupled from the canvas's render
+// cycle.
 export const RoadmapView = {
   Provider: RoadmapViewProvider,
   Header: RoadmapViewHeader,
   Canvas: RoadmapViewCanvas,
   Hint: RoadmapViewHint,
-  NodeDetail: RoadmapViewNodeDetail,
+  SheetProvider: NodeSheetProvider,
+  Sheet: RoadmapNodeSheet,
 }
