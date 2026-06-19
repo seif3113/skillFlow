@@ -13,11 +13,14 @@ export type RoadmapResource = {
   url?: string
   source?: string
   type?: string
+  description?: string
 }
 
 // The API stores tags/resources as opaque JSON; narrow them defensively.
 export function asTags(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((t): t is string => typeof t === "string") : []
+  return Array.isArray(value)
+    ? value.filter((t): t is string => typeof t === "string")
+    : []
 }
 
 export function asResources(value: unknown): RoadmapResource[] {
@@ -36,7 +39,7 @@ const NODE_HEIGHT = 96
 // persist positions, so generated/adapted graphs always stay readable.
 export function layoutRoadmap(
   nodes: RoadmapNode[],
-  edges: RoadmapEdge[],
+  edges: RoadmapEdge[]
 ): { nodes: RoadmapFlowNode[]; edges: RoadmapFlowEdge[] } {
   const g = new dagre.graphlib.Graph()
   g.setGraph({ rankdir: "TB", nodesep: 48, ranksep: 72 })
@@ -47,7 +50,7 @@ export function layoutRoadmap(
   }
   const nodeIds = new Set(nodes.map((n) => n.id))
   const validEdges = edges.filter(
-    (e) => nodeIds.has(e.sourceNodeId) && nodeIds.has(e.targetNodeId),
+    (e) => nodeIds.has(e.sourceNodeId) && nodeIds.has(e.targetNodeId)
   )
   for (const edge of validEdges) {
     g.setEdge(String(edge.sourceNodeId), String(edge.targetNodeId))

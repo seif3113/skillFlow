@@ -114,6 +114,10 @@ mutation DeleteNode($id: Int!) {
   }
 }
 
+query SearchNodeResources($topic: String!, $limit: Int, $type: String) {
+  searchNodeResources(topic: $topic, limit: $limit, type: $type)
+}
+
 mutation CreateNodeEdge(
   $roadmapId: Int!
   $sourceNodeId: Int!

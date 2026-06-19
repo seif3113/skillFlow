@@ -1,4 +1,4 @@
-import { useRef } from "react"
+import { useRef, useState } from "react"
 import {
   ReactFlow,
   Background,
@@ -11,6 +11,7 @@ import {
   LinkSquare02Icon,
   Quiz01Icon,
   CheckmarkCircle02Icon,
+  PencilEdit02Icon,
 } from "@hugeicons/core-free-icons"
 
 import {
@@ -33,6 +34,7 @@ import {
 } from "@/components/ui/sheet"
 import { RoadmapFlowNodeCard } from "./roadmap-flow-node"
 import { useNodeQuiz, QuizQuestions, QuizResults } from "./node-quiz"
+import { useNodeEditor, NodeEditFields, resetEditorToNode } from "./node-editor"
 import { RoadmapViewProvider } from "./roadmap-view-provider"
 import { useRoadmapView } from "./roadmap-view-context"
 import {
@@ -92,8 +94,11 @@ function RoadmapViewCanvas() {
   const onNodeClick: NodeMouseHandler<RoadmapFlowNode> = (_, n) => {
     actions.focusNode(Number(n.id))
     // Open the far-away sheet via the external store, carrying the node
-    // snapshot + a completion callback that updates this canvas on pass.
-    sheet.open(n.data.node, () => actions.markCompleted(Number(n.id)))
+    // snapshot + callbacks that sync the canvas on quiz-pass and on edit.
+    sheet.open(n.data.node, {
+      onPassed: () => actions.markCompleted(Number(n.id)),
+      onUpdated: (updated) => actions.updateNode(updated),
+    })
   }
 
   // Show a skeleton before the first nodes exist — whether we're loading an
@@ -141,19 +146,43 @@ function RoadmapViewHint() {
   )
 }
 
-// The full drawer body + footer for a node. Mounted with a per-node `key` so
-// quiz state resets when the selected node changes. The quiz (taking/results)
-// replaces the node info entirely; actions live in the footer.
+// The full sheet body + footer for a node. Mounted with a per-node `key` so
+// quiz/edit state resets when the node changes. The quiz (taking/results) and
+// the edit form each replace the read-only info; actions live in the footer.
 function NodeDetailContent({
-  node,
+  node: initialNode,
   onPassed,
+  onUpdated,
   onClose,
 }: {
   node: RoadmapNode
   onPassed: () => void
+  onUpdated: (node: RoadmapNode) => void
   onClose: () => void
 }) {
-  const quiz = useNodeQuiz(node.id, onPassed)
+  // Local copy so edits + completion reflect immediately in this sheet without
+  // a refetch; the canvas is kept in sync via onPassed / onUpdated.
+  const [node, setNode] = useState(initialNode)
+  const [editing, setEditing] = useState(false)
+
+  const quiz = useNodeQuiz(node.id, () => {
+    setNode((n) => ({ ...n, isCompleted: true }))
+    onPassed()
+  })
+
+  const form = useNodeEditor({
+    node,
+    onSaved: (updated) => {
+      setNode((n) => ({ ...n, ...updated }))
+      onUpdated(updated)
+      setEditing(false)
+    },
+  })
+
+  const startEdit = () => {
+    resetEditorToNode(form, node)
+    setEditing(true)
+  }
 
   return (
     <>
@@ -163,7 +192,9 @@ function NodeDetailContent({
 
       <ScrollArea className="min-h-0 flex-1" scrollFade>
         <div className="px-6 pb-6">
-          {quiz.mode === "idle" ? (
+          {editing ? (
+            <NodeEditFields form={form} />
+          ) : quiz.mode === "idle" ? (
             <div className="flex flex-col gap-4">
               {node.description ? (
                 <p className="text-sm text-muted-foreground">
@@ -229,20 +260,44 @@ function NodeDetailContent({
       </ScrollArea>
 
       <SheetFooter>
-        {quiz.mode === "idle" ? (
-          <Button
-            className="w-full"
-            variant={node.isCompleted ? "outline" : "default"}
-            disabled={quiz.generating}
-            onClick={quiz.start}
-          >
-            {quiz.generating ? (
-              <Spinner data-icon="inline-start" />
-            ) : (
-              <HugeiconsIcon icon={Quiz01Icon} data-icon="inline-start" />
-            )}
-            {node.isCompleted ? "Retake quiz" : "Take quiz to complete"}
-          </Button>
+        {editing ? (
+          <>
+            <Button variant="ghost" onClick={() => setEditing(false)}>
+              Cancel
+            </Button>
+            <form.Subscribe
+              selector={(state) => [state.canSubmit, state.isSubmitting]}
+            >
+              {([canSubmit, isSubmitting]) => (
+                <Button
+                  onClick={() => form.handleSubmit()}
+                  disabled={!canSubmit}
+                >
+                  {isSubmitting ? <Spinner data-icon="inline-start" /> : null}
+                  Save changes
+                </Button>
+              )}
+            </form.Subscribe>
+          </>
+        ) : quiz.mode === "idle" ? (
+          <>
+            <Button variant="outline" onClick={startEdit}>
+              <HugeiconsIcon icon={PencilEdit02Icon} data-icon="inline-start" />
+              Edit
+            </Button>
+            <Button
+              variant={node.isCompleted ? "outline" : "default"}
+              disabled={quiz.generating}
+              onClick={quiz.start}
+            >
+              {quiz.generating ? (
+                <Spinner data-icon="inline-start" />
+              ) : (
+                <HugeiconsIcon icon={Quiz01Icon} data-icon="inline-start" />
+              )}
+              {node.isCompleted ? "Retake quiz" : "Take quiz to complete"}
+            </Button>
+          </>
         ) : quiz.mode === "taking" ? (
           <>
             <Button
@@ -278,7 +333,7 @@ function NodeDetailContent({
 // driven by the external node-sheet store, so it re-renders ONLY on open/close
 // — never during the canvas's churn — letting base-ui's transition run.
 function RoadmapNodeSheet() {
-  const { node, onPassed, close } = useNodeSheetState()
+  const { node, onPassed, onUpdated, close } = useNodeSheetState()
 
   // Keep rendering the last node through the close animation so the content
   // doesn't blank out mid-transition.
@@ -297,6 +352,7 @@ function RoadmapNodeSheet() {
             key={shown.id}
             node={shown}
             onPassed={() => onPassed?.()}
+            onUpdated={(updated) => onUpdated?.(updated)}
             onClose={close}
           />
         ) : null}

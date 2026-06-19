@@ -12,20 +12,30 @@ import type { RoadmapNode } from "@/lib/roadmap-graph"
 // subscribes via useSyncExternalStore, it re-renders ONLY when the open node
 // changes — never during the canvas's frequent re-renders (drag/zoom/streaming/
 // polling), which would otherwise interrupt base-ui's open/close transition.
+type NodeSheetCallbacks = {
+  onPassed?: () => void
+  onUpdated?: (node: RoadmapNode) => void
+}
+
 type NodeSheetSnapshot = {
   node: RoadmapNode | null
   onPassed: (() => void) | null
+  onUpdated: ((node: RoadmapNode) => void) | null
 }
 
 type NodeSheetStore = {
   subscribe: (listener: () => void) => () => void
   getSnapshot: () => NodeSheetSnapshot
-  open: (node: RoadmapNode, onPassed?: () => void) => void
+  open: (node: RoadmapNode, callbacks?: NodeSheetCallbacks) => void
   close: () => void
 }
 
 function createNodeSheetStore(): NodeSheetStore {
-  let snapshot: NodeSheetSnapshot = { node: null, onPassed: null }
+  let snapshot: NodeSheetSnapshot = {
+    node: null,
+    onPassed: null,
+    onUpdated: null,
+  }
   const listeners = new Set<() => void>()
   const emit = () => {
     for (const l of listeners) l()
@@ -38,13 +48,17 @@ function createNodeSheetStore(): NodeSheetStore {
       }
     },
     getSnapshot: () => snapshot,
-    open: (node, onPassed) => {
-      snapshot = { node, onPassed: onPassed ?? null }
+    open: (node, callbacks) => {
+      snapshot = {
+        node,
+        onPassed: callbacks?.onPassed ?? null,
+        onUpdated: callbacks?.onUpdated ?? null,
+      }
       emit()
     },
     close: () => {
       if (snapshot.node === null) return
-      snapshot = { node: null, onPassed: snapshot.onPassed }
+      snapshot = { ...snapshot, node: null }
       emit()
     },
   }
@@ -85,6 +99,7 @@ export function useNodeSheetState() {
   return {
     node: snapshot.node,
     onPassed: snapshot.onPassed,
+    onUpdated: snapshot.onUpdated,
     close: store.close,
   }
 }

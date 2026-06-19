@@ -8,6 +8,7 @@ import type {
 } from "@xyflow/react"
 import type { GenerationStatus } from "@/hooks/use-roadmap-generation"
 import type {
+  RoadmapNode,
   RoadmapFlowNode,
   RoadmapFlowEdge,
 } from "@/lib/roadmap-graph"
@@ -45,6 +46,8 @@ export interface RoadmapViewActions {
   focusNode: (id: number) => void
   // Reflect a node's completion locally after a passing quiz attempt.
   markCompleted: (nodeId: number) => void
+  // Reflect an edited node (title/description/tags/resources) on the canvas.
+  updateNode: (node: RoadmapNode) => void
 }
 
 export interface RoadmapViewMeta {
@@ -58,8 +61,9 @@ export interface RoadmapViewContextValue {
   meta: RoadmapViewMeta
 }
 
-export const RoadmapViewContext =
-  createContext<RoadmapViewContextValue | null>(null)
+export const RoadmapViewContext = createContext<RoadmapViewContextValue | null>(
+  null
+)
 
 export function useRoadmapView(): RoadmapViewContextValue {
   const ctx = use(RoadmapViewContext)

@@ -67,7 +67,8 @@ export function RoadmapViewProvider({
     if (generating) {
       if (nodes.length === stableRef.current.count) stableRef.current.ticks += 1
       else stableRef.current = { count: nodes.length, ticks: 0 }
-      if (nodes.length > 0 && stableRef.current.ticks >= 4) onGenerationSettled()
+      if (nodes.length > 0 && stableRef.current.ticks >= 4)
+        onGenerationSettled()
     }
   }, [data, generating, onGenerationSettled])
 
@@ -92,7 +93,7 @@ export function RoadmapViewProvider({
         .map((e) => e.id)
         .sort((a, b) => a - b)
         .join(","),
-    [rmNodes, rmEdges],
+    [rmNodes, rmEdges]
   )
 
   useEffect(() => {
@@ -102,14 +103,14 @@ export function RoadmapViewProvider({
       setFlowNodes(laid.nodes)
       setFlowEdges(laid.edges)
       requestAnimationFrame(() =>
-        instanceRef.current?.fitView({ duration: 200, padding: 0.2 }),
+        instanceRef.current?.fitView({ duration: 200, padding: 0.2 })
       )
     } else {
       setFlowNodes((prev) =>
         prev.map((fn) => {
           const dn = rmNodes.find((n) => String(n.id) === fn.id)
           return dn ? { ...fn, data: { node: dn } } : fn
-        }),
+        })
       )
     }
   }, [structureKey, rmNodes, rmEdges, setFlowNodes, setFlowEdges])
@@ -121,7 +122,7 @@ export function RoadmapViewProvider({
       onNode: (node) => setRmNodes((prev) => upsertById(prev, node)),
       onEdges: (incoming) =>
         setRmEdges((prev) =>
-          incoming.reduce((acc, e) => upsertById(acc, e), prev),
+          incoming.reduce((acc, e) => upsertById(acc, e), prev)
         ),
       onDone: () => {
         void refetch()
@@ -140,7 +141,15 @@ export function RoadmapViewProvider({
   // panel calls this after a passing attempt to reflect it on the canvas.
   const markCompleted = useCallback((nodeId: number) => {
     setRmNodes((prev) =>
-      prev.map((n) => (n.id === nodeId ? { ...n, isCompleted: true } : n)),
+      prev.map((n) => (n.id === nodeId ? { ...n, isCompleted: true } : n))
+    )
+  }, [])
+
+  // The node editor calls this after a successful UpdateNode so the canvas
+  // reflects new title/description/tags/resources without a refetch.
+  const updateNode = useCallback((updated: RoadmapNode) => {
+    setRmNodes((prev) =>
+      prev.map((n) => (n.id === updated.id ? { ...n, ...updated } : n))
     )
   }, [])
 
@@ -160,7 +169,7 @@ export function RoadmapViewProvider({
         })
         .catch(() => toast.error("Couldn't connect these topics."))
     },
-    [createNodeEdge, roadmapId],
+    [createNodeEdge, roadmapId]
   )
 
   const reconnect: OnReconnect = useCallback(
@@ -185,7 +194,7 @@ export function RoadmapViewProvider({
         })
         .catch(() => toast.error("Couldn't reconnect."))
     },
-    [createNodeEdge, deleteNodeEdge, roadmapId],
+    [createNodeEdge, deleteNodeEdge, roadmapId]
   )
 
   const deleteEdges = useCallback(
@@ -194,11 +203,11 @@ export function RoadmapViewProvider({
       setRmEdges((prev) => prev.filter((e) => !ids.has(String(e.id))))
       for (const e of deleted) {
         deleteNodeEdge({ variables: { id: Number(e.id) } }).catch(() =>
-          toast.error("Couldn't delete an edge."),
+          toast.error("Couldn't delete an edge.")
         )
       }
     },
-    [deleteNodeEdge],
+    [deleteNodeEdge]
   )
 
   const deleteNodes = useCallback(
@@ -208,17 +217,16 @@ export function RoadmapViewProvider({
       setRmEdges((prev) =>
         prev.filter(
           (e) =>
-            !ids.has(String(e.sourceNodeId)) &&
-            !ids.has(String(e.targetNodeId)),
-        ),
+            !ids.has(String(e.sourceNodeId)) && !ids.has(String(e.targetNodeId))
+        )
       )
       for (const n of deleted) {
         deleteNode({ variables: { id: Number(n.id) } }).catch(() =>
-          toast.error("Couldn't delete a node."),
+          toast.error("Couldn't delete a node.")
         )
       }
     },
-    [deleteNode],
+    [deleteNode]
   )
 
   const registerInstance = useCallback((instance: FitViewInstance) => {
@@ -255,6 +263,7 @@ export function RoadmapViewProvider({
         deleteNodes,
         focusNode,
         markCompleted,
+        updateNode,
       },
       meta: { roadmapId, registerInstance },
     }),
@@ -273,12 +282,11 @@ export function RoadmapViewProvider({
       deleteNodes,
       focusNode,
       markCompleted,
+      updateNode,
       roadmapId,
       registerInstance,
-    ],
+    ]
   )
 
-  return (
-    <RoadmapViewContext value={value}>{children}</RoadmapViewContext>
-  )
+  return <RoadmapViewContext value={value}>{children}</RoadmapViewContext>
 }
