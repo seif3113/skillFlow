@@ -149,7 +149,7 @@ export function RoadmapAssistant({ onClose }: { onClose: () => void }) {
             onKeyDown={onKeyDown}
             placeholder="Ask or instruct…"
             rows={1}
-            className="max-h-32 min-h-9 resize-none"
+            className="max-h-40 min-h-9 flex-1 rounded-lg px-3 py-1 sm:min-h-8"
           />
           <Button
             type="submit"
