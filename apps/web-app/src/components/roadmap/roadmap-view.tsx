@@ -269,9 +269,8 @@ function RoadmapViewNodeDetail() {
     <Drawer
       open={node !== null}
       onOpenChange={(open) => !open && actions.selectNode(null)}
-      position="right"
     >
-      <DrawerPopup>
+      <DrawerPopup showBar>
         {shown ? (
           <NodeDetailContent
             key={shown.id}
