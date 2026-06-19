@@ -9,6 +9,7 @@ from models.schemes import (
     ChatRequest,
     RoadmapRequest,
     RoadmapEditRequest,
+    QuizRequest,
 )
 import asyncio
 import time
@@ -509,4 +510,42 @@ async def chat_explain_node(request: Request, chat_request: ChatRequest):
 
     return JSONResponse(
         status_code=status.HTTP_200_OK, content={"signal": "success", "answer": answer}
+    )
+
+
+@nlp_router.post("/generate-quiz")
+async def generate_quiz(request: Request, quiz_request: QuizRequest):
+    node_name = (quiz_request.node_name or "").strip()
+    if not node_name:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"signal": "error", "message": "node_name is required."},
+        )
+
+    nlp_controller = NLPController(
+        vectordb_client=request.app.vectordb_client,
+        generation_client=request.app.generation_client,
+        embedding_client=request.app.embedding_client,
+        template_parser=request.app.template_parser,
+        embedding_helper=request.app.embedding_helper,
+    )
+
+    questions = nlp_controller.generate_node_quiz(
+        node_name=node_name,
+        node_description=quiz_request.node_description or "",
+        num_questions=quiz_request.num_questions or 5,
+    )
+
+    if not questions:
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "signal": "error",
+                "message": "Quiz generation failed to produce questions.",
+            },
+        )
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"signal": "success", "questions": questions},
     )

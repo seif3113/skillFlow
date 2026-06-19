@@ -43,3 +43,8 @@ class ChatRequest(BaseModel):
     message: str
     node_name: Optional[str] = None
 
+class QuizRequest(BaseModel):
+    node_name: str
+    node_description: Optional[str] = ""
+    num_questions: Optional[int] = 5
+

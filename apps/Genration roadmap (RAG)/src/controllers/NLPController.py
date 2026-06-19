@@ -1022,3 +1022,83 @@ class NLPController(BaseController):
         )
 
         return answer
+
+    def generate_node_quiz(
+        self, node_name: str, node_description: str = "", num_questions: int = 5
+    ):
+        """
+        Generates a multiple-choice quiz for a roadmap node, grounded in the
+        node's vector-DB context when available. Returns a list of dicts:
+        {question, choices, answer (0-based index), explanation}.
+        """
+        node_name = (node_name or "").strip()
+        if not node_name:
+            return []
+
+        # Ground the quiz in retrieved context for this topic, when available.
+        retrieved_documents = self.search_vector_db_collection(
+            text=node_name, limit=3
+        )
+        context_text = ""
+        if retrieved_documents:
+            context_text = "\n".join(
+                [
+                    (
+                        doc.payload.get("text", "")
+                        if hasattr(doc, "payload")
+                        else getattr(doc, "text", str(doc))
+                    )
+                    for doc in retrieved_documents
+                ]
+            )
+
+        system_prompt = "\n".join(
+            [
+                "You are an expert assessment designer.",
+                "Create a multiple-choice quiz that tests genuine understanding of the given topic.",
+                "",
+                "### RULES:",
+                "1. Each question has exactly 4 choices.",
+                "2. Exactly one choice is correct.",
+                "3. 'answer' is the 0-based index (0-3) of the correct choice.",
+                "4. 'explanation' briefly says why the correct choice is right.",
+                "5. Vary difficulty; avoid trivially obvious or trick questions.",
+                "",
+                "### OUTPUT:",
+                "Return ONLY a valid JSON array, no prose, of objects shaped:",
+                '{"question": "...", "choices": ["a","b","c","d"], "answer": 0, "explanation": "..."}',
+            ]
+        )
+
+        user_prompt = "\n".join(
+            [
+                f"Topic: {node_name}",
+                f"Topic description: {node_description or 'N/A'}",
+                f"Number of questions: {num_questions}",
+                "",
+                f"Context (optional grounding):\n{context_text}",
+                "",
+                "Return the quiz JSON array.",
+            ]
+        )
+
+        chat_history = [
+            self.generation_client.construct_prompt(
+                prompt=system_prompt,
+                role=self.generation_client.enums.SYSTEM.value,
+            )
+        ]
+
+        raw = self.generation_client.generate_text(
+            prompt=user_prompt, chat_history=chat_history
+        )
+
+        try:
+            parsed = self._extract_json_from_llm_response(raw)
+        except Exception as e:
+            logger.error(f"Failed to parse quiz JSON: {e}")
+            return []
+
+        if not isinstance(parsed, list):
+            return []
+        return parsed
