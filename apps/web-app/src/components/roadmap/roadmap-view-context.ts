@@ -51,6 +51,8 @@ export interface RoadmapViewActions {
   updateNode: (node: RoadmapNode) => void
   // Toggle whether the roadmap is published to the public Explore directory.
   togglePublish: () => void
+  // Re-pull the roadmap from the server (e.g. after the AI assistant edits it).
+  refetchRoadmap: () => void
 }
 
 export interface RoadmapViewMeta {

@@ -239,6 +239,12 @@ export function RoadmapViewProvider({
     [deleteNode]
   )
 
+  // Pull server truth again — the AI assistant mutates the roadmap server-side,
+  // so after its turn we refetch and the data effect re-syncs the canvas.
+  const refetchRoadmap = useCallback(() => {
+    void refetch()
+  }, [refetch])
+
   const registerInstance = useCallback((instance: FitViewInstance) => {
     instanceRef.current = instance
   }, [])
@@ -276,6 +282,7 @@ export function RoadmapViewProvider({
         markCompleted,
         updateNode,
         togglePublish,
+        refetchRoadmap,
       },
       meta: { roadmapId, registerInstance },
     }),
@@ -296,6 +303,7 @@ export function RoadmapViewProvider({
       markCompleted,
       updateNode,
       togglePublish,
+      refetchRoadmap,
       roadmapId,
       registerInstance,
     ]

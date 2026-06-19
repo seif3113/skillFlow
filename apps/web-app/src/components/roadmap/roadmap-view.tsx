@@ -34,6 +34,7 @@ import {
   SheetFooter,
 } from "@/components/ui/sheet"
 import { RoadmapFlowNodeCard } from "./roadmap-flow-node"
+import { RoadmapAssistant } from "./roadmap-assistant"
 import { useNodeQuiz, QuizQuestions, QuizResults } from "./node-quiz"
 import { useNodeEditor, NodeEditFields, resetEditorToNode } from "./node-editor"
 import { RoadmapViewProvider } from "./roadmap-view-provider"
@@ -381,6 +382,7 @@ export const RoadmapView = {
   Header: RoadmapViewHeader,
   Canvas: RoadmapViewCanvas,
   Hint: RoadmapViewHint,
+  Assistant: RoadmapAssistant,
   SheetProvider: NodeSheetProvider,
   Sheet: RoadmapNodeSheet,
 }
