@@ -51,7 +51,8 @@ type DeleteRoadmapResult {
 }
 
 input CreateRoadmapInput {
-  userId: Int!
+  # Deprecated/ignored: the owner is derived from the authenticated session.
+  userId: Int
   title: String!
   description: String
   learningProfileId: Int

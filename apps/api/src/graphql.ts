@@ -28,7 +28,7 @@ export interface UpdateNodeInput {
 }
 
 export interface CreateRoadmapInput {
-    userId: number;
+    userId?: Nullable<number>;
     title: string;
     description?: Nullable<string>;
     learningProfileId?: Nullable<number>;

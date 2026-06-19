@@ -1,5 +1,5 @@
 export interface CreateRoadmapInput {
-  userId: number;
+  userId?: number;
   title: string;
   description?: string;
   learningProfileId?: number;
