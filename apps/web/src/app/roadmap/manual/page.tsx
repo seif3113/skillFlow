@@ -9,8 +9,7 @@ import { InitRoadmapDialog } from "@/components/roadmap/InitRoadmapDialog";
 export default function ManualRoadmapPage() {
   const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
-  const { mutateAsync: createRoadmap, isPending: isCreating } =
-    useCreateRoadmap();
+  const [createRoadmap, { loading: isCreating }] = useCreateRoadmap();
   const [isDialogOpen, setIsDialogOpen] = useState(true);
 
   useEffect(() => {
@@ -26,11 +25,16 @@ export default function ManualRoadmapPage() {
     if (!session) return;
     try {
       const response = await createRoadmap({
-        title: data.title,
-        description: data.description,
-        userId: parseInt(session.user.id, 10),
+        variables: {
+          input: {
+            title: data.title,
+            description: data.description,
+            userId: parseInt(session.user.id, 10),
+          },
+        },
       });
-      const id = response.createRoadmap.id;
+      const id = response.data?.createRoadmap.id;
+      if (!id) throw new Error("createRoadmap returned no data");
       router.push(`/roadmap/${id}`);
     } catch (e) {
       console.error("Failed to create roadmap", e);

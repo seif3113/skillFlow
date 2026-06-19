@@ -17,7 +17,7 @@ export function RoadmapCreator({ userId, initialTopic }: RoadmapCreatorProps) {
   const [step, setStep] = useState<"topic" | "questions" | "generating">("topic");
   const [runQuery, setRunQuery] = useState(false);
 
-  const { mutateAsync: createRoadmap } = useCreateRoadmap();
+  const [createRoadmap] = useCreateRoadmap();
 
   const { 
     data: customizationQuestions, 
@@ -56,12 +56,17 @@ export function RoadmapCreator({ userId, initialTopic }: RoadmapCreatorProps) {
     setStep("generating");
     try {
       const res = await createRoadmap({
-        userId,
-        title: targetTopic,
-        description: `Generated learning path for ${targetTopic}`,
+        variables: {
+          input: {
+            userId,
+            title: targetTopic,
+            description: `Generated learning path for ${targetTopic}`,
+          },
+        },
       });
-      
-      const newRoadmapId = res.createRoadmap.id;
+
+      const newRoadmapId = res.data?.createRoadmap.id;
+      if (!newRoadmapId) throw new Error("createRoadmap returned no data");
       
       const url = new URL(`/roadmap/${newRoadmapId}`, window.location.origin);
       url.searchParams.set("topic", targetTopic);

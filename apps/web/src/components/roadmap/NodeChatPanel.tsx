@@ -196,7 +196,7 @@ export function NodeChatPanel({
   const userId = session?.user?.id ? parseInt(session.user.id, 10) : undefined;
 
   const { data: chatHistory, isLoading: isLoadingHistory } = useNodeChats(nodeId, userId);
-  const { mutateAsync: sendChatMessage, isPending: isSendingMessage } = useSendNodeChatMessage();
+  const [sendChatMessage, { loading: isSendingMessage }] = useSendNodeChatMessage();
 
   // Load chat history when it changes
   useEffect(() => {
@@ -245,10 +245,12 @@ export function NodeChatPanel({
 
     try {
       await sendChatMessage({
-        nodeId,
-        userId,
-        sender: "user",
-        message: { text: userText },
+        variables: {
+          nodeId,
+          userId,
+          sender: "user",
+          message: { text: userText },
+        },
       });
     } catch (err) {
       console.error(err);
