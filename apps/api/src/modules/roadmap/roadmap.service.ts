@@ -14,7 +14,6 @@ import { genericFetch } from '@/utils/fetch';
 
 type RoadmapCustomizationResponse = {
   signal?: string;
-  message?: string;
   questions?: RoadmapCustomizationQuestion[];
 };
 

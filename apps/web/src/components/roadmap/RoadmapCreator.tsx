@@ -12,15 +12,23 @@ import type { Node, Edge } from "@xyflow/react";
 import { useCreateRoadmap, useCreateNode } from "@/hooks/useRoadmap";
 
 interface RoadmapCreatorProps {
-  userId: number; // Replaced Id<"users"> with number to match GraphQL
+  userId: number;
+  initialTopic?: string;
 }
 
-export function RoadmapCreator({ userId }: RoadmapCreatorProps) {
+export function RoadmapCreator({ userId, initialTopic }: RoadmapCreatorProps) {
   const router = useRouter();
   const [topic, setTopic] = useState("");
   const [roadmapId, setRoadmapId] = useState<number | null>(null);
   const [questionsAnswered, setQuestionsAnswered] = useState(false);
   const [isSavingToDb, setIsSavingToDb] = useState(false);
+
+  // Trigger initial topic submission if provided from dashboard prompt
+  useEffect(() => {
+    if (initialTopic && step === "topic") {
+      handleTopicSubmit(initialTopic);
+    }
+  }, [initialTopic]);
 
   // Track if we've saved to database
   const roadmapSavedRef = useRef(false);

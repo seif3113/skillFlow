@@ -144,6 +144,15 @@ const PUBLISH_ROADMAP = gql`
   }
 `;
 
+const ROADMAP_CUSTOMIZATION_QUESTIONS = gql`
+  query RoadmapCustomizationQuestions($message: String!) {
+    roadmapCustomizationQuestions(message: $message) {
+      question
+      choices
+    }
+  }
+`;
+
 const FORK_ROADMAP = gql`
   mutation ForkRoadmap($id: Int!, $userId: Int!) {
     forkRoadmap(id: $id, userId: $userId) {
@@ -368,5 +377,17 @@ export function useGetPublicRoadmaps() {
       const data: any = await graphQLClient.request(PUBLIC_ROADMAPS);
       return data.publicRoadmaps || [];
     },
+  });
+}
+
+export function useRoadmapCustomizationQuestions(message: string, enabled: boolean = false) {
+  return useQuery({
+    queryKey: ["roadmapCustomizationQuestions", message],
+    queryFn: async () => {
+      if (!message) return [];
+      const data: any = await graphQLClient.request(ROADMAP_CUSTOMIZATION_QUESTIONS, { message });
+      return data.roadmapCustomizationQuestions || [];
+    },
+    enabled: enabled && !!message,
   });
 }

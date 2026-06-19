@@ -80,7 +80,7 @@ export class NodeService {
       throw new InternalServerErrorException('RAG_URI is not configured');
     }
 
-    const url = `${baseUrl.replace(/\/$/, '')}/nlp/index/search`;
+    const url = `${baseUrl.replace(/\/$/, '')}/api/v1/nlp/index/search`;
     const parsed = await genericFetch<VectorDbSearchResponse>(url, {
       method: 'POST',
       body: JSON.stringify(reqBody),
