@@ -58,17 +58,11 @@ function RoadmapsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="font-semibold text-xl">My roadmaps</h1>
-          <p className="text-muted-foreground text-sm">
-            Your AI-generated learning paths.
-          </p>
-        </div>
-        <Button render={<Link to="/roadmaps/new" />} nativeButton={false}>
-          <HugeiconsIcon icon={PlusSignIcon} data-icon="inline-start" />
-          New roadmap
-        </Button>
+      <div>
+        <h1 className="font-semibold text-xl">My roadmaps</h1>
+        <p className="text-muted-foreground text-sm">
+          Your AI-generated learning paths.
+        </p>
       </div>
 
       {loading ? (

@@ -47,7 +47,7 @@ export function RoadmapViewProvider({
 }) {
   // While generating, poll the persisted roadmap as a progressive-reveal safety
   // net alongside the live subscription.
-  const { data, refetch } = useQuery(GetRoadmapDocument, {
+  const { data, loading, refetch } = useQuery(GetRoadmapDocument, {
     variables: { id: roadmapId },
     pollInterval: generating ? 1000 : 0,
   })
@@ -257,6 +257,7 @@ export function RoadmapViewProvider({
         title: data?.roadmap?.title ?? "Roadmap",
         status,
         isStreaming: status === "streaming",
+        isLoading: loading && !data,
         nodeCount: rmNodes.length,
         flowNodes,
         flowEdges,
@@ -276,7 +277,8 @@ export function RoadmapViewProvider({
       meta: { roadmapId, updating, registerInstance },
     }),
     [
-      data?.roadmap?.title,
+      data,
+      loading,
       status,
       rmNodes.length,
       flowNodes,

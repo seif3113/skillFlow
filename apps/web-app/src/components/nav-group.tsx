@@ -13,6 +13,7 @@ import {
 	SidebarMenuSubButton,
 	SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
+import { Link } from "@tanstack/react-router";
 import {
 	useActiveNavPath,
 	type SidebarNavGroup,
@@ -56,7 +57,7 @@ export function NavGroup({ label, items }: SidebarNavGroup) {
 												<SidebarMenuSubItem key={subItem.title}>
 													<SidebarMenuSubButton
 														isActive={subItem.path === activePath}
-														render={<a href={subItem.path} />}
+														render={<Link to={subItem.path as string} />}
 													>
 														{subItem.icon}
 														<span>{subItem.title}</span>
@@ -69,7 +70,7 @@ export function NavGroup({ label, items }: SidebarNavGroup) {
 							) : (
 								<SidebarMenuButton
 									isActive={isActive}
-									render={<a href={item.path} />}
+									render={<Link to={item.path as string} />}
 								>
 									{item.icon}
 									<span>{item.title}</span>

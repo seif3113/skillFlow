@@ -10,7 +10,6 @@ import {
   Card,
   CardAction,
   CardContent,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -30,13 +29,13 @@ export function RoadmapCard({
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0
 
   return (
-    <Card className="relative transition-colors hover:border-primary/40">
-      <CardHeader>
-        <CardTitle className="truncate">{roadmap.title}</CardTitle>
-        {roadmap.isPublished ? (
-          <Badge variant="secondary">Published</Badge>
-        ) : null}
-        <CardAction>
+    <Card className="relative gap-4 transition-colors hover:ring-primary">
+      <CardHeader className="items-center">
+        <CardTitle className="truncate font-medium">{roadmap.title}</CardTitle>
+        <CardAction className="flex items-center gap-1">
+          {roadmap.isPublished ? (
+            <Badge variant="secondary">Public</Badge>
+          ) : null}
           <Button
             variant="ghost"
             size="icon-sm"
@@ -54,25 +53,15 @@ export function RoadmapCard({
         </CardAction>
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-3">
-        {roadmap.description ? (
-          <p className="line-clamp-2 text-muted-foreground text-sm">
-            {roadmap.description}
-          </p>
-        ) : null}
-        <div className="flex flex-col gap-1.5">
-          <Progress value={pct} />
-          <p className="text-muted-foreground text-xs">
-            {completed} / {total} topics{total > 0 ? ` · ${pct}%` : ""}
-          </p>
+      <CardContent className="flex flex-col gap-2">
+        <Progress value={pct} />
+        <div className="flex items-center justify-between text-muted-foreground text-xs">
+          <span>
+            {completed} / {total} topics
+          </span>
+          <span className="tabular-nums">{pct}%</span>
         </div>
       </CardContent>
-
-      <CardFooter>
-        <p className="text-muted-foreground text-xs">
-          Updated {new Date(roadmap.updatedAt).toLocaleDateString()}
-        </p>
-      </CardFooter>
 
       {/* Stretched link makes the whole card open the roadmap; the delete
           button above (z-10) stays clickable. */}

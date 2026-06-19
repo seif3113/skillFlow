@@ -10,6 +10,7 @@ import {
 import { asTags, asResources, type RoadmapFlowNode } from "@/lib/roadmap-graph"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import {
   Sheet,
@@ -41,12 +42,48 @@ function RoadmapViewHeader() {
   )
 }
 
+function RoadmapCanvasSkeleton({ label }: { label: string }) {
+  return (
+    <div className="relative flex h-full items-center justify-center overflow-hidden p-8">
+      {/* A faint, pulsing DAG silhouette: root → parallel branch → merge. */}
+      <div className="flex flex-col items-center gap-4 opacity-50">
+        <Skeleton className="h-16 w-56 rounded-2xl" />
+        <Skeleton className="h-6 w-px" />
+        <div className="flex gap-5">
+          <Skeleton className="h-16 w-44 rounded-2xl" />
+          <Skeleton className="h-16 w-44 rounded-2xl" />
+        </div>
+        <Skeleton className="h-6 w-px" />
+        <Skeleton className="h-16 w-52 rounded-2xl" />
+      </div>
+
+      {/* Centered spinner + label over a subtle scrim. */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/40 backdrop-blur-[1px]">
+        <Spinner className="size-7 text-primary" />
+        <p className="font-medium text-muted-foreground text-sm">{label}</p>
+      </div>
+    </div>
+  )
+}
+
 function RoadmapViewCanvas() {
   const { state, actions, meta } = useRoadmapView()
 
   const onNodeClick: NodeMouseHandler<RoadmapFlowNode> = (_, n) => {
     actions.selectNode(Number(n.id))
     actions.focusNode(Number(n.id))
+  }
+
+  // Show a skeleton before the first nodes exist — whether we're loading an
+  // existing roadmap or waiting on the first streamed node of a new one.
+  if (state.flowNodes.length === 0 && (state.isLoading || state.isStreaming)) {
+    return (
+      <div className="h-[72vh] overflow-hidden rounded-2xl border bg-muted/20">
+        <RoadmapCanvasSkeleton
+          label={state.isStreaming ? "Generating your roadmap…" : "Loading…"}
+        />
+      </div>
+    )
   }
 
   return (

@@ -4,7 +4,6 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
 	DashboardSquare01Icon,
 	Route01Icon,
-	MagicWand01Icon,
 	Compass01Icon,
 	Quiz01Icon,
 	ChartLineData01Icon,
@@ -38,11 +37,6 @@ export const navGroups: SidebarNavGroup[] = [
 				title: "My Roadmaps",
 				path: "/roadmaps",
 				icon: <HugeiconsIcon icon={Route01Icon} />,
-			},
-			{
-				title: "Create Roadmap",
-				path: "/roadmaps/new",
-				icon: <HugeiconsIcon icon={MagicWand01Icon} />,
 			},
 			{
 				title: "Explore",

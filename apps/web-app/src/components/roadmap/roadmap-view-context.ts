@@ -30,6 +30,7 @@ export interface RoadmapViewState {
   title: string
   status: GenerationStatus
   isStreaming: boolean
+  isLoading: boolean
   nodeCount: number
   flowNodes: RoadmapFlowNode[]
   flowEdges: RoadmapFlowEdge[]

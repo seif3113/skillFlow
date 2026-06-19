@@ -1,16 +1,18 @@
+import { Link } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { AppBreadcrumbs } from "@/components/app-breadcrumbs";
-import { navLinks } from "@/components/app-shared";
+import { navLinks, useActiveNavPath } from "@/components/app-shared";
 import { CustomSidebarTrigger } from "@/components/custom-sidebar-trigger";
 import { NavUser } from "@/components/nav-user";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { MagicWand01Icon } from "@hugeicons/core-free-icons";
 
-const activeItem = navLinks.find((item) => item.isActive);
-
 export function AppHeader() {
+	const activePath = useActiveNavPath();
+	const activeItem = navLinks.find((item) => item.path === activePath);
+
 	return (
 		<header
 			className={cn(
@@ -27,7 +29,7 @@ export function AppHeader() {
 				<AppBreadcrumbs page={activeItem} />
 			</div>
 			<div className="flex items-center gap-3">
-				<Button render={<a href="/roadmaps/new" />} nativeButton={false}>
+				<Button render={<Link to="/roadmaps/new" />} nativeButton={false}>
 					<HugeiconsIcon icon={MagicWand01Icon} data-icon="inline-start" />
 					New Roadmap
 				</Button>
