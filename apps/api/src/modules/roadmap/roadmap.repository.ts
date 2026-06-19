@@ -33,6 +33,7 @@ export class RoadmapRepository {
       .select({
         id: roadmaps.id,
         userName: user.name,
+        userImage: user.image,
         title: roadmaps.title,
         description: roadmaps.description,
         isPublished: roadmaps.isPublished,

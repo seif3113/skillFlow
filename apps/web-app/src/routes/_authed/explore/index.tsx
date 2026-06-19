@@ -5,6 +5,7 @@ import { Compass01Icon, ViewIcon } from "@hugeicons/core-free-icons"
 
 import { PublicRoadmapsDocument } from "@/gql/graphql"
 import { ForkButton } from "@/components/roadmap/public-roadmap-view"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -64,8 +65,23 @@ function ExplorePage() {
           {roadmaps.map((roadmap) => (
             <Card key={roadmap.id} className="flex flex-col">
               <CardHeader>
-                <CardTitle>{roadmap.title}</CardTitle>
-                <CardDescription>by {roadmap.userName}</CardDescription>
+                <div className="flex items-center gap-3">
+                  <Avatar className="size-9">
+                    {roadmap.userImage ? (
+                      <AvatarImage
+                        src={roadmap.userImage}
+                        alt={roadmap.userName}
+                      />
+                    ) : null}
+                    <AvatarFallback>
+                      {roadmap.userName.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <CardTitle className="truncate">{roadmap.title}</CardTitle>
+                    <CardDescription>by {roadmap.userName}</CardDescription>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="flex-1">
                 {roadmap.description ? (

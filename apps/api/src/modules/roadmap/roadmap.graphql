@@ -16,6 +16,7 @@ type Roadmap {
 type PublicRoadmap {
   id: Int!
   userName: String!
+  userImage: String
   title: String!
   description: String
   isPublished: Boolean!

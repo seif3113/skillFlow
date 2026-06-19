@@ -168,6 +168,7 @@ export interface Roadmap {
 export interface PublicRoadmap {
     id: number;
     userName: string;
+    userImage?: Nullable<string>;
     title: string;
     description?: Nullable<string>;
     isPublished: boolean;
