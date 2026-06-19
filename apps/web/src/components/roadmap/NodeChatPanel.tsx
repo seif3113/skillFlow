@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { X, Send, Sparkles, Bot, User } from "lucide-react";
+import { useNodeChats, useSendNodeChatMessage } from "@/hooks/useRoadmap";
+import { authClient } from "@/lib/auth-client";
 
 interface Message {
   id: string;
@@ -13,21 +15,200 @@ interface Message {
 interface NodeChatPanelProps {
   isOpen: boolean;
   onClose: () => void;
+  nodeId?: number;
   nodeTitle: string;
+}
+
+// Simple built-in Markdown renderer to support basic syntax without external dependency issues
+interface MarkdownRendererProps {
+  content: string;
+  isUser: boolean;
+}
+
+function MarkdownRenderer({ content, isUser }: MarkdownRendererProps) {
+  const lines = content.split("\n");
+  let inCodeBlock = false;
+  let codeBlockContent: string[] = [];
+
+  const elements: React.ReactNode[] = [];
+
+  const parseInline = (text: string): React.ReactNode[] => {
+    const parts: React.ReactNode[] = [];
+    let currentText = text;
+    let index = 0;
+
+    while (currentText.length > 0) {
+      const boldMatch = currentText.match(/\*\*(.*?)\*\*/);
+      const codeMatch = currentText.match(/`(.*?)`/);
+
+      const boldIndex = boldMatch?.index !== undefined ? boldMatch.index : Infinity;
+      const codeIndex = codeMatch?.index !== undefined ? codeMatch.index : Infinity;
+
+      if (boldIndex === Infinity && codeIndex === Infinity) {
+        parts.push(<span key={index++}>{currentText}</span>);
+        break;
+      }
+
+      if (boldIndex < codeIndex) {
+        if (boldIndex > 0) {
+          parts.push(<span key={index++}>{currentText.substring(0, boldIndex)}</span>);
+        }
+        parts.push(
+          <strong key={index++} className={`font-bold ${isUser ? "text-white" : "text-foreground"}`}>
+            {boldMatch![1]}
+          </strong>
+        );
+        currentText = currentText.substring(boldIndex + boldMatch![0].length);
+      } else {
+        if (codeIndex > 0) {
+          parts.push(<span key={index++}>{currentText.substring(0, codeIndex)}</span>);
+        }
+        parts.push(
+          <code
+            key={index++}
+            className={`font-mono text-[10px] px-1.5 py-0.5 rounded ${
+              isUser
+                ? "bg-sky-700 text-sky-100"
+                : "bg-muted text-sky-400 border border-border"
+            }`}
+          >
+            {codeMatch![1]}
+          </code>
+        );
+        currentText = currentText.substring(codeIndex + codeMatch![0].length);
+      }
+    }
+
+    return parts;
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    if (line.startsWith("```")) {
+      if (inCodeBlock) {
+        elements.push(
+          <pre
+            key={`code-${i}`}
+            className={`p-3 rounded-lg my-2 overflow-x-auto font-mono text-[10px] border ${
+              isUser
+                ? "bg-sky-700 border-sky-600 text-sky-100"
+                : "bg-muted border-border text-foreground"
+            }`}
+          >
+            <code>{codeBlockContent.join("\n")}</code>
+          </pre>
+        );
+        codeBlockContent = [];
+        inCodeBlock = false;
+      } else {
+        inCodeBlock = true;
+      }
+      continue;
+    }
+
+    if (inCodeBlock) {
+      codeBlockContent.push(line);
+      continue;
+    }
+
+    // Headers
+    if (line.startsWith("### ")) {
+      elements.push(
+        <h4 key={i} className={`text-xs font-bold mt-2 mb-1 ${isUser ? "text-white" : "text-foreground"}`}>
+          {parseInline(line.substring(4))}
+        </h4>
+      );
+    } else if (line.startsWith("## ")) {
+      elements.push(
+        <h3 key={i} className={`text-sm font-bold mt-3 mb-1.5 ${isUser ? "text-white" : "text-foreground"}`}>
+          {parseInline(line.substring(3))}
+        </h3>
+      );
+    } else if (line.startsWith("# ")) {
+      elements.push(
+        <h2 key={i} className={`text-base font-black mt-3 mb-2.5 ${isUser ? "text-white" : "text-foreground"}`}>
+          {parseInline(line.substring(2))}
+        </h2>
+      );
+    }
+    // Lists
+    else if (line.trim().startsWith("- ") || line.trim().startsWith("* ")) {
+      const cleanLine = line.trim().substring(2);
+      elements.push(
+        <ul key={i} className="list-disc list-inside ml-2 my-0.5">
+          <li>{parseInline(cleanLine)}</li>
+        </ul>
+      );
+    } else if (/^\d+\.\s/.test(line.trim())) {
+      const match = line.trim().match(/^(\d+)\.\s(.*)/);
+      if (match) {
+        elements.push(
+          <ol key={i} className="list-decimal list-inside ml-2 my-0.5">
+            <li value={parseInt(match[1])}>{parseInline(match[2])}</li>
+          </ol>
+        );
+      }
+    }
+    // Blank line
+    else if (line.trim() === "") {
+      elements.push(<div key={i} className="h-1.5" />);
+    }
+    // Normal paragraph
+    else {
+      elements.push(
+        <p key={i} className="mb-1 leading-relaxed">
+          {parseInline(line)}
+        </p>
+      );
+    }
+  }
+
+  if (inCodeBlock && codeBlockContent.length > 0) {
+    elements.push(
+      <pre
+        key="unclosed-code"
+        className={`p-3 rounded-lg my-2 overflow-x-auto font-mono text-[10px] border ${
+          isUser
+            ? "bg-sky-700 border-sky-600 text-sky-100"
+            : "bg-muted border-border text-foreground"
+        }`}
+      >
+        <code>{codeBlockContent.join("\n")}</code>
+      </pre>
+    );
+  }
+
+  return <div className="space-y-0.5">{elements}</div>;
 }
 
 export function NodeChatPanel({
   isOpen,
   onClose,
+  nodeId,
   nodeTitle,
 }: NodeChatPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Initialize with welcome message when nodeTitle changes
+  const { data: session } = authClient.useSession();
+  const userId = session?.user?.id ? parseInt(session.user.id, 10) : undefined;
+
+  const { data: chatHistory, isLoading: isLoadingHistory } = useNodeChats(nodeId, userId);
+  const { mutateAsync: sendChatMessage, isPending: isSendingMessage } = useSendNodeChatMessage();
+
+  // Load chat history when it changes
   useEffect(() => {
-    if (nodeTitle) {
+    if (chatHistory && chatHistory.length > 0) {
+      const mapped = chatHistory.map((c: any) => ({
+        id: String(c.id),
+        sender: c.sender as "user" | "ai",
+        text: typeof c.message === "string" ? c.message : c.message.text || JSON.stringify(c.message),
+        timestamp: new Date(c.sentAt || Date.now()),
+      }));
+      setMessages(mapped);
+    } else if (nodeTitle) {
       setMessages([
         {
           id: "welcome",
@@ -37,39 +218,50 @@ export function NodeChatPanel({
         },
       ]);
     }
-  }, [nodeTitle]);
+  }, [chatHistory, nodeTitle]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, isSendingMessage]);
 
   if (!isOpen) return null;
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() || !nodeId || !userId || isSendingMessage) return;
 
-    const userMessage: Message = {
-      id: String(Date.now()),
-      sender: "user",
-      text: inputValue.trim(),
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
+    const userText = inputValue.trim();
     setInputValue("");
 
-    // Simulate AI response delay
-    setTimeout(() => {
-      const aiMessage: Message = {
-        id: String(Date.now() + 1),
-        sender: "ai",
-        text: `This is a mock AI response discussing "${inputValue.trim()}". In the future, this will connect to the NestJS API to query our RAG backend and stream live explanation text.`,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, aiMessage]);
-    }, 1000);
+    // Optimistically add user message to messages list
+    const userMessage: Message = {
+      id: "temp-user-" + Date.now(),
+      sender: "user",
+      text: userText,
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, userMessage]);
+
+    try {
+      await sendChatMessage({
+        nodeId,
+        userId,
+        sender: "user",
+        message: { text: userText },
+      });
+    } catch (err) {
+      console.error(err);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: "error-" + Date.now(),
+          sender: "ai",
+          text: "Sorry, I encountered an error trying to connect to the assistant server. Please try again.",
+          timestamp: new Date(),
+        },
+      ]);
+    }
   };
 
   return (
@@ -129,7 +321,7 @@ export function NodeChatPanel({
                   : "bg-card border border-border text-card-foreground rounded-tl-none"
               }`}
             >
-              <p className="whitespace-pre-wrap">{msg.text}</p>
+              <MarkdownRenderer content={msg.text} isUser={msg.sender === "user"} />
               <span className="text-[9px] text-muted-white self-end mt-1 font-bold">
                 {msg.timestamp.toLocaleTimeString([], {
                   hour: "2-digit",
@@ -139,6 +331,22 @@ export function NodeChatPanel({
             </div>
           </div>
         ))}
+
+        {isSendingMessage && (
+          <div className="flex items-start gap-3 flex-row">
+            <div className="p-2 rounded-xl shrink-0 border bg-sky-500/10 border-sky-500/20 text-sky-400">
+              <Bot className="w-3.5 h-3.5 animate-pulse" />
+            </div>
+            <div className="flex flex-col max-w-[75%] rounded-2xl px-4 py-3 text-xs leading-relaxed bg-card border border-border text-card-foreground rounded-tl-none">
+              <div className="flex items-center gap-1.5 py-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-bounce [animation-delay:-0.3s]"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-bounce [animation-delay:-0.15s]"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-bounce"></span>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div ref={messagesEndRef} />
       </div>
 

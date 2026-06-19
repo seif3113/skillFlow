@@ -163,6 +163,32 @@ const FORK_ROADMAP = gql`
   }
 `;
 
+const GET_NODE_CHATS = gql`
+  query NodeChats($nodeId: Int!, $userId: Int!) {
+    nodeChats(nodeId: $nodeId, userId: $userId) {
+      id
+      nodeId
+      userId
+      sender
+      message
+      sentAt
+    }
+  }
+`;
+
+const SEND_NODE_CHAT_MESSAGE = gql`
+  mutation SendNodeChatMessage($nodeId: Int!, $userId: Int!, $sender: String!, $message: JSON!) {
+    sendNodeChatMessage(nodeId: $nodeId, userId: $userId, sender: $sender, message: $message) {
+      id
+      nodeId
+      userId
+      sender
+      message
+      sentAt
+    }
+  }
+`;
+
 const PUBLIC_ROADMAPS = gql`
   query PublicRoadmaps {
     publicRoadmaps {
@@ -418,6 +444,53 @@ export function useUpdateRoadmapAi() {
         message,
       });
       return response.updateRoadmapAi;
+    },
+  });
+}
+
+export function useNodeChats(nodeId?: number, userId?: number) {
+  return useQuery({
+    queryKey: ["nodeChats", nodeId, userId],
+    queryFn: async () => {
+      if (!nodeId || !userId) return [];
+      const data: any = await graphQLClient.request(GET_NODE_CHATS, {
+        nodeId,
+        userId,
+      });
+      return data.nodeChats || [];
+    },
+    enabled: !!nodeId && !!userId,
+  });
+}
+
+export function useSendNodeChatMessage() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      nodeId,
+      userId,
+      sender,
+      message,
+    }: {
+      nodeId: number;
+      userId: number;
+      sender: string;
+      message: any;
+    }) => {
+      const response: any = await graphQLClient.request(SEND_NODE_CHAT_MESSAGE, {
+        nodeId,
+        userId,
+        sender,
+        message,
+      });
+      return response.sendNodeChatMessage;
+    },
+    onSuccess: (data: any) => {
+      if (data?.nodeId && data?.userId) {
+        queryClient.invalidateQueries({
+          queryKey: ["nodeChats", data.nodeId, data.userId],
+        });
+      }
     },
   });
 }

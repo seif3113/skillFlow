@@ -41,3 +41,5 @@ class RoadmapEditRequest(BaseModel):
     
 class ChatRequest(BaseModel):
     message: str
+    node_name: Optional[str] = None
+

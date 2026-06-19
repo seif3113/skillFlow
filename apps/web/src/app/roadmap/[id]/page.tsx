@@ -86,6 +86,7 @@ export default function RoadmapPage() {
   // Chatbot Panel State
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatNodeTitle, setChatNodeTitle] = useState("");
+  const [chatNodeId, setChatNodeId] = useState<string | null>(null);
 
   // AI Edit States
   const [isAiEditPanelOpen, setIsAiEditPanelOpen] = useState(false);
@@ -103,6 +104,7 @@ export default function RoadmapPage() {
   useEffect(() => {
     const handleOpenChat = (e: Event) => {
       const customEvent = e as CustomEvent;
+      setChatNodeId(customEvent.detail.id);
       setChatNodeTitle(customEvent.detail.title);
       setIsChatOpen(true);
       setIsSidebarOpen(false); // Close other sidebars when chat opens
@@ -403,6 +405,7 @@ export default function RoadmapPage() {
   const handleNodeClick = (_: React.MouseEvent, node: FlowNode) => {
     setSelectedNodeId(node.id);
     if (isChatOpen) {
+      setChatNodeId(node.id);
       setChatNodeTitle((node.data as any)?.label || node.id);
     } else {
       setIsSidebarOpen(true);
@@ -679,6 +682,7 @@ export default function RoadmapPage() {
         <NodeChatPanel
           isOpen={isChatOpen}
           onClose={() => setIsChatOpen(false)}
+          nodeId={chatNodeId ? parseInt(chatNodeId, 10) : undefined}
           nodeTitle={chatNodeTitle}
         />
 

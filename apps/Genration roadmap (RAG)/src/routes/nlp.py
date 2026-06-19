@@ -406,8 +406,8 @@ async def chat_explain_node(request: Request, chat_request: ChatRequest):
     )
 
     answer = nlp_controller.explain_node(
-        node_name=chat_request.message,
-        user_question=None,  # You can map this if the user asks a specific follow-up
+        node_name=chat_request.node_name or chat_request.message,
+        user_question=chat_request.message if chat_request.node_name else None,
     )
 
     if not answer:
