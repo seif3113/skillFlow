@@ -7,6 +7,7 @@ import { MagicWand01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons"
 
 import {
   CreateRoadmapDocument,
+  GenerateRoadmapStreamDocument,
   RoadmapCustomizationQuestionsDocument,
 } from "@/gql/graphql"
 import { AppShell } from "@/components/app-shell"
@@ -41,6 +42,7 @@ function NewRoadmapPage() {
   )
   const [createRoadmap, { loading: creating }] =
     useMutation(CreateRoadmapDocument)
+  const [generateRoadmapStream] = useMutation(GenerateRoadmapStreamDocument)
 
   const handleTopicSubmit = async () => {
     const trimmed = topic.trim()
@@ -70,14 +72,24 @@ function NewRoadmapPage() {
       })
       const id = res.data?.createRoadmap.id
       if (!id) throw new Error("createRoadmap returned no id")
+      // Kick off generation here, on the explicit user action — the mutation
+      // returns immediately while the server streams nodes in the background.
+      // The viewer then subscribes + polls to render them as they arrive.
+      await generateRoadmapStream({
+        variables: {
+          roadmapId: id,
+          topic: finalTopic,
+          customizationAnswers: finalAnswers,
+        },
+      })
       navigate({
         to: "/roadmaps/$id",
         params: { id: String(id) },
-        search: { topic: finalTopic, answers: finalAnswers },
+        search: { topic: finalTopic },
       })
     } catch (e) {
       console.error(e)
-      toast.error("Couldn't create the roadmap. Please try again.")
+      toast.error("Couldn't start roadmap generation. Please try again.")
     }
   }
 

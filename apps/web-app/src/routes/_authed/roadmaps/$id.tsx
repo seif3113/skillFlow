@@ -38,7 +38,7 @@ import {
   type RoadmapFlowNode,
   type RoadmapFlowEdge,
 } from "@/lib/roadmap-graph"
-import { useRoadmapGeneration } from "@/hooks/use-roadmap-generation"
+import { useRoadmapGenerationStream } from "@/hooks/use-roadmap-generation"
 import { RoadmapFlowNodeCard } from "@/components/roadmap/roadmap-flow-node"
 import { AppShell } from "@/components/app-shell"
 import { Button } from "@/components/ui/button"
@@ -52,13 +52,12 @@ import {
 } from "@/components/ui/sheet"
 
 export const Route = createFileRoute("/_authed/roadmaps/$id")({
+  // `topic` present ⇒ a generation was just kicked off; the viewer subscribes
+  // + polls until it settles, then clears the param.
   validateSearch: (
     search: Record<string, unknown>,
-  ): { topic?: string; answers?: string[] } => ({
+  ): { topic?: string } => ({
     topic: typeof search.topic === "string" ? search.topic : undefined,
-    answers: Array.isArray(search.answers)
-      ? search.answers.filter((a): a is string => typeof a === "string")
-      : undefined,
   }),
   component: RoadmapViewPage,
 })
@@ -92,13 +91,30 @@ function RoadmapViewPage() {
   const [rmNodes, setRmNodes] = useState<RoadmapNode[]>([])
   const [rmEdges, setRmEdges] = useState<RoadmapEdge[]>([])
   const [selectedId, setSelectedId] = useState<number | null>(null)
+  const stableRef = useRef({ count: -1, ticks: 0 })
 
   useEffect(() => {
-    if (data?.roadmap) {
-      setRmNodes(data.roadmap.nodes ?? [])
-      setRmEdges(data.roadmap.edges ?? [])
+    if (!data?.roadmap) return
+    const nodes = data.roadmap.nodes ?? []
+    const edges = data.roadmap.edges ?? []
+    setRmNodes(nodes)
+    setRmEdges(edges)
+    // Fallback completion: if the live `done` event is missed (e.g. the socket
+    // connected late), stop once the persisted node count holds steady across a
+    // few polls.
+    if (generating) {
+      if (nodes.length === stableRef.current.count) stableRef.current.ticks += 1
+      else stableRef.current = { count: nodes.length, ticks: 0 }
+      if (nodes.length > 0 && stableRef.current.ticks >= 4) {
+        void navigate({
+          to: "/roadmaps/$id",
+          params: { id },
+          search: {},
+          replace: true,
+        })
+      }
     }
-  }, [data])
+  }, [data, generating, id, navigate])
 
   // xyflow-owned state so nodes are draggable; positions live here, not in the
   // domain. We only re-run the dagre layout when the graph *structure* changes.
@@ -147,10 +163,8 @@ function RoadmapViewPage() {
   }, [structureKey, rmNodes, rmEdges, setFlowNodes, setFlowEdges])
 
   // --- live generation ---
-  const { status, error } = useRoadmapGeneration({
+  const { status } = useRoadmapGenerationStream({
     roadmapId,
-    topic: search.topic,
-    answers: search.answers,
     enabled: generating,
     callbacks: {
       onNode: (node) => setRmNodes((prev) => upsertById(prev, node)),
@@ -165,12 +179,9 @@ function RoadmapViewPage() {
           replace: true,
         })
       },
+      onError: (message) => toast.error(message),
     },
   })
-
-  useEffect(() => {
-    if (status === "error" && error) toast.error(error)
-  }, [status, error])
 
   // --- mutations / editing ---
   const [updateNode, { loading: updating }] = useMutation(UpdateNodeDocument)
