@@ -1,0 +1,116 @@
+query GetRoadmap($id: Int!) {
+  roadmap(id: $id) {
+    id
+    title
+    description
+    isPublished
+    nodes {
+      id
+      title
+      description
+      tags
+      resources
+      isCompleted
+    }
+  }
+}
+
+query RoadmapsByUser($userId: Int!) {
+  roadmapsByUser(userId: $userId) {
+    id
+    title
+    description
+    isPublished
+    createdAt
+    updatedAt
+    nodes {
+      id
+      isCompleted
+    }
+  }
+}
+
+query SearchNodeResources($topic: String!, $limit: Int, $type: String) {
+  searchNodeResources(topic: $topic, limit: $limit, type: $type)
+}
+
+query PublicRoadmaps {
+  publicRoadmaps {
+    id
+    userName
+    title
+    description
+    isPublished
+    createdAt
+    updatedAt
+    nodes {
+      id
+      title
+      description
+      tags
+      resources
+      isCompleted
+    }
+  }
+}
+
+mutation CreateRoadmap($input: CreateRoadmapInput!) {
+  createRoadmap(input: $input) {
+    id
+    title
+    description
+  }
+}
+
+mutation UpdateRoadmap($input: UpdateRoadmapInput!) {
+  updateRoadmap(input: $input) {
+    id
+    title
+    description
+  }
+}
+
+mutation DeleteRoadmap($id: Int!) {
+  deleteRoadmap(id: $id) {
+    success
+    message
+  }
+}
+
+mutation CreateNode($input: CreateNodeInput!) {
+  createNode(input: $input) {
+    id
+    title
+    description
+    tags
+    resources
+    isCompleted
+  }
+}
+
+mutation UpdateNode($input: UpdateNodeInput!) {
+  updateNode(input: $input) {
+    id
+    title
+    description
+    tags
+    resources
+    isCompleted
+  }
+}
+
+mutation DeleteNode($id: Int!) {
+  deleteNode(id: $id) {
+    success
+    message
+  }
+}
+
+mutation PublishRoadmap($id: Int!) {
+  publishRoadmap(id: $id) {
+    id
+    title
+    description
+    isPublished
+  }
+}

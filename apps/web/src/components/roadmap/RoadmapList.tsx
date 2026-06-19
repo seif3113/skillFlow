@@ -12,11 +12,11 @@ import {
 interface Roadmap {
   id: number;
   title: string;
-  description?: string;
+  description?: string | null;
   isPublished?: boolean;
   createdAt: string;
   updatedAt: string;
-  nodes?: any[];
+  nodes?: any[] | null;
 }
 
 interface RoadmapListProps {

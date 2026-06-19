@@ -1,321 +1,187 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { gql } from "graphql-request";
-import { graphQLClient } from "@/lib/react-query";
+"use client";
+
+import { useQuery, useMutation } from "@apollo/client/react";
+import {
+  GetRoadmapDocument,
+  RoadmapsByUserDocument,
+  SearchNodeResourcesDocument,
+  PublicRoadmapsDocument,
+  CreateRoadmapDocument,
+  UpdateRoadmapDocument,
+  DeleteRoadmapDocument,
+  CreateNodeDocument,
+  UpdateNodeDocument,
+  DeleteNodeDocument,
+  PublishRoadmapDocument,
+  type CreateRoadmapInput,
+  type UpdateRoadmapInput,
+  type CreateNodeInput,
+  type UpdateNodeInput,
+} from "@/lib/gql/graphql";
 
 // ----------------------------------------------------------------------
-// GRAPHQL QUERIES & MUTATIONS
+// Thin adapters over Apollo's typed hooks. They preserve the
+// `{ data, isLoading }` / `{ mutate, mutateAsync, isPending }` shape the
+// existing components consume, while everything underneath is now the
+// normalized Apollo cache + fully-typed documents generated from the schema.
 // ----------------------------------------------------------------------
 
-const GET_ROADMAP = gql`
-  query GetRoadmap($id: Int!) {
-    roadmap(id: $id) {
-      id
-      title
-      description
-      isPublished
-      nodes {
-        id
-        title
-        description
-        tags
-        resources
-        isCompleted
-      }
-    }
-  }
-`;
+type MutationCallbacks<TData> = {
+  onSuccess?: (data: TData) => void;
+  onError?: (error: unknown) => void;
+};
 
-const ROADMAPS_BY_USER = gql`
-  query RoadmapsByUser($userId: Int!) {
-    roadmapsByUser(userId: $userId) {
-      id
-      title
-      description
-      isPublished
-      createdAt
-      updatedAt
-      nodes {
-        id
-        isCompleted
-      }
-    }
-  }
-`;
-
-const SEARCH_NODE_RESOURCES = gql`
-  query SearchNodeResources($topic: String!, $limit: Int, $type: String) {
-    searchNodeResources(topic: $topic, limit: $limit, type: $type)
-  }
-`;
-
-const CREATE_ROADMAP = gql`
-  mutation CreateRoadmap($input: CreateRoadmapInput!) {
-    createRoadmap(input: $input) {
-      id
-      title
-      description
-    }
-  }
-`;
-
-const UPDATE_ROADMAP = gql`
-  mutation UpdateRoadmap($input: UpdateRoadmapInput!) {
-    updateRoadmap(input: $input) {
-      id
-      title
-      description
-    }
-  }
-`;
-
-const DELETE_ROADMAP = gql`
-  mutation DeleteRoadmap($id: Int!) {
-    deleteRoadmap(id: $id) {
-      success
-      message
-    }
-  }
-`;
-
-const CREATE_NODE = gql`
-  mutation CreateNode($input: CreateNodeInput!) {
-    createNode(input: $input) {
-      id
-      title
-      description
-      tags
-      resources
-      isCompleted
-    }
-  }
-`;
-
-const UPDATE_NODE = gql`
-  mutation UpdateNode($input: UpdateNodeInput!) {
-    updateNode(input: $input) {
-      id
-      title
-      description
-      tags
-      resources
-      isCompleted
-    }
-  }
-`;
-
-const DELETE_NODE = gql`
-  mutation DeleteNode($id: Int!) {
-    deleteNode(id: $id) {
-      success
-      message
-    }
-  }
-`;
-
-const PUBLISH_ROADMAP = gql`
-  mutation PublishRoadmap($id: Int!) {
-    publishRoadmap(id: $id) {
-      id
-      title
-      description
-      isPublished
-    }
-  }
-`;
-
-const PUBLIC_ROADMAPS = gql`
-  query PublicRoadmaps {
-    publicRoadmaps {
-      id
-      userName
-      title
-      description
-      isPublished
-      createdAt
-      updatedAt
-      nodes {
-        id
-        title
-        description
-        tags
-        resources
-        isCompleted
-      }
-    }
-  }
-`;
-
-// ----------------------------------------------------------------------
-// TYPES
-// ----------------------------------------------------------------------
-
-interface CreateRoadmapInput {
-  userId: number;
-  title: string;
-  description?: string;
-  learningProfileId?: number;
-  isPublished?: boolean;
-}
-
-interface UpdateRoadmapInput {
-  id: number;
-  userId?: number;
-  title?: string;
-  description?: string;
-  learningProfileId?: number;
-  isPublished?: boolean;
-}
-
-interface CreateNodeInput {
-  roadmapId: number;
-  title: string;
-  description?: string;
-  tags?: any;
-  resources?: any;
-  isCompleted?: boolean;
-}
-
-interface UpdateNodeInput {
-  id: number;
-  roadmapId?: number;
-  title?: string;
-  description?: string;
-  tags?: any;
-  resources?: any;
-  isCompleted?: boolean;
+// Wraps an async runner into a TanStack-Query-style mutation result.
+function asMutation<TArgs, TData>(
+  runner: (args: TArgs) => Promise<TData>,
+  loading: boolean,
+) {
+  return {
+    mutateAsync: runner,
+    mutate: (args: TArgs, callbacks?: MutationCallbacks<TData>) => {
+      runner(args)
+        .then((data) => callbacks?.onSuccess?.(data))
+        .catch((error) => callbacks?.onError?.(error));
+    },
+    isPending: loading,
+  };
 }
 
 // ----------------------------------------------------------------------
-// HOOKS
+// QUERIES
 // ----------------------------------------------------------------------
 
 export function useGetRoadmap(id?: number) {
-  return useQuery({
-    queryKey: ["roadmap", id],
-    queryFn: async () => {
-      if (!id) return null;
-      const data: any = await graphQLClient.request(GET_ROADMAP, { id });
-      return data.roadmap;
-    },
-    enabled: !!id,
+  const { data, loading, error, refetch } = useQuery(GetRoadmapDocument, {
+    variables: { id: id ?? 0 },
+    skip: !id,
   });
+  return {
+    data: data?.roadmap ?? null,
+    isLoading: loading,
+    isFetching: loading,
+    error,
+    refetch,
+  };
 }
 
 export function useRoadmapsByUser(userId?: number) {
-  return useQuery({
-    queryKey: ["roadmaps", userId],
-    queryFn: async () => {
-      if (!userId) return [];
-      const data: any = await graphQLClient.request(ROADMAPS_BY_USER, {
-        userId,
-      });
-      return data.roadmapsByUser || [];
-    },
-    enabled: !!userId,
+  const { data, loading, error, refetch } = useQuery(RoadmapsByUserDocument, {
+    variables: { userId: userId ?? 0 },
+    skip: !userId,
   });
+  return {
+    data: data?.roadmapsByUser ?? [],
+    isLoading: loading,
+    isFetching: loading,
+    error,
+    refetch,
+  };
 }
 
-export function useSearchNodeResources(topic: string, limit: number = 5, type?: string) {
-  return useQuery({
-    queryKey: ["searchNodeResources", topic, limit, type],
-    queryFn: async () => {
-      if (!topic) return [];
-      const data: any = await graphQLClient.request(SEARCH_NODE_RESOURCES, {
-        topic,
-        limit,
-        type: type || undefined,
-      });
-      return data.searchNodeResources || [];
-    },
-    enabled: !!topic && topic.length > 2, // Only run if we have a real topic
+export function useSearchNodeResources(
+  topic: string,
+  limit: number = 5,
+  type?: string,
+) {
+  const { data, loading, error } = useQuery(SearchNodeResourcesDocument, {
+    variables: { topic, limit, type: type || undefined },
+    // Only run once we have a meaningful topic.
+    skip: !topic || topic.length <= 2,
+    notifyOnNetworkStatusChange: true,
   });
-}
-
-export function useCreateRoadmap() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: CreateRoadmapInput) => {
-      return await graphQLClient.request(CREATE_ROADMAP, { input });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["roadmaps"] });
-    },
-  });
-}
-
-export function useUpdateRoadmap() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: UpdateRoadmapInput) => {
-      return await graphQLClient.request(UPDATE_ROADMAP, { input });
-    },
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ["roadmaps"] });
-      if (data?.updateRoadmap?.id) {
-        queryClient.invalidateQueries({
-          queryKey: ["roadmap", data.updateRoadmap.id],
-        });
-      }
-    },
-  });
-}
-
-export function useDeleteRoadmap() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: number) => {
-      return await graphQLClient.request(DELETE_ROADMAP, { id });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["roadmaps"] });
-    },
-  });
-}
-
-export function useCreateNode() {
-  return useMutation({
-    mutationFn: async (input: CreateNodeInput) => {
-      return await graphQLClient.request(CREATE_NODE, { input });
-    },
-  });
-}
-
-export function useUpdateNode() {
-  return useMutation({
-    mutationFn: async (input: UpdateNodeInput) => {
-      return await graphQLClient.request(UPDATE_NODE, { input });
-    },
-  });
-}
-
-export function useDeleteNode() {
-  return useMutation({
-    mutationFn: async (id: number) => {
-      return await graphQLClient.request(DELETE_NODE, { id });
-    },
-  });
-}
-
-export function usePublishRoadmap() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: number) => {
-      return await graphQLClient.request(PUBLISH_ROADMAP, { id });
-    },
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({
-        queryKey: ["roadmap", data.publishRoadmap.id],
-      });
-    },
-  });
+  return {
+    data: data?.searchNodeResources ?? [],
+    isLoading: loading,
+    isFetching: loading,
+    error,
+  };
 }
 
 export function useGetPublicRoadmaps() {
-  return useQuery({
-    queryKey: ["publicRoadmaps"],
-    queryFn: async () => {
-      const data: any = await graphQLClient.request(PUBLIC_ROADMAPS);
-      return data.publicRoadmaps || [];
-    },
-  });
+  const { data, loading, error, refetch } = useQuery(PublicRoadmapsDocument);
+  return {
+    data: data?.publicRoadmaps ?? [],
+    isLoading: loading,
+    isFetching: loading,
+    error,
+    refetch,
+  };
+}
+
+// ----------------------------------------------------------------------
+// MUTATIONS
+// ----------------------------------------------------------------------
+
+export function useCreateRoadmap() {
+  const [mutate, { loading }] = useMutation(CreateRoadmapDocument);
+  return asMutation(async (input: CreateRoadmapInput) => {
+    const res = await mutate({
+      variables: { input },
+      refetchQueries: ["RoadmapsByUser"],
+    });
+    if (!res.data) throw new Error("createRoadmap returned no data");
+    return res.data;
+  }, loading);
+}
+
+export function useUpdateRoadmap() {
+  const [mutate, { loading }] = useMutation(UpdateRoadmapDocument);
+  // Normalized cache auto-updates the roadmap entity by id; no refetch needed.
+  return asMutation(async (input: UpdateRoadmapInput) => {
+    const res = await mutate({ variables: { input } });
+    if (!res.data) throw new Error("updateRoadmap returned no data");
+    return res.data;
+  }, loading);
+}
+
+export function useDeleteRoadmap() {
+  const [mutate, { loading }] = useMutation(DeleteRoadmapDocument);
+  return asMutation(async (id: number) => {
+    const res = await mutate({
+      variables: { id },
+      refetchQueries: ["RoadmapsByUser", "PublicRoadmaps"],
+    });
+    if (!res.data) throw new Error("deleteRoadmap returned no data");
+    return res.data;
+  }, loading);
+}
+
+export function useCreateNode() {
+  const [mutate, { loading }] = useMutation(CreateNodeDocument);
+  return asMutation(async (input: CreateNodeInput) => {
+    const res = await mutate({ variables: { input } });
+    if (!res.data) throw new Error("createNode returned no data");
+    return res.data;
+  }, loading);
+}
+
+export function useUpdateNode() {
+  const [mutate, { loading }] = useMutation(UpdateNodeDocument);
+  return asMutation(async (input: UpdateNodeInput) => {
+    const res = await mutate({ variables: { input } });
+    if (!res.data) throw new Error("updateNode returned no data");
+    return res.data;
+  }, loading);
+}
+
+export function useDeleteNode() {
+  const [mutate, { loading }] = useMutation(DeleteNodeDocument);
+  return asMutation(async (id: number) => {
+    const res = await mutate({ variables: { id } });
+    if (!res.data) throw new Error("deleteNode returned no data");
+    return res.data;
+  }, loading);
+}
+
+export function usePublishRoadmap() {
+  const [mutate, { loading }] = useMutation(PublishRoadmapDocument);
+  return asMutation(async (id: number) => {
+    const res = await mutate({
+      variables: { id },
+      refetchQueries: ["PublicRoadmaps"],
+    });
+    if (!res.data) throw new Error("publishRoadmap returned no data");
+    return res.data;
+  }, loading);
 }
