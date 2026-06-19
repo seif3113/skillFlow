@@ -18,6 +18,19 @@ query NodeQuiz($nodeId: Int!) {
   }
 }
 
+query MyQuizAttempts {
+  myQuizAttempts {
+    id
+    score
+    passed
+    createdAt
+    nodeId
+    nodeTitle
+    roadmapId
+    roadmapTitle
+  }
+}
+
 mutation GenerateNodeQuiz($nodeId: Int!) {
   generateNodeQuiz(nodeId: $nodeId) {
     ...QuizFields

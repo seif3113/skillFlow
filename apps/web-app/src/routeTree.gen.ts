@@ -13,6 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
 import { Route as ApiAssistantRouteImport } from './routes/api/assistant'
+import { Route as AuthedProgressRouteImport } from './routes/_authed/progress'
 import { Route as AuthedRoadmapsIndexRouteImport } from './routes/_authed/roadmaps/index'
 import { Route as AuthedExploreIndexRouteImport } from './routes/_authed/explore/index'
 import { Route as AuthedRoadmapsNewRouteImport } from './routes/_authed/roadmaps/new'
@@ -37,6 +38,11 @@ const ApiAssistantRoute = ApiAssistantRouteImport.update({
   id: '/api/assistant',
   path: '/api/assistant',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedProgressRoute = AuthedProgressRouteImport.update({
+  id: '/progress',
+  path: '/progress',
+  getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedRoadmapsIndexRoute = AuthedRoadmapsIndexRouteImport.update({
   id: '/roadmaps/',
@@ -67,6 +73,7 @@ const AuthedExploreIdRoute = AuthedExploreIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
   '/login': typeof LoginRoute
+  '/progress': typeof AuthedProgressRoute
   '/api/assistant': typeof ApiAssistantRoute
   '/explore/$id': typeof AuthedExploreIdRoute
   '/roadmaps/$id': typeof AuthedRoadmapsIdRoute
@@ -76,6 +83,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/progress': typeof AuthedProgressRoute
   '/api/assistant': typeof ApiAssistantRoute
   '/': typeof AuthedIndexRoute
   '/explore/$id': typeof AuthedExploreIdRoute
@@ -88,6 +96,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authed': typeof AuthedRouteWithChildren
   '/login': typeof LoginRoute
+  '/_authed/progress': typeof AuthedProgressRoute
   '/api/assistant': typeof ApiAssistantRoute
   '/_authed/': typeof AuthedIndexRoute
   '/_authed/explore/$id': typeof AuthedExploreIdRoute
@@ -101,6 +110,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/progress'
     | '/api/assistant'
     | '/explore/$id'
     | '/roadmaps/$id'
@@ -110,6 +120,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
+    | '/progress'
     | '/api/assistant'
     | '/'
     | '/explore/$id'
@@ -121,6 +132,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authed'
     | '/login'
+    | '/_authed/progress'
     | '/api/assistant'
     | '/_authed/'
     | '/_authed/explore/$id'
@@ -166,6 +178,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAssistantRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/progress': {
+      id: '/_authed/progress'
+      path: '/progress'
+      fullPath: '/progress'
+      preLoaderRoute: typeof AuthedProgressRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/roadmaps/': {
       id: '/_authed/roadmaps/'
       path: '/roadmaps'
@@ -205,6 +224,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthedRouteChildren {
+  AuthedProgressRoute: typeof AuthedProgressRoute
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedExploreIdRoute: typeof AuthedExploreIdRoute
   AuthedRoadmapsIdRoute: typeof AuthedRoadmapsIdRoute
@@ -214,6 +234,7 @@ interface AuthedRouteChildren {
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedProgressRoute: AuthedProgressRoute,
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedExploreIdRoute: AuthedExploreIdRoute,
   AuthedRoadmapsIdRoute: AuthedRoadmapsIdRoute,
