@@ -53,11 +53,10 @@ export class NodeService {
   }
 
   async findByRoadmapId(roadmapId: number): Promise<NodeType[]> {
-    const roadmap = await this.roadmapRepository.findById(roadmapId);
-    if (!roadmap) {
-      throw new NotFoundException(`Roadmap with id ${roadmapId} not found`);
-    }
-
+    // No existence check here: this runs as the `Roadmap.nodes` field resolver
+    // (parent already loaded) and behind `assertRoadmapReadable` on the direct
+    // query — the extra findById was a redundant round-trip per roadmap (N+1
+    // on list views). A missing roadmap simply yields no nodes.
     const rows = await this.nodeRepository.findByRoadmapId(roadmapId);
     return rows.map((r) => this.mapRow(r));
   }

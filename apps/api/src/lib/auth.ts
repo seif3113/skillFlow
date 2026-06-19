@@ -37,6 +37,15 @@ export const auth = betterAuth({
       },
     },
   },
+  session: {
+    // Cache the session in a short-lived signed cookie so the per-request auth
+    // guard reads it from the cookie instead of hitting the DB every time.
+    // Cuts a DB round-trip off every GraphQL request.
+    cookieCache: {
+      enabled: true,
+      maxAge: 5 * 60,
+    },
+  },
   baseURL: process.env.BETTER_AUTH_URL,
   secret: process.env.BETTER_AUTH_SECRET,
   trustedOrigins: ['http://localhost:3000'],
