@@ -113,7 +113,7 @@ export function buildAssistantTools({
 
     searchResources: tool({
       description:
-        "Search for learning resources (videos, articles, courses) on a topic. Returns options; use attachResource to add one to a node.",
+        "Search for learning resources (videos, articles, courses) on a topic. Returns options; use attachResources to add them to a node in one call.",
       inputSchema: z.object({
         topic: z.string(),
         type: z.enum(["all", "video", "article", "course"]).optional(),
@@ -131,23 +131,30 @@ export function buildAssistantTools({
       },
     }),
 
-    attachResource: tool({
-      description: "Attach a learning resource (with a URL) to a topic node.",
+    attachResources: tool({
+      description:
+        "Attach one or more learning resources (each with a URL) to a topic node. Pass ALL resources for a node in a single call — do not call this multiple times for the same node.",
       inputSchema: z.object({
         nodeId: z.number(),
-        title: z.string(),
-        url: z.string(),
-        type: z.string().optional(),
+        resources: z
+          .array(
+            z.object({
+              title: z.string(),
+              url: z.string(),
+              type: z.string().optional(),
+            })
+          )
+          .min(1),
       }),
-      execute: async ({ nodeId, title, url, type }) => {
+      execute: async ({ nodeId, resources }) => {
         const data = await gql(GetRoadmapDocument, { id: roadmapId })
         const node = (data.roadmap?.nodes ?? []).find((n) => n.id === nodeId)
         if (!node) return { ok: false, reason: "No such node" }
         const existing = Array.isArray(node.resources) ? node.resources : []
         await gql(UpdateNodeDocument, {
-          input: { id: nodeId, resources: [...existing, { title, url, type }] },
+          input: { id: nodeId, resources: [...existing, ...resources] },
         })
-        return { ok: true, nodeId, title }
+        return { ok: true, nodeId, added: resources.length }
       },
     }),
   }

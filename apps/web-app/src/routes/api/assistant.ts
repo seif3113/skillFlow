@@ -81,9 +81,16 @@ export const Route = createFileRoute("/api/assistant")({
           messages: await convertToModelMessages(messages),
           stopWhen: stepCountIs(8),
           tools: buildAssistantTools({ cookie, roadmapId }),
+          // Force sequential tool calls. Several tools read-then-write the
+          // roadmap (e.g. attachResources), so parallel calls would race and
+          // drop edits; it also avoids Groq's malformed parallel tool calls.
+          providerOptions: { groq: { parallelToolCalls: false } },
         })
 
-        return result.toUIMessageStreamResponse()
+        return result.toUIMessageStreamResponse({
+          onError: (error) =>
+            error instanceof Error ? error.message : "Something went wrong.",
+        })
       },
     },
   },
