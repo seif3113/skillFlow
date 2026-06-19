@@ -370,32 +370,6 @@ async def generate_roadmap_rag(request: Request, roadmap_request: RoadmapRequest
                         nodes.append(node)
                         yield _json_stream_event("node", {"node": node})
 
-            try:
-                parsed_nodes = nlp_controller._extract_json_from_llm_response(
-                    full_response
-                )
-                if isinstance(parsed_nodes, list):
-                    nodes = parsed_nodes
-                elif isinstance(parsed_nodes, dict):
-                    # Try to extract list from dictionary values
-                    for value in parsed_nodes.values():
-                        if isinstance(value, list):
-                            nodes = value
-                            break
-                    if not nodes:
-                        nodes = [parsed_nodes]
-            except Exception as e:
-                logger.error(f"Failed to parse streamed final roadmap: {e}")
-                yield _json_stream_event(
-                    "error",
-                    {
-                        "signal": "error",
-                        "message": "Roadmap stream finished but final JSON parsing failed.",
-                        "details": str(e),
-                    },
-                )
-                return
-
             yield _json_stream_event("nodes", {"nodes": nodes})
             yield _json_stream_event("done", {"signal": "success"})
 

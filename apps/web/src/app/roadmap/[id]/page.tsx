@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import {
   ReactFlow,
   Controls,
   Background,
   BackgroundVariant,
   Node as FlowNode,
+  useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import Link from "next/link";
@@ -22,6 +23,8 @@ import {
   Settings,
   Trash2,
   Sparkles,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
@@ -35,6 +38,7 @@ import {
   usePublishRoadmap,
   useUpdateRoadmapAi,
 } from "@/hooks/useRoadmap";
+import { useRoadmapStream } from "@/hooks/useRoadmapStream";
 import { getLayoutedElements } from "@/lib/layout";
 import { RoadmapNode } from "@/components/roadmap/RoadmapNode";
 import { InitRoadmapDialog } from "@/components/roadmap/InitRoadmapDialog";
@@ -57,8 +61,11 @@ const nodeTypes = {
 export default function RoadmapPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const idStr = params.id as string;
   const roadmapId = parseInt(idStr, 10);
+  const topic = searchParams.get("topic");
+  const answersJson = searchParams.get("answers");
 
   // Load existing roadmap
   const {
@@ -66,6 +73,37 @@ export default function RoadmapPage() {
     isLoading: isLoadingRoadmap,
     refetch,
   } = useGetRoadmap(roadmapId);
+
+  const {
+    nodes: streamedNodes,
+    status: streamStatus,
+    error: streamError,
+    startGeneration,
+  } = useRoadmapStream();
+
+  const customizationAnswers = useMemo(() => {
+    if (!answersJson) return undefined;
+    try {
+      return JSON.parse(answersJson) as string[];
+    } catch {
+      return undefined;
+    }
+  }, [answersJson]);
+
+  useEffect(() => {
+    if (roadmapId && topic && streamStatus === "idle") {
+      startGeneration(roadmapId, topic, customizationAnswers);
+    }
+  }, [roadmapId, topic, streamStatus, startGeneration, customizationAnswers]);
+
+  useEffect(() => {
+    if (streamStatus === "done" || streamStatus === "error") {
+      refetch();
+      if (streamStatus === "done") {
+        router.replace(`/roadmap/${roadmapId}`);
+      }
+    }
+  }, [streamStatus, refetch, router, roadmapId]);
 
   // Roadmap Metadata
   const [title, setTitle] = useState("");
@@ -190,19 +228,81 @@ export default function RoadmapPage() {
   }, [nodes, proposedNodes, isPreviewMode, selectedNodeId]);
 
   const { nodes: flowNodes, edges: flowEdges } = useMemo(() => {
-    const activeNodes = isPreviewMode ? proposedNodes : nodes;
-    const activeEdges = isPreviewMode ? proposedEdges : edges;
+    let activeNodes = isPreviewMode ? proposedNodes : nodes;
+    let activeEdges = isPreviewMode ? proposedEdges : edges;
+
+    if (streamStatus !== "idle") {
+      const mergedNodes = [...activeNodes];
+
+      streamedNodes.forEach((sn) => {
+        if (
+          !mergedNodes.find(
+            (n) =>
+              String(n.id) === String(sn.id) ||
+              n.title.toLowerCase() === sn.title.toLowerCase(),
+          )
+        ) {
+          mergedNodes.push({
+            id: String(sn.id),
+            title: sn.title,
+            description: sn.description || "",
+            tags: sn.tags,
+            resources: sn.resources || [],
+            isCompleted: sn.isCompleted,
+          });
+        }
+      });
+
+      // Add shimmer skeleton nodes at the end to indicate AI is working
+      if (streamStatus === "connecting" || streamStatus === "streaming") {
+        const skeletonCount = 1;
+        for (let i = 0; i < skeletonCount; i++) {
+          mergedNodes.push({
+            id: `skeleton-${i}`,
+            title: "Generating...",
+            description: "",
+            tags: [],
+            resources: [],
+            isCompleted: false,
+            isSkeleton: true,
+          } as any);
+        }
+      }
+
+      activeNodes = mergedNodes;
+
+      const newEdges = [];
+      for (let i = 0; i < activeNodes.length - 1; i++) {
+        if (activeNodes[i].id && activeNodes[i + 1].id) {
+          newEdges.push({
+            source: activeNodes[i].id!,
+            target: activeNodes[i + 1].id!,
+          });
+        }
+      }
+      activeEdges = newEdges;
+    }
+
     const layoutNodes = activeNodes.map((n) => ({
       id: n.id!,
       label: n.title,
       description: n.description,
       resources: n.resources,
       completed: n.isCompleted,
-      isReadOnly: false,
+      isReadOnly: streamStatus !== "idle",
       diffState: (n as any).diffState,
+      isSkeleton: (n as any).isSkeleton,
     }));
     return getLayoutedElements(layoutNodes, activeEdges);
-  }, [nodes, proposedNodes, edges, proposedEdges, isPreviewMode]);
+  }, [
+    nodes,
+    proposedNodes,
+    edges,
+    proposedEdges,
+    isPreviewMode,
+    streamedNodes,
+    streamStatus,
+  ]);
 
   // Calculate progress (mocked since backend doesn't store 'completed' yet)
   const completedCount = flowNodes.filter((n) => n.data.completed).length;
@@ -242,8 +342,13 @@ export default function RoadmapPage() {
       });
 
       // Map backend response nodes to NodeDraft format
-      const incomingNodes: (NodeDraft & { id?: string; diffState?: "added" | "modified" | "deleted" })[] = resultNodes.map((n: any) => {
-        const existsInOriginal = nodes.some((origNode) => String(origNode.id) === String(n.id));
+      const incomingNodes: (NodeDraft & {
+        id?: string;
+        diffState?: "added" | "modified" | "deleted";
+      })[] = resultNodes.map((n: any) => {
+        const existsInOriginal = nodes.some(
+          (origNode) => String(origNode.id) === String(n.id),
+        );
         return {
           id: existsInOriginal && n.id ? String(n.id) : undefined,
           title: n.title,
@@ -254,18 +359,27 @@ export default function RoadmapPage() {
         };
       });
 
-      const updatedNodes: (NodeDraft & { id?: string; diffState?: "added" | "modified" | "deleted" })[] = [];
+      const updatedNodes: (NodeDraft & {
+        id?: string;
+        diffState?: "added" | "modified" | "deleted";
+      })[] = [];
 
       // 1. Find added or modified nodes
       incomingNodes.forEach((incNode) => {
         const existingMatch = incNode.id
           ? nodes.find((origNode) => String(origNode.id) === String(incNode.id))
-          : nodes.find((origNode) => origNode.title.toLowerCase().trim() === incNode.title.toLowerCase().trim());
+          : nodes.find(
+              (origNode) =>
+                origNode.title.toLowerCase().trim() ===
+                incNode.title.toLowerCase().trim(),
+            );
 
         if (!existingMatch) {
           updatedNodes.push({
             ...incNode,
-            id: incNode.id ? String(incNode.id) : "temp-" + Date.now() + Math.random(),
+            id: incNode.id
+              ? String(incNode.id)
+              : "temp-" + Date.now() + Math.random(),
             diffState: "added",
           });
         } else {
@@ -275,8 +389,12 @@ export default function RoadmapPage() {
           const isDescChanged = desc1 !== desc2;
 
           // Normalize tags
-          const tags1 = (existingMatch.tags || []).map((t) => t.toLowerCase().trim()).sort();
-          const tags2 = (incNode.tags || []).map((t) => t.toLowerCase().trim()).sort();
+          const tags1 = (existingMatch.tags || [])
+            .map((t) => t.toLowerCase().trim())
+            .sort();
+          const tags2 = (incNode.tags || [])
+            .map((t) => t.toLowerCase().trim())
+            .sort();
           const isTagsChanged = JSON.stringify(tags1) !== JSON.stringify(tags2);
 
           // Normalize resources (compare key fields: title, url)
@@ -284,11 +402,17 @@ export default function RoadmapPage() {
             title: (r.title || "").trim().toLowerCase(),
             url: (r.url || "").trim().toLowerCase(),
           });
-          const res1 = (existingMatch.resources || []).map(normalizeRes).sort((a, b) => a.url.localeCompare(b.url));
-          const res2 = (incNode.resources || []).map(normalizeRes).sort((a, b) => a.url.localeCompare(b.url));
-          const isResourcesChanged = JSON.stringify(res1) !== JSON.stringify(res2);
+          const res1 = (existingMatch.resources || [])
+            .map(normalizeRes)
+            .sort((a, b) => a.url.localeCompare(b.url));
+          const res2 = (incNode.resources || [])
+            .map(normalizeRes)
+            .sort((a, b) => a.url.localeCompare(b.url));
+          const isResourcesChanged =
+            JSON.stringify(res1) !== JSON.stringify(res2);
 
-          const isModified = isDescChanged || isTagsChanged || isResourcesChanged;
+          const isModified =
+            isDescChanged || isTagsChanged || isResourcesChanged;
 
           updatedNodes.push({
             ...incNode,
@@ -301,7 +425,9 @@ export default function RoadmapPage() {
       // 2. Find deleted nodes (nodes in original that are not in incomingNodes)
       nodes.forEach((origNode) => {
         const stillExists = incomingNodes.some(
-          (incNode) => incNode.title.toLowerCase().trim() === origNode.title.toLowerCase().trim()
+          (incNode) =>
+            incNode.title.toLowerCase().trim() ===
+            origNode.title.toLowerCase().trim(),
         );
 
         if (!stillExists) {
@@ -314,7 +440,9 @@ export default function RoadmapPage() {
 
       // Rebuild preview edges linearly for the preview representation
       const updatedEdges = [];
-      const nonDeletedNodes = updatedNodes.filter(n => n.diffState !== "deleted");
+      const nonDeletedNodes = updatedNodes.filter(
+        (n) => n.diffState !== "deleted",
+      );
       for (let i = 0; i < nonDeletedNodes.length - 1; i++) {
         updatedEdges.push({
           source: nonDeletedNodes[i].id!,
@@ -729,7 +857,7 @@ export default function RoadmapPage() {
           variant="danger"
         />
 
-        {nodes.length === 0 ? (
+        {flowNodes.length === 0 ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10 pointer-events-none">
             <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mb-4 border border-border shadow-xl">
               <Plus className="w-8 h-8 text-muted-foreground" />
@@ -756,9 +884,10 @@ export default function RoadmapPage() {
               onNodeClick={handleNodeClick}
               fitView
               fitViewOptions={{ padding: 0.2 }}
-              minZoom={0.5}
+              minZoom={0.1}
               maxZoom={2}
             >
+              <AutoFitView streamStatus={streamStatus} />
               <Background
                 variant={BackgroundVariant.Dots}
                 gap={20}
@@ -772,4 +901,32 @@ export default function RoadmapPage() {
       </main>
     </div>
   );
+}
+
+function AutoFitView({ streamStatus }: { streamStatus: string }) {
+  const { setViewport, getNodes } = useReactFlow();
+
+  useEffect(() => {
+    if (streamStatus === 'connecting') {
+      const timeoutId = setTimeout(() => {
+        const nodes = getNodes();
+        if (nodes.length > 0) {
+          const firstNode = nodes[0];
+          const targetZoom = 0.45; // Fixed zoomed-out scale
+          
+          // Node width is approximately 260px, so center X is position.x + 130
+          const nodeCenterX = firstNode.position.x + 130;
+          
+          // Center horizontally in the window, and place the first node 120px from the top
+          const viewportX = (window.innerWidth / 2) - (nodeCenterX * targetZoom);
+          const viewportY = 20 - (firstNode.position.y * targetZoom);
+
+          setViewport({ x: viewportX, y: viewportY, zoom: targetZoom }, { duration: 800 });
+        }
+      }, 50);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [streamStatus, getNodes, setViewport]);
+
+  return null;
 }

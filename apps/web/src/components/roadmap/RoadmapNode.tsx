@@ -17,11 +17,40 @@ export interface RoadmapNodeData {
   completed: boolean;
   isReadOnly?: boolean;
   diffState?: "added" | "modified" | "deleted";
+  isSkeleton?: boolean;
 }
 
 function RoadmapNodeComponent({ id, data, selected }: NodeProps) {
   const nodeData = data as unknown as RoadmapNodeData;
-  const { diffState } = nodeData;
+  const { diffState, isSkeleton } = nodeData;
+
+  if (isSkeleton) {
+    return (
+      <div className="relative w-[260px] rounded-xl border-2 p-5 bg-card/40 backdrop-blur-sm border-border/50 shadow-xl overflow-hidden group">
+        {/* Shimmer effect */}
+        <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-sky-500/10 to-transparent" />
+        
+        {/* Pulsing border glow */}
+        <div className="absolute inset-0 border-2 border-sky-500/20 rounded-xl animate-pulse" />
+
+        <Handle type="target" position={Position.Top} className="opacity-0" />
+        
+        <div className="flex flex-col gap-4 relative z-10">
+          <div className="h-5 w-3/4 bg-muted/80 rounded-md animate-pulse" />
+          <div className="space-y-2">
+            <div className="h-3 w-full bg-muted/40 rounded-md animate-pulse" />
+            <div className="h-3 w-5/6 bg-muted/40 rounded-md animate-pulse" />
+            <div className="h-3 w-4/6 bg-muted/40 rounded-md animate-pulse" />
+          </div>
+          <div className="flex justify-between items-center mt-2">
+            <div className="h-4 w-1/3 bg-muted/30 rounded-md animate-pulse" />
+            <div className="h-4 w-6 bg-muted/30 rounded-full animate-pulse" />
+          </div>
+        </div>
+        <Handle type="source" position={Position.Bottom} className="opacity-0" />
+      </div>
+    );
+  }
 
   // Visual diff style mappings
   let diffContainerClass = "";
@@ -37,7 +66,7 @@ function RoadmapNodeComponent({ id, data, selected }: NodeProps) {
   return (
     <div
       className={`
-        relative group transition-all duration-300
+        relative group transition-all duration-300 animate-in fade-in zoom-in-90 duration-700
         ${selected ? "scale-105" : "hover:scale-[1.02]"}
         ${diffState === "deleted" ? "pointer-events-none" : ""}
       `}
