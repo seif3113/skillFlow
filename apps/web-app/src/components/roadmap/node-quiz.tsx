@@ -24,13 +24,13 @@ const toChoices = (v: unknown): string[] =>
   Array.isArray(v) ? v.filter((c): c is string => typeof c === "string") : []
 
 // Quiz state machine for a single node: generate → take → grade. Lifted into a
-// hook so the drawer can drive the body and footer from the same state.
+// hook so the sheet can drive the body and footer from the same state.
 export function useNodeQuiz(nodeId: number, onPassed: () => void) {
   const [generate, { loading: generating }] = useMutation(
-    GenerateNodeQuizDocument,
+    GenerateNodeQuizDocument
   )
   const [submit, { loading: submitting }] = useMutation(
-    SubmitQuizAttemptDocument,
+    SubmitQuizAttemptDocument
   )
   const [quiz, setQuiz] = useState<Quiz | null>(null)
   const [answers, setAnswers] = useState<Record<number, number>>({})
@@ -110,14 +110,14 @@ export function QuizQuestions({
     <div className="flex flex-col gap-5">
       {quiz.questions.map((q, qi) => (
         <div key={q.id} className="flex flex-col gap-2">
-          <p className="font-medium text-sm">
+          <p className="text-sm font-medium">
             {qi + 1}. {q.question}
           </p>
           <ToggleGroup
             variant="outline"
             spacing={2}
             orientation="vertical"
-            className="items-stretch"
+            className="w-full items-stretch"
             value={answers[q.id] !== undefined ? [String(answers[q.id])] : []}
             onValueChange={(v: string[]) =>
               v[0] !== undefined && onAnswer(q.id, Number(v[0]))
@@ -127,9 +127,12 @@ export function QuizQuestions({
               <ToggleGroupItem
                 key={ci}
                 value={String(ci)}
-                className="h-auto justify-start whitespace-normal py-2 text-left aria-pressed:border-primary aria-pressed:bg-primary/10 aria-pressed:text-foreground"
+                className="h-auto w-full justify-start gap-3 py-2.5 text-left whitespace-normal aria-pressed:border-primary aria-pressed:bg-primary/10 aria-pressed:text-foreground"
               >
-                {choice}
+                <span className="flex size-5 shrink-0 items-center justify-center rounded border bg-muted/60 text-xs font-medium text-muted-foreground">
+                  {String.fromCharCode(65 + ci)}
+                </span>
+                <span className="flex-1">{choice}</span>
               </ToggleGroupItem>
             ))}
           </ToggleGroup>
@@ -156,21 +159,21 @@ export function QuizResults({
           "flex items-center gap-3 rounded-xl border p-3",
           result.passed
             ? "border-primary/40 bg-primary/5"
-            : "border-destructive/40 bg-destructive/5",
+            : "border-destructive/40 bg-destructive/5"
         )}
       >
         <HugeiconsIcon
           icon={result.passed ? CheckmarkCircle02Icon : CancelCircleIcon}
           className={cn(
             "size-6 shrink-0",
-            result.passed ? "text-primary" : "text-destructive",
+            result.passed ? "text-primary" : "text-destructive"
           )}
         />
         <div>
-          <p className="font-medium text-sm">
+          <p className="text-sm font-medium">
             {result.passed ? "Passed — node completed" : "Not passed"}
           </p>
-          <p className="text-muted-foreground text-xs">
+          <p className="text-xs text-muted-foreground">
             Scored {result.score}% (need {result.passThreshold}% to pass)
           </p>
         </div>
@@ -181,7 +184,7 @@ export function QuizResults({
         const choices = toChoices(q.choices)
         return (
           <div key={q.id} className="flex flex-col gap-1.5">
-            <p className="font-medium text-sm">
+            <p className="text-sm font-medium">
               {qi + 1}. {q.question}
             </p>
             <div className="flex flex-col gap-1">
@@ -192,20 +195,23 @@ export function QuizResults({
                   <div
                     key={ci}
                     className={cn(
-                      "rounded-lg border px-3 py-1.5 text-sm",
+                      "flex items-center gap-3 rounded-lg border px-3 py-1.5 text-sm",
                       isCorrect && "border-primary/50 bg-primary/10",
                       isPicked &&
                         !isCorrect &&
-                        "border-destructive/50 bg-destructive/10",
+                        "border-destructive/50 bg-destructive/10"
                     )}
                   >
-                    {choice}
+                    <span className="flex size-5 shrink-0 items-center justify-center rounded border bg-muted/60 text-xs font-medium text-muted-foreground">
+                      {String.fromCharCode(65 + ci)}
+                    </span>
+                    <span className="flex-1">{choice}</span>
                   </div>
                 )
               })}
             </div>
             {r?.explanation ? (
-              <p className="text-muted-foreground text-xs">{r.explanation}</p>
+              <p className="text-xs text-muted-foreground">{r.explanation}</p>
             ) : null}
           </div>
         )
