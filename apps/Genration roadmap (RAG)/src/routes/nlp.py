@@ -410,9 +410,18 @@ async def edit_roadmap_rag(request: Request, edit_request: RoadmapEditRequest):
     )
 
     try:
+        # Sort nodes by ID ascending first to guarantee consistent ordering
+        sorted_roadmap = sorted(edit_request.roadmap, key=lambda n: n.id)
+
+        ordered_roadmap = []
+        for index, node in enumerate(sorted_roadmap):
+            node_dict = node.dict()
+            node_dict["order"] = index + 1  # Provide explicit 1-based ordering for the LLM
+            ordered_roadmap.append(node_dict)
+
         edited_roadmap = nlp_controller.edit_roadmap_rag(
             prompt=prompt,
-            roadmap=[node.dict() for node in edit_request.roadmap],
+            roadmap=ordered_roadmap,
         )
     except Exception as e:
         logger.error(f"Roadmap RAG edit failed: {str(e)}")
@@ -436,8 +445,7 @@ async def edit_roadmap_rag(request: Request, edit_request: RoadmapEditRequest):
 
     return JSONResponse(
         content={
-            "roadmap": edited_roadmap["roadmap"],
-            "intent": edited_roadmap["intent"],
+            "roadmap": edited_roadmap.get("roadmap", []),
         }
     )
 
