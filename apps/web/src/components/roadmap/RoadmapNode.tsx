@@ -26,11 +26,9 @@ function RoadmapNodeComponent({ id, data, selected }: NodeProps) {
   // Visual diff style mappings
   let diffContainerClass = "";
   if (diffState === "added") {
-    diffContainerClass =
-      "border-emerald-500/80 bg-emerald-500/5 shadow-[0_0_15px_rgba(16,185,129,0.15)]";
+    diffContainerClass = "border-green-500/80 bg-green-500/5 shadow-[0_0_15px_rgba(34,197,94,0.15)]";
   } else if (diffState === "modified") {
-    diffContainerClass =
-      "border-amber-500/80 bg-amber-500/5 shadow-[0_0_15px_rgba(245,158,11,0.15)]";
+    diffContainerClass = "border-yellow-500/80 bg-yellow-500/5 shadow-[0_0_15px_rgba(234,179,8,0.15)]";
   } else if (diffState === "deleted") {
     diffContainerClass =
       "border-red-500/60 border-dashed opacity-50 bg-red-500/5 line-through decoration-red-500/40";
@@ -51,10 +49,10 @@ function RoadmapNodeComponent({ id, data, selected }: NodeProps) {
 
       {/* Added / Modified AI glows */}
       {diffState === "added" && (
-        <div className="absolute -inset-2 bg-emerald-500/10 blur-xl rounded-2xl pointer-events-none" />
+        <div className="absolute -inset-2 bg-green-500/10 blur-xl rounded-2xl pointer-events-none" />
       )}
       {diffState === "modified" && (
-        <div className="absolute -inset-2 bg-amber-500/10 blur-xl rounded-2xl pointer-events-none" />
+        <div className="absolute -inset-2 bg-yellow-500/10 blur-xl rounded-2xl pointer-events-none" />
       )}
 
       <div
@@ -97,15 +95,11 @@ function RoadmapNodeComponent({ id, data, selected }: NodeProps) {
             >
               {nodeData.label}
               {diffState && (
-                <span
-                  className={`ml-2 text-[9px] px-1.5 py-0.5 rounded-sm font-bold uppercase tracking-wider ${
-                    diffState === "added"
-                      ? "bg-emerald-500/20 text-emerald-400"
-                      : diffState === "modified"
-                        ? "bg-amber-500/20 text-amber-400"
-                        : "bg-red-500/20 text-red-400"
-                  }`}
-                >
+                <span className={`ml-2 text-[9px] px-1.5 py-0.5 rounded-sm font-bold uppercase tracking-wider ${
+                  diffState === "added" ? "bg-green-500/20 text-green-400" :
+                  diffState === "modified" ? "bg-yellow-500/20 text-yellow-400" :
+                  "bg-red-500/20 text-red-400"
+                }`}>
                   {diffState}
                 </span>
               )}

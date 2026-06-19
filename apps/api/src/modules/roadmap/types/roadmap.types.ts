@@ -14,3 +14,20 @@ export interface DeleteRoadmapResult {
   success: boolean;
   message: string;
 }
+
+export interface UpdatedRoadmapResult {
+  roadmap?: {
+    id: number;
+    title: string;
+    description?: string | null;
+    tags?: string[] | null;
+    resources?:
+      | {
+          title: string;
+          source?: string | null;
+          url: string;
+          type?: string | null;
+        }[]
+      | null;
+  }[];
+}

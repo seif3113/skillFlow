@@ -87,6 +87,7 @@ extend type Query {
 extend type Mutation {
   createRoadmap(input: CreateRoadmapInput!): Roadmap!
   updateRoadmap(input: UpdateRoadmapInput!): Roadmap!
+  updateRoadmapAi(id: Int!, message: String!): [Node!]!
   deleteRoadmap(id: Int!): DeleteRoadmapResult!
   publishRoadmap(id: Int!): Roadmap!
   forkRoadmap(id: Int!, userId: Int!): Roadmap!

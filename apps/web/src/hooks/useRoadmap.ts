@@ -177,6 +177,18 @@ const PUBLIC_ROADMAPS = gql`
   }
 `;
 
+const UPDATE_ROADMAP_AI = gql`
+  mutation UpdateRoadmapAi($id: Int!, $message: String!) {
+    updateRoadmapAi(id: $id, message: $message) {
+      id
+      title
+      description
+      resources
+      tags
+    }
+  }
+`;
+
 // ----------------------------------------------------------------------
 // TYPES
 // ----------------------------------------------------------------------
@@ -395,5 +407,17 @@ export function useRoadmapCustomizationQuestions(
       return data.roadmapCustomizationQuestions || [];
     },
     enabled: enabled && !!message,
+  });
+}
+
+export function useUpdateRoadmapAi() {
+  return useMutation({
+    mutationFn: async ({ id, message }: { id: number; message: string }) => {
+      const response: any = await graphQLClient.request(UPDATE_ROADMAP_AI, {
+        id,
+        message,
+      });
+      return response.updateRoadmapAi;
+    },
   });
 }
