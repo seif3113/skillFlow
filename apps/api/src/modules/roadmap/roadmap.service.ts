@@ -93,6 +93,14 @@ export class RoadmapService {
     return this.mapRow(row);
   }
 
+  // Anonymous-safe read: only returns the roadmap when it's published, so an
+  // unauthenticated caller can't fetch a private roadmap by guessing its id.
+  async findPublicById(id: number): Promise<RoadmapType | null> {
+    const row = await this.roadmapRepository.findById(id);
+    if (!row || !row.isPublished) return null;
+    return this.mapRow(row);
+  }
+
   async findByUserId(userId: number): Promise<RoadmapType[]> {
     const rows = await this.roadmapRepository.findByUserId(userId);
     return rows.map((r) => this.mapRow(r));

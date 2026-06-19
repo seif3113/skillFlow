@@ -307,6 +307,6 @@ export class PublicRoadmapResolver {
 
   @Query('publicRoadmap')
   getPublicRoadmap(@Args('id') id: number) {
-    return this.roadmapService.findById(id);
+    return this.roadmapService.findPublicById(id);
   }
 }
