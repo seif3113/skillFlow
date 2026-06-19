@@ -58,11 +58,6 @@ export function AppSidebar() {
 						</SidebarMenuItem>
 					))}
 				</SidebarMenu>
-				<div className="px-4 pt-4 pb-2 transition-opacity group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:opacity-0">
-					<p className="text-nowrap text-[9px] text-muted-foreground">
-						© {new Date().getFullYear()} SkillFlow
-					</p>
-				</div>
 			</SidebarFooter>
 		</Sidebar>
 	);

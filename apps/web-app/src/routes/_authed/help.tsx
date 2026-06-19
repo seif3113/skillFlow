@@ -65,7 +65,7 @@ function HelpPage() {
         </p>
       </div>
 
-      <ol className="flex flex-col gap-3">
+      <ol className="grid gap-3 sm:grid-cols-2">
         {STEPS.map((step, i) => (
           <li key={step.title}>
             <Card>
