@@ -211,6 +211,7 @@ const UPDATE_ROADMAP_AI = gql`
       description
       resources
       tags
+      intent
     }
   }
 `;

@@ -51,13 +51,14 @@ export interface UpdateUserInput {
 }
 
 export interface Node {
-    id: number;
+    id?: Nullable<number>;
     roadmapId: number;
     title: string;
     description?: Nullable<string>;
     tags?: Nullable<JSON>;
     resources?: Nullable<JSON>;
     isCompleted: boolean;
+    intent?: Nullable<string>;
     createdAt: DateTime;
     updatedAt: DateTime;
     chats?: Nullable<NodeExplanationChat[]>;

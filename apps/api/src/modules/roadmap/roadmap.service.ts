@@ -106,6 +106,7 @@ export class RoadmapService {
     const payload = await genericFetch<RoadmapCustomizationResponse>(url, {
       method: 'POST',
       body: JSON.stringify({ message: cleanedMessage }),
+      timeout: 60000,
     });
 
     if (!Array.isArray(payload.questions)) {
@@ -167,10 +168,11 @@ export class RoadmapService {
       throw new InternalServerErrorException('RAG_URI is not configured');
     }
 
-    const url = `${baseUrl.replace(/\/$/, '')}/api/v1/nlp/edit-roadmap-rag`;
+    const url = `${baseUrl.replace(/\/$/, '')}/nlp/edit-roadmap-rag`;
     const payload = await genericFetch<UpdatedRoadmapResult>(url, {
       method: 'POST',
       body: JSON.stringify({ prompt: cleanedMessage, roadmap: roadmapNodes }),
+      timeout: 60000, // LLM calls can be slow
     });
 
     if (!payload || !payload.roadmap) {

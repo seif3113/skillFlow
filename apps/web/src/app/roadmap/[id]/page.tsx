@@ -343,112 +343,106 @@ export default function RoadmapPage() {
         message: prompt,
       });
 
-      // Map backend response nodes to NodeDraft format
-      const incomingNodes: (NodeDraft & {
+      // 1. Heuristic ID assignment for nodes missing IDs
+      const explicitlyReturnedIds = new Set(
+        resultNodes.map((n: any) => (n.id ? String(n.id) : null)).filter(Boolean)
+      );
+      const availableOriginalNodes = nodes.filter(
+        (n) => !explicitlyReturnedIds.has(String(n.id))
+      );
+
+      const mappedResultNodes: (NodeDraft & {
         id?: string;
         diffState?: "added" | "modified" | "deleted";
       })[] = resultNodes.map((n: any) => {
-        const existsInOriginal = nodes.some(
-          (origNode) => String(origNode.id) === String(n.id),
-        );
+        let diffState: "added" | "modified" | "deleted" | undefined = undefined;
+        if (n.intent === "new") diffState = "added";
+        else if (n.intent === "modified") diffState = "modified";
+        else if (n.intent === "deleted") diffState = "deleted";
+
+        let finalId = n.id ? String(n.id) : null;
+
+        if (!finalId && n.intent !== "new") {
+          // Try to match by exact title first
+          const exactMatchIdx = availableOriginalNodes.findIndex(
+            (orig) => orig.title === n.title
+          );
+          if (exactMatchIdx !== -1) {
+            finalId = String(availableOriginalNodes[exactMatchIdx].id);
+            availableOriginalNodes.splice(exactMatchIdx, 1);
+          } else if (availableOriginalNodes.length > 0) {
+            // Fallback to sequential assignment
+            finalId = String(availableOriginalNodes[0].id);
+            availableOriginalNodes.splice(0, 1);
+          }
+        }
+
+        if (!finalId) {
+          finalId = "temp-" + Date.now() + Math.random();
+        }
+
         return {
-          id: existsInOriginal && n.id ? String(n.id) : undefined,
+          id: finalId,
           title: n.title,
           description: n.description || "",
           tags: n.tags || [],
           resources: n.resources || [],
           isCompleted: n.isCompleted || false,
+          diffState,
         };
       });
 
-      const updatedNodes: (NodeDraft & {
-        id?: string;
-        diffState?: "added" | "modified" | "deleted";
-      })[] = [];
+      // 2. Merge with original nodes robustly
+      const updatedNodes: any[] = [];
+      const usedResNodeIds = new Set<string>();
+      let resIdx = 0;
 
-      // 1. Find added or modified nodes
-      incomingNodes.forEach((incNode) => {
-        const existingMatch = incNode.id
-          ? nodes.find((origNode) => String(origNode.id) === String(incNode.id))
-          : nodes.find(
-              (origNode) =>
-                origNode.title.toLowerCase().trim() ===
-                incNode.title.toLowerCase().trim(),
-            );
+      for (const origNode of nodes) {
+        const resNodeIdx = mappedResultNodes.findIndex((n) => n.id === origNode.id);
 
-        if (!existingMatch) {
-          updatedNodes.push({
-            ...incNode,
-            id: incNode.id
-              ? String(incNode.id)
-              : "temp-" + Date.now() + Math.random(),
-            diffState: "added",
-          });
+        if (resNodeIdx === -1) {
+          // Node is completely missing from RAG response.
+          // Since the LLM supports explicit intent: "deleted", we assume missing nodes 
+          // were just omitted (laziness) and should be kept as idle, NOT deleted!
+          updatedNodes.push({ ...origNode, diffState: undefined });
         } else {
-          // Normalize descriptions
-          const desc1 = (existingMatch.description || "").trim();
-          const desc2 = (incNode.description || "").trim();
-          const isDescChanged = desc1 !== desc2;
+          // Catch up on any new/moved nodes in mappedResultNodes before this matched node
+          while (resIdx < resNodeIdx) {
+            const rNode = mappedResultNodes[resIdx];
+            if (!usedResNodeIds.has(rNode.id!)) {
+              updatedNodes.push(rNode);
+              usedResNodeIds.add(rNode.id!);
+            }
+            resIdx++;
+          }
 
-          // Normalize tags
-          const tags1 = (existingMatch.tags || [])
-            .map((t) => t.toLowerCase().trim())
-            .sort();
-          const tags2 = (incNode.tags || [])
-            .map((t) => t.toLowerCase().trim())
-            .sort();
-          const isTagsChanged = JSON.stringify(tags1) !== JSON.stringify(tags2);
+          // Add the matched node itself
+          const rNode = mappedResultNodes[resNodeIdx];
+          if (!usedResNodeIds.has(rNode.id!)) {
+            updatedNodes.push(rNode);
+            usedResNodeIds.add(rNode.id!);
+          }
 
-          // Normalize resources (compare key fields: title, url)
-          const normalizeRes = (r: any) => ({
-            title: (r.title || "").trim().toLowerCase(),
-            url: (r.url || "").trim().toLowerCase(),
-          });
-          const res1 = (existingMatch.resources || [])
-            .map(normalizeRes)
-            .sort((a, b) => a.url.localeCompare(b.url));
-          const res2 = (incNode.resources || [])
-            .map(normalizeRes)
-            .sort((a, b) => a.url.localeCompare(b.url));
-          const isResourcesChanged =
-            JSON.stringify(res1) !== JSON.stringify(res2);
-
-          const isModified =
-            isDescChanged || isTagsChanged || isResourcesChanged;
-
-          updatedNodes.push({
-            ...incNode,
-            id: String(existingMatch.id),
-            diffState: isModified ? "modified" : undefined,
-          });
+          if (resIdx <= resNodeIdx) {
+            resIdx = resNodeIdx + 1;
+          }
         }
-      });
+      }
 
-      // 2. Find deleted nodes (nodes in original that are not in incomingNodes)
-      nodes.forEach((origNode) => {
-        const stillExists = incomingNodes.some(
-          (incNode) =>
-            incNode.title.toLowerCase().trim() ===
-            origNode.title.toLowerCase().trim(),
-        );
-
-        if (!stillExists) {
-          updatedNodes.push({
-            ...origNode,
-            diffState: "deleted",
-          });
+      // 3. Add any remaining nodes from mappedResultNodes that were placed at the end
+      for (const rNode of mappedResultNodes) {
+        if (!usedResNodeIds.has(rNode.id!)) {
+          updatedNodes.push(rNode);
+          usedResNodeIds.add(rNode.id!);
         }
-      });
+      }
 
-      // Rebuild preview edges linearly for the preview representation
+      // Rebuild preview edges linearly for ALL nodes so layout works
       const updatedEdges = [];
-      const nonDeletedNodes = updatedNodes.filter(
-        (n) => n.diffState !== "deleted",
-      );
-      for (let i = 0; i < nonDeletedNodes.length - 1; i++) {
+      for (let i = 0; i < updatedNodes.length - 1; i++) {
         updatedEdges.push({
-          source: nonDeletedNodes[i].id!,
-          target: nonDeletedNodes[i + 1].id!,
+          source: updatedNodes[i].id!,
+          target: updatedNodes[i + 1].id!,
         });
       }
 
@@ -457,6 +451,8 @@ export default function RoadmapPage() {
       setIsAiEditingLoading(false);
       setIsAiEditPanelOpen(false);
       setIsPreviewMode(true);
+      setSelectedNodeId(null);
+      setIsSidebarOpen(false);
       toast.success("AI edits proposed! Review the preview on canvas.");
     } catch (err) {
       console.error(err);
@@ -468,12 +464,14 @@ export default function RoadmapPage() {
   const handleApplyAiEdits = async () => {
     setIsApplyingEdits(true);
     try {
+      const promises: Promise<any>[] = [];
+
       const deletedNodes = proposedNodes.filter(
         (n) => (n as any).diffState === "deleted",
       );
       for (const node of deletedNodes) {
         if (node.id && !node.id.startsWith("temp-")) {
-          await deleteNode(parseInt(node.id, 10));
+          promises.push(deleteNode(parseInt(node.id, 10)));
         }
       }
 
@@ -482,14 +480,16 @@ export default function RoadmapPage() {
       );
       for (const node of modifiedNodes) {
         if (node.id) {
-          await updateNode({
-            id: parseInt(node.id, 10),
-            title: node.title,
-            description: node.description,
-            tags: node.tags,
-            resources: node.resources,
-            isCompleted: node.isCompleted,
-          });
+          promises.push(
+            updateNode({
+              id: parseInt(node.id, 10),
+              title: node.title,
+              description: node.description,
+              tags: node.tags,
+              resources: node.resources,
+              isCompleted: node.isCompleted,
+            })
+          );
         }
       }
 
@@ -497,18 +497,22 @@ export default function RoadmapPage() {
         (n) => (n as any).diffState === "added",
       );
       for (const node of addedNodes) {
-        await createNode({
-          roadmapId,
-          title: node.title,
-          description: node.description,
-          tags: node.tags,
-          resources: node.resources,
-          isCompleted: node.isCompleted,
-        });
+        promises.push(
+          createNode({
+            roadmapId,
+            title: node.title,
+            description: node.description,
+            tags: node.tags,
+            resources: node.resources,
+            isCompleted: node.isCompleted,
+          })
+        );
       }
 
+      await Promise.all(promises);
+
       toast.success("AI changes applied successfully!");
-      refetch();
+      await refetch();
       setIsPreviewMode(false);
     } catch (e) {
       console.error(e);
@@ -531,6 +535,7 @@ export default function RoadmapPage() {
   };
 
   const handleNodeClick = (_: React.MouseEvent, node: FlowNode) => {
+    if (isPreviewMode) return;
     setSelectedNodeId(node.id);
     if (isChatOpen) {
       setChatNodeId(node.id);
@@ -750,7 +755,8 @@ export default function RoadmapPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsInitDialogOpen(true)}
-            className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-xl transition-colors"
+            disabled={isPreviewMode}
+            className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent disabled:opacity-50 rounded-xl transition-colors"
             title="Edit Roadmap Info"
           >
             <Settings className="w-5 h-5" />
@@ -759,8 +765,8 @@ export default function RoadmapPage() {
           {roadmapId && (
             <button
               onClick={() => setIsDeleteConfirmOpen(true)}
-              disabled={isDeletingRoadmap}
-              className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-colors"
+              disabled={isDeletingRoadmap || isPreviewMode}
+              className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 disabled:opacity-50 rounded-xl transition-colors"
               title="Delete Roadmap"
             >
               <Trash2 className="w-5 h-5" />
@@ -778,7 +784,7 @@ export default function RoadmapPage() {
 
           <button
             onClick={openAddNode}
-            disabled={isSavingNode}
+            disabled={isSavingNode || isPreviewMode}
             className="flex items-center gap-2 px-4 py-2 bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-white text-sm font-medium rounded-xl transition-colors shadow-lg shadow-sky-500/20"
           >
             {isSavingNode ? (
