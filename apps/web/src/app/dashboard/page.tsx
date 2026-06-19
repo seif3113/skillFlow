@@ -398,10 +398,10 @@ function Dashboard() {
                 Answer these questions to customize your path for "{aiPrompt}".
               </p>
 
-              <div className="flex-1 overflow-y-auto space-y-6 pr-1">
+              <div className="flex-1 overflow-y-auto space-y-8 pr-2 pb-4">
                 {customizationQuestions.map((q, idx) => (
-                  <div key={idx} className="space-y-2.5">
-                    <label className="text-sm font-bold text-zinc-200">
+                  <div key={idx} className="space-y-3">
+                    <label className="text-sm font-bold text-zinc-200 leading-relaxed block">
                       {idx + 1}. {q.question}
                     </label>
                     {q.choices && q.choices.length > 0 ? (
