@@ -1,10 +1,7 @@
 "use client";
 
-import {
-	Avatar,
-	AvatarFallback,
-	AvatarImage,
-} from "@/components/ui/avatar";
+import { useState } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -15,67 +12,64 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { HugeiconsIcon } from "@hugeicons/react";
-import {
-	UserIcon,
-	Settings01Icon,
-	CreditCardIcon,
-	Logout01Icon,
-} from "@hugeicons/core-free-icons";
-
-const user = {
-	name: "Shaban Haider",
-	email: "shaban@efferd.com",
-	avatar: "https://github.com/shabanhr.png",
-};
+import { Logout01Icon } from "@hugeicons/core-free-icons";
+import { authClient } from "@/lib/auth/client";
 
 export function NavUser() {
+	const { data: session } = authClient.useSession();
+	const [signingOut, setSigningOut] = useState(false);
+
+	const user = session?.user;
+	const displayName = user?.name || user?.email || "Account";
+	const initial = displayName.charAt(0).toUpperCase();
+
+	const handleSignOut = async () => {
+		setSigningOut(true);
+		try {
+			await authClient.signOut();
+		} finally {
+			// Hard redirect so the root loader re-resolves the (now empty) session.
+			window.location.href = "/login";
+		}
+	};
+
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger
 				nativeButton={false}
-				render={<Avatar className="size-8" />}
+				render={<Avatar className="size-8 cursor-pointer" />}
 			>
-				<AvatarImage src={user.avatar} />
-				<AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+				{user?.image ? <AvatarImage src={user.image} alt={displayName} /> : null}
+				<AvatarFallback>{initial}</AvatarFallback>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end" className="w-60">
 				<DropdownMenuGroup>
 					<DropdownMenuLabel className="flex items-center gap-3">
 						<Avatar className="size-10">
-							<AvatarImage src={user.avatar} />
-							<AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+							{user?.image ? (
+								<AvatarImage src={user.image} alt={displayName} />
+							) : null}
+							<AvatarFallback>{initial}</AvatarFallback>
 						</Avatar>
-						<div className="flex flex-col">
-							<span className="font-medium text-foreground">{user.name}</span>
-							<span className="truncate text-muted-foreground text-xs">
-								{user.email}
+						<div className="flex min-w-0 flex-col">
+							<span className="truncate font-medium text-foreground">
+								{displayName}
 							</span>
+							{user?.email ? (
+								<span className="truncate text-muted-foreground text-xs">
+									{user.email}
+								</span>
+							) : null}
 						</div>
 					</DropdownMenuLabel>
-				</DropdownMenuGroup>
-				<DropdownMenuSeparator />
-				<DropdownMenuGroup>
-					<DropdownMenuItem>
-						<HugeiconsIcon icon={UserIcon} />
-						Account
-					</DropdownMenuItem>
-					<DropdownMenuItem>
-						<HugeiconsIcon icon={Settings01Icon} />
-						Settings
-					</DropdownMenuItem>
-				</DropdownMenuGroup>
-				<DropdownMenuSeparator />
-				<DropdownMenuGroup>
-					<DropdownMenuItem>
-						<HugeiconsIcon icon={CreditCardIcon} />
-						Plan & Billing
-					</DropdownMenuItem>
 				</DropdownMenuGroup>
 				<DropdownMenuSeparator />
 				<DropdownMenuGroup>
 					<DropdownMenuItem
 						className="w-full cursor-pointer"
 						variant="destructive"
+						disabled={signingOut}
+						onClick={handleSignOut}
 					>
 						<HugeiconsIcon icon={Logout01Icon} />
 						Log out
