@@ -8,6 +8,7 @@ import {
   AiChat02Icon,
   Compass01Icon,
   ChartLineData01Icon,
+  SlidersHorizontalIcon,
 } from "@hugeicons/core-free-icons"
 
 import { Button } from "@/components/ui/button"
@@ -22,6 +23,11 @@ const STEPS = [
     icon: MagicWand01Icon,
     title: "Generate a roadmap",
     body: "Describe any topic and AI builds a personalized, prerequisite-ordered learning path for it.",
+  },
+  {
+    icon: SlidersHorizontalIcon,
+    title: "Tailor it to you",
+    body: "When generating, answer a few quick questions so the roadmap matches your level, goals, and the time you have.",
   },
   {
     icon: Route01Icon,
@@ -57,7 +63,7 @@ const STEPS = [
 
 function HelpPage() {
   return (
-    <div className="flex max-w-3xl flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-xl font-semibold">Help</h1>
         <p className="text-sm text-muted-foreground">
@@ -65,10 +71,10 @@ function HelpPage() {
         </p>
       </div>
 
-      <ol className="grid gap-3 sm:grid-cols-2">
+      <ol className="grid auto-rows-fr gap-3 sm:grid-cols-2">
         {STEPS.map((step, i) => (
-          <li key={step.title}>
-            <Card>
+          <li key={step.title} className="h-full">
+            <Card className="h-full">
               <CardContent className="flex items-start gap-4">
                 <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-sm font-semibold text-primary">
                   {i + 1}
