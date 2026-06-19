@@ -16,7 +16,13 @@ import {
 import { useSearchNodeResources } from "@/hooks/useRoadmap";
 import { useDebounce } from "@/hooks/useDebounce";
 
-function ResourceIcon({ type, className }: { type?: string; className?: string }) {
+function ResourceIcon({
+  type,
+  className,
+}: {
+  type?: string;
+  className?: string;
+}) {
   const cn = className || "w-4 h-4 text-sky-500";
   switch (type?.toLowerCase()) {
     case "video":

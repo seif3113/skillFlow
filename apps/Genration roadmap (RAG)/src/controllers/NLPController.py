@@ -616,11 +616,11 @@ class NLPController(BaseController):
 
         return retrieved_resources
 
-    def generate_customized_roadmap_rag(
+    def _build_customized_roadmap_compilation_prompt(
         self, topic: str, customization_answers: list = None
     ):
         """
-        Generates a customized roadmap with compact RAG context and pre-selected resources.
+        Prepares compact RAG context and returns the final roadmap compilation prompt.
         """
         from datetime import datetime
 
@@ -628,7 +628,7 @@ class NLPController(BaseController):
         topic = (topic or "").strip()
 
         if not topic:
-            return None
+            return None, None
 
         customization_str = "None provided"
         if customization_answers:
@@ -670,7 +670,7 @@ class NLPController(BaseController):
             topic_objects = topic_objects[:8]
         except Exception as e:
             logger.error(f"Failed to parse sub-topics: {e}")
-            return None
+            return None, None
 
         # Step 2: Batch vector search with concise, sub-topic specific queries.
         search_queries = [
@@ -730,6 +730,21 @@ class NLPController(BaseController):
             )
             comp_user_prompt = f"Compact roadmap context: {compact_context}"
 
+        return comp_system_prompt, comp_user_prompt
+
+    def generate_customized_roadmap_rag(
+        self, topic: str, customization_answers: list = None
+    ):
+        """
+        Generates a customized roadmap with compact RAG context and pre-selected resources.
+        """
+        comp_system_prompt, comp_user_prompt = self._build_customized_roadmap_compilation_prompt(
+            topic=topic, customization_answers=customization_answers
+        )
+
+        if not comp_system_prompt or not comp_user_prompt:
+            return None
+
         chat_history_2 = [
             self.generation_client.construct_prompt(
                 prompt=comp_system_prompt,
@@ -745,6 +760,36 @@ class NLPController(BaseController):
             return self._extract_json_from_llm_response(final_roadmap_raw)
         except Exception as e:
             logger.error(f"Failed to parse final roadmap: {e}")
+            return None
+
+    def generate_customized_roadmap_rag_stream(
+        self, topic: str, customization_answers: list = None
+    ):
+        """
+        Streams the final roadmap JSON text after the RAG context has been prepared.
+        This is intentionally separate from generate_customized_roadmap_rag so only
+        the streaming endpoint opts into provider streaming.
+        """
+        comp_system_prompt, comp_user_prompt = self._build_customized_roadmap_compilation_prompt(
+            topic=topic, customization_answers=customization_answers
+        )
+
+        if not comp_system_prompt or not comp_user_prompt:
+            return None
+
+        chat_history = [
+            self.generation_client.construct_prompt(
+                prompt=comp_system_prompt,
+                role=self.generation_client.enums.SYSTEM.value,
+            )
+        ]
+
+        try:
+            return self.generation_client.generate_text_stream(
+                prompt=comp_user_prompt, chat_history=chat_history
+            )
+        except NotImplementedError:
+            logger.error("Configured generation provider does not support streaming.")
             return None
 
     def edit_roadmap_rag(self, prompt: str, roadmap: list):

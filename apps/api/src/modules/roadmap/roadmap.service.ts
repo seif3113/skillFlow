@@ -102,7 +102,7 @@ export class RoadmapService {
       throw new InternalServerErrorException('RAG_URI is not configured');
     }
 
-    const url = `${baseUrl.replace(/\/$/, '')}/api/v1/nlp/roadmap-customization`;
+    const url = `${baseUrl.replace(/\/$/, '')}/nlp/roadmap-customization`;
     const payload = await genericFetch<RoadmapCustomizationResponse>(url, {
       method: 'POST',
       body: JSON.stringify({ message: cleanedMessage }),

@@ -105,6 +105,48 @@ class CerebrasProvider(LLMInterface):
             self.logger.error(f"Cerebras API Error: {str(e)}")
             return None
 
+    def generate_text_stream(self, prompt: str, chat_history: list=None, max_output_tokens: int=None,
+                             temperature: float = None):
+        if chat_history is None:
+            chat_history = []
+
+        if not self.client:
+            self.logger.error("Cerebras client was not set")
+            return
+
+        if not self.generation_model_id:
+            self.logger.error("Generation model for Cerebras was not set")
+            return
+
+        max_output_tokens = max_output_tokens if max_output_tokens else self.default_generation_max_output_tokens
+        temperature = temperature if temperature else self.default_generation_temperature
+
+        messages = list(chat_history)
+        messages.append(
+            self.construct_prompt(prompt=prompt, role=self.enums.USER.value)
+        )
+
+        try:
+            stream = self.client.chat.completions.create(
+                model=self.generation_model_id,
+                messages=messages,
+                max_completion_tokens=max_output_tokens,
+                temperature=temperature,
+                stream=True,
+            )
+
+            for chunk in stream:
+                if not chunk or not chunk.choices:
+                    continue
+                delta = chunk.choices[0].delta
+                content = getattr(delta, "content", None)
+                if content:
+                    yield content
+
+        except Exception as e:
+            self.logger.error(f"Cerebras streaming API Error: {str(e)}")
+            return
+
     def embed_text(self, text: Union[str, List[str]], document_type: Optional[str] = None):
         # Cerebras does not provide an embeddings API at this time.
         self.logger.error("Cerebras provider does not support text embedding.")

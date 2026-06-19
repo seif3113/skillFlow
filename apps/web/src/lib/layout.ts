@@ -9,6 +9,7 @@ export interface LayoutNode {
   completed?: boolean;
   isReadOnly?: boolean;
   diffState?: "added" | "modified" | "deleted";
+  isSkeleton?: boolean;
 }
 
 interface LayoutEdge {
@@ -69,6 +70,7 @@ export function getLayoutedElements(
         completed: node.completed || false,
         isReadOnly: node.isReadOnly || false,
         diffState: node.diffState,
+        isSkeleton: node.isSkeleton,
       },
     };
   });

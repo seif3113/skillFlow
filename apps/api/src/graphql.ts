@@ -111,6 +111,7 @@ export interface IMutation {
     publishRoadmap(id: number): Roadmap | Promise<Roadmap>;
     forkRoadmap(id: number, userId: number): Roadmap | Promise<Roadmap>;
     createRoadmapLearningProfile(userId: number, goal?: Nullable<string>, level?: Nullable<string>, background?: Nullable<string>, timeAvailability?: Nullable<string>, preferences?: Nullable<JSON>): RoadmapLearningProfile | Promise<RoadmapLearningProfile>;
+    generateRoadmapStream(roadmapId: number, topic: string, customizationAnswers?: Nullable<string[]>): boolean | Promise<boolean>;
     updateUser(updateUserInput: UpdateUserInput): User | Promise<User>;
     removeUser(id: number): User | Promise<User>;
 }
@@ -185,6 +186,16 @@ export interface DeleteRoadmapResult {
 export interface RoadmapCustomizationQuestion {
     question: string;
     choices: string[];
+}
+
+export interface RoadmapStreamEvent {
+    event: string;
+    node?: Nullable<Node>;
+    message?: Nullable<string>;
+}
+
+export interface ISubscription {
+    roadmapGenerationStream(roadmapId: number): RoadmapStreamEvent | Promise<RoadmapStreamEvent>;
 }
 
 export interface User {

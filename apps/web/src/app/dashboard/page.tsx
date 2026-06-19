@@ -36,6 +36,7 @@ function Dashboard() {
   const [aiPrompt, setAiPrompt] = useState("");
   const [customize, setCustomize] = useState(false);
   const [runQuery, setRunQuery] = useState(false);
+  const [isCreatingAiRoadmap, setIsCreatingAiRoadmap] = useState(false);
 
   // Customization questions panel states
   const [isCustomizationOpen, setIsCustomizationOpen] = useState(false);
@@ -106,31 +107,47 @@ function Dashboard() {
         });
       }, 50);
     } else {
-      // Direct prompt: call route with topic parameters
-      router.push(`/roadmap/new?topic=${encodeURIComponent(aiPrompt.trim())}`);
+      if (!session?.user?.id) return;
+      setIsCreatingAiRoadmap(true);
+      try {
+        const response = await createRoadmap({
+          title: aiPrompt.trim(),
+          userId: parseInt(session.user.id, 10),
+        });
+        router.push(
+          `/roadmap/${response.createRoadmap.id}?topic=${encodeURIComponent(
+            aiPrompt.trim()
+          )}`
+        );
+      } catch (error) {
+        console.error("Failed to create roadmap", error);
+        toast.error("Failed to create roadmap.");
+      } finally {
+        setIsCreatingAiRoadmap(false);
+      }
     }
   };
 
   const handleCustomizationSubmit = async () => {
-    const payload = customizationQuestions.map((q, idx) => ({
-      question: q.question,
-      answer: answers[idx],
-    }));
-
-    console.log("Customization answers payload:", payload);
-    toast.success("Customization submitted successfully!");
-
-    // Placeholder: call createRoadmap with prompt & customization details
+    if (!session?.user?.id) return;
+    setIsCreatingAiRoadmap(true);
     try {
       const response = await createRoadmap({
-        title: "Untitled",
-        userId: parseInt(session?.user?.id || "1", 10),
+        title: aiPrompt.trim() || "Tailored Roadmap",
+        userId: parseInt(session.user.id, 10),
       });
       setIsCustomizationOpen(false);
-      router.push(`/roadmap/${response.createRoadmap.id}`);
+      const formattedAnswers = customizationQuestions.map((q, idx) => answers[idx]);
+      router.push(
+        `/roadmap/${response.createRoadmap.id}?topic=${encodeURIComponent(
+          aiPrompt.trim()
+        )}&answers=${encodeURIComponent(JSON.stringify(formattedAnswers))}`
+      );
     } catch (e) {
       console.error("Failed to create tailored roadmap", e);
       toast.error("Failed to create tailored roadmap.");
+    } finally {
+      setIsCreatingAiRoadmap(false);
     }
   };
 
@@ -288,10 +305,10 @@ function Dashboard() {
               />
               <button
                 onClick={handleAiSubmit}
-                disabled={!aiPrompt.trim() || isQuestionsLoading}
+                disabled={!aiPrompt.trim() || isQuestionsLoading || isCreatingAiRoadmap}
                 className="bg-sky-500 hover:bg-sky-400 text-white font-bold px-6 py-3 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-sky-500/20 text-sm"
               >
-                {isQuestionsLoading && (
+                {(isQuestionsLoading || isCreatingAiRoadmap) && (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 )}
                 <span>Generate Path</span>
@@ -381,10 +398,10 @@ function Dashboard() {
                 Answer these questions to customize your path for "{aiPrompt}".
               </p>
 
-              <div className="flex-1 overflow-y-auto space-y-6 pr-1">
+              <div className="flex-1 overflow-y-auto space-y-8 pr-2 pb-4">
                 {customizationQuestions.map((q, idx) => (
-                  <div key={idx} className="space-y-2.5">
-                    <label className="text-sm font-bold text-zinc-200">
+                  <div key={idx} className="space-y-3">
+                    <label className="text-sm font-bold text-zinc-200 leading-relaxed block">
                       {idx + 1}. {q.question}
                     </label>
                     {q.choices && q.choices.length > 0 ? (
@@ -434,9 +451,12 @@ function Dashboard() {
                 </button>
                 <button
                   onClick={handleCustomizationSubmit}
-                  disabled={answers.some((ans) => !ans || !ans.trim())}
-                  className="px-6 py-2.5 text-xs font-bold text-white bg-sky-500 hover:bg-sky-400 rounded-xl transition-all disabled:opacity-50 disabled:hover:scale-100 cursor-pointer shadow-lg shadow-sky-500/20"
+                  disabled={answers.some((ans) => !ans || !ans.trim()) || isCreatingAiRoadmap}
+                  className="px-6 py-2.5 text-xs font-bold text-white bg-sky-500 hover:bg-sky-400 rounded-xl transition-all disabled:opacity-50 disabled:hover:scale-100 cursor-pointer shadow-lg shadow-sky-500/20 flex items-center gap-2"
                 >
+                  {isCreatingAiRoadmap && (
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  )}
                   Create Roadmap
                 </button>
               </div>

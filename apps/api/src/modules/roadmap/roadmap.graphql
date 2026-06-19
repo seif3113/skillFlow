@@ -71,6 +71,12 @@ type RoadmapCustomizationQuestion {
   choices: [String!]!
 }
 
+type RoadmapStreamEvent {
+  event: String!
+  node: Node
+  message: String
+}
+
 extend type Query {
   roadmaps: [Roadmap!]!
   roadmap(id: Int!): Roadmap
@@ -82,6 +88,10 @@ extend type Query {
   roadmapCustomizationQuestions(
     message: String!
   ): [RoadmapCustomizationQuestion!]!
+}
+
+type Subscription {
+  roadmapGenerationStream(roadmapId: Int!): RoadmapStreamEvent!
 }
 
 extend type Mutation {
@@ -99,4 +109,9 @@ extend type Mutation {
     timeAvailability: String
     preferences: JSON
   ): RoadmapLearningProfile!
+  generateRoadmapStream(
+    roadmapId: Int!
+    topic: String!
+    customizationAnswers: [String!]
+  ): Boolean!
 }

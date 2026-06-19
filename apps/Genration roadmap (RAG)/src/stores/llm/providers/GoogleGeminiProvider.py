@@ -121,6 +121,68 @@ class GoogleGeminiProvider(LLMInterface):
             self.logger.error(f"Google Gemini API Error: {str(e)}")
             return None    
 
+    def generate_text_stream(self, prompt: str, chat_history: list=None, max_output_tokens: int=None,
+                             temperature: float = None):
+        if chat_history is None:
+            chat_history = []
+
+        if not self.generation_model_id:
+            self.logger.error("Generation model for Gemini was not set")
+            return
+
+        max_output_tokens = max_output_tokens if max_output_tokens else self.default_generation_max_output_tokens
+        temperature = temperature if temperature else self.default_generation_temperature
+
+        messages = list(chat_history)
+        messages.append(
+            self.construct_prompt(prompt=prompt, role=self.enums.USER.value)
+        )
+
+        system_instruction = None
+        formatted_history = []
+
+        for msg in messages:
+            role = msg.get("role")
+            content = msg.get("content", "")
+
+            if role == self.enums.SYSTEM.value:
+                if system_instruction is None:
+                    system_instruction = content
+                else:
+                    system_instruction += "\n" + content
+            else:
+                gemini_role = "model" if role == self.enums.ASSISTANT.value else "user"
+                formatted_history.append({"role": gemini_role, "parts": [content]})
+
+        try:
+            if system_instruction:
+                model = genai.GenerativeModel(
+                    model_name=self.generation_model_id,
+                    system_instruction=system_instruction
+                )
+            else:
+                model = genai.GenerativeModel(model_name=self.generation_model_id)
+
+            generation_config = genai.types.GenerationConfig(
+                max_output_tokens=max_output_tokens,
+                temperature=temperature,
+            )
+
+            stream = model.generate_content(
+                formatted_history,
+                generation_config=generation_config,
+                stream=True,
+            )
+
+            for chunk in stream:
+                content = getattr(chunk, "text", None)
+                if content:
+                    yield content
+
+        except Exception as e:
+            self.logger.error(f"Google Gemini streaming API Error: {str(e)}")
+            return
+
     def embed_text(self, text: Union[str, List[str]], document_type: Optional[str] = None):
         if not self.embedding_model_id:
             self.logger.error("Embedding model for Gemini was not set")

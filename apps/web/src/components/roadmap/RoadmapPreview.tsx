@@ -14,49 +14,52 @@ import { useMemo } from "react";
 
 const initialNodes: Node[] = [
   {
-    id: '1',
-    type: 'roadmapNode',
+    id: "1",
+    type: "roadmapNode",
     position: { x: 0, y: 0 },
-    data: { 
-      label: 'React Fundamentals', 
-      description: 'Master JSX, Props, and State basics.',
-      resources: [{ title: 'Official Docs', url: '#' }],
-      completed: true 
+    data: {
+      label: "React Fundamentals",
+      description: "Master JSX, Props, and State basics.",
+      resources: [{ title: "Official Docs", url: "#" }],
+      completed: true,
     },
   },
   {
-    id: '2',
-    type: 'roadmapNode',
+    id: "2",
+    type: "roadmapNode",
     position: { x: 0, y: 200 },
-    data: { 
-      label: 'Advanced Hooks', 
-      description: 'Deep dive into useEffect, useMemo, and useCallback.',
-      resources: [{ title: 'Hooks Guide', url: '#' }],
-      completed: false 
+    data: {
+      label: "Advanced Hooks",
+      description: "Deep dive into useEffect, useMemo, and useCallback.",
+      resources: [{ title: "Hooks Guide", url: "#" }],
+      completed: false,
     },
   },
   {
-    id: '3',
-    type: 'roadmapNode',
+    id: "3",
+    type: "roadmapNode",
     position: { x: 300, y: 100 },
-    data: { 
-      label: 'State Management', 
-      description: 'Explore Context API and modern libraries.',
-      resources: [{ title: 'Zustand Docs', url: '#' }],
-      completed: false 
+    data: {
+      label: "State Management",
+      description: "Explore Context API and modern libraries.",
+      resources: [{ title: "Zustand Docs", url: "#" }],
+      completed: false,
     },
   },
 ];
 
 const initialEdges: Edge[] = [
-  { id: 'e1-2', source: '1', target: '2', type: 'smoothstep', animated: true },
-  { id: 'e1-3', source: '1', target: '3', type: 'smoothstep' },
+  { id: "e1-2", source: "1", target: "2", type: "smoothstep", animated: true },
+  { id: "e1-3", source: "1", target: "3", type: "smoothstep" },
 ];
 
 export function RoadmapPreview() {
-  const nodeTypes: NodeTypes = useMemo(() => ({
-    roadmapNode: RoadmapNode,
-  }), []);
+  const nodeTypes: NodeTypes = useMemo(
+    () => ({
+      roadmapNode: RoadmapNode,
+    }),
+    [],
+  );
 
   return (
     <div className="w-full h-full">
