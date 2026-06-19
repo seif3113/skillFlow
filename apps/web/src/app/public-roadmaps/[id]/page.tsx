@@ -51,6 +51,9 @@ export default function PublicRoadmapDetailPage() {
           id: String(n.id),
         })) || [];
 
+      // Sort nodes by numeric ID ascending
+      loadedNodes.sort((a: any, b: any) => Number(a.id) - Number(b.id));
+
       setNodes(loadedNodes);
 
       const loadedEdges = [];

@@ -29,6 +29,7 @@ class RoadmapResource(BaseModel):
     type: str
 
 class RoadmapNode(BaseModel):
+    id: int
     title: str
     description: str
     tags: List[str] = Field(default_factory=list)

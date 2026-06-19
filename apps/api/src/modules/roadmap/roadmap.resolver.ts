@@ -63,6 +63,11 @@ export class RoadmapResolver {
     return this.roadmapService.update(input);
   }
 
+  @Mutation('updateRoadmapAi')
+  updateRoadmapAi(@Args('id') id: number, @Args('message') message: string) {
+    return this.roadmapService.updateRoadmapAi(id, message);
+  }
+
   @Mutation('deleteRoadmap')
   deleteRoadmap(@Args('id') id: number) {
     return this.roadmapService.delete(id);

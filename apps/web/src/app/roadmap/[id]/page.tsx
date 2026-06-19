@@ -33,6 +33,7 @@ import {
   useUpdateNode,
   useDeleteNode,
   usePublishRoadmap,
+  useUpdateRoadmapAi,
 } from "@/hooks/useRoadmap";
 import { getLayoutedElements } from "@/lib/layout";
 import { RoadmapNode } from "@/components/roadmap/RoadmapNode";
@@ -60,8 +61,11 @@ export default function RoadmapPage() {
   const roadmapId = parseInt(idStr, 10);
 
   // Load existing roadmap
-  const { data: existingRoadmap, isLoading: isLoadingRoadmap, refetch } =
-    useGetRoadmap(roadmapId);
+  const {
+    data: existingRoadmap,
+    isLoading: isLoadingRoadmap,
+    refetch,
+  } = useGetRoadmap(roadmapId);
 
   // Roadmap Metadata
   const [title, setTitle] = useState("");
@@ -88,9 +92,13 @@ export default function RoadmapPage() {
   const [isAiEditingLoading, setIsAiEditingLoading] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [originalNodes, setOriginalNodes] = useState<NodeDraft[]>([]);
-  const [originalEdges, setOriginalEdges] = useState<{ source: string; target: string }[]>([]);
+  const [originalEdges, setOriginalEdges] = useState<
+    { source: string; target: string }[]
+  >([]);
   const [proposedNodes, setProposedNodes] = useState<NodeDraft[]>([]);
-  const [proposedEdges, setProposedEdges] = useState<{ source: string; target: string }[]>([]);
+  const [proposedEdges, setProposedEdges] = useState<
+    { source: string; target: string }[]
+  >([]);
 
   useEffect(() => {
     const handleOpenChat = (e: Event) => {
@@ -118,6 +126,7 @@ export default function RoadmapPage() {
   const { mutateAsync: updateNode, isPending: isUpdatingNode } =
     useUpdateNode();
   const { mutateAsync: deleteNode } = useDeleteNode();
+  const { mutateAsync: updateRoadmapAi } = useUpdateRoadmapAi();
   const [isApplyingEdits, setIsApplyingEdits] = useState(false);
   const isSavingNode = isCreatingNode || isUpdatingNode || isApplyingEdits;
 
@@ -127,7 +136,11 @@ export default function RoadmapPage() {
       const response = await publishRoadmap(roadmapId);
       const nextState = response.publishRoadmap.isPublished;
       setIsPublished(nextState);
-      toast.success(nextState ? "Roadmap published successfully!" : "Roadmap is now private.");
+      toast.success(
+        nextState
+          ? "Roadmap published successfully!"
+          : "Roadmap is now private.",
+      );
     } catch (e) {
       console.error(e);
       toast.error("Failed to update publication status.");
@@ -146,6 +159,9 @@ export default function RoadmapPage() {
           ...n,
           id: String(n.id),
         })) || [];
+
+      // Sort nodes by numeric ID ascending
+      loadedNodes.sort((a: any, b: any) => Number(a.id) - Number(b.id));
 
       setNodes(loadedNodes);
 
@@ -216,117 +232,94 @@ export default function RoadmapPage() {
   const handleAiEditSubmit = async (prompt: string) => {
     setIsAiEditingLoading(true);
     try {
-      // Simulate API/AI delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
       setOriginalNodes(nodes);
       setOriginalEdges(edges);
 
-      const updatedNodes: (NodeDraft & { diffState?: "added" | "modified" | "deleted" })[] = nodes.map((n) => ({
-        ...n,
-        diffState: undefined,
-      }));
-      const updatedEdges = [...edges];
+      // Call the NestJS graphql updateRoadmapAi mutation
+      const resultNodes = await updateRoadmapAi({
+        id: roadmapId,
+        message: prompt,
+      });
 
-      const cleanPrompt = prompt.toLowerCase();
-      
-      if (cleanPrompt.includes("docker") || cleanPrompt.includes("container")) {
-        const newNodeId = "temp-" + Date.now();
-        const newNode = {
-          id: newNodeId,
-          title: "Docker & Containerization",
-          description: "Learn how to build, run and ship containerized applications using Docker.",
-          tags: ["devops", "docker", "containers"],
-          resources: [
-            {
-              title: "Docker for Beginners",
-              url: "https://www.youtube.com/watch?v=fqMOX6JJhGo",
-              description: "A complete Docker tutorial video.",
-              type: "video"
-            }
-          ],
-          isCompleted: false,
-          diffState: "added" as const
+      // Map backend response nodes to NodeDraft format
+      const incomingNodes: (NodeDraft & { id?: string; diffState?: "added" | "modified" | "deleted" })[] = resultNodes.map((n: any) => {
+        const existsInOriginal = nodes.some((origNode) => String(origNode.id) === String(n.id));
+        return {
+          id: existsInOriginal && n.id ? String(n.id) : undefined,
+          title: n.title,
+          description: n.description || "",
+          tags: n.tags || [],
+          resources: n.resources || [],
+          isCompleted: n.isCompleted || false,
         };
-        
-        if (updatedNodes.length > 0) {
-          const lastNode = updatedNodes[updatedNodes.length - 1];
-          updatedNodes.splice(updatedNodes.length - 1, 0, newNode);
-          
-          if (updatedNodes.length > 2) {
-            const secondToLast = updatedNodes[updatedNodes.length - 3];
-            const edgeIndex = updatedEdges.findIndex(
-              (e) => e.source === secondToLast.id && e.target === lastNode.id
-            );
-            if (edgeIndex !== -1) {
-              updatedEdges.splice(edgeIndex, 1);
-            }
-            updatedEdges.push({ source: secondToLast.id!, target: newNodeId });
-            updatedEdges.push({ source: newNodeId, target: lastNode.id! });
-          } else {
-            updatedEdges.push({ source: updatedNodes[0].id!, target: newNodeId });
-          }
+      });
+
+      const updatedNodes: (NodeDraft & { id?: string; diffState?: "added" | "modified" | "deleted" })[] = [];
+
+      // 1. Find added or modified nodes
+      incomingNodes.forEach((incNode) => {
+        const existingMatch = incNode.id
+          ? nodes.find((origNode) => String(origNode.id) === String(incNode.id))
+          : nodes.find((origNode) => origNode.title.toLowerCase().trim() === incNode.title.toLowerCase().trim());
+
+        if (!existingMatch) {
+          updatedNodes.push({
+            ...incNode,
+            id: incNode.id ? String(incNode.id) : "temp-" + Date.now() + Math.random(),
+            diffState: "added",
+          });
         } else {
-          updatedNodes.push(newNode);
+          // Normalize descriptions
+          const desc1 = (existingMatch.description || "").trim();
+          const desc2 = (incNode.description || "").trim();
+          const isDescChanged = desc1 !== desc2;
+
+          // Normalize tags
+          const tags1 = (existingMatch.tags || []).map((t) => t.toLowerCase().trim()).sort();
+          const tags2 = (incNode.tags || []).map((t) => t.toLowerCase().trim()).sort();
+          const isTagsChanged = JSON.stringify(tags1) !== JSON.stringify(tags2);
+
+          // Normalize resources (compare key fields: title, url)
+          const normalizeRes = (r: any) => ({
+            title: (r.title || "").trim().toLowerCase(),
+            url: (r.url || "").trim().toLowerCase(),
+          });
+          const res1 = (existingMatch.resources || []).map(normalizeRes).sort((a, b) => a.url.localeCompare(b.url));
+          const res2 = (incNode.resources || []).map(normalizeRes).sort((a, b) => a.url.localeCompare(b.url));
+          const isResourcesChanged = JSON.stringify(res1) !== JSON.stringify(res2);
+
+          const isModified = isDescChanged || isTagsChanged || isResourcesChanged;
+
+          updatedNodes.push({
+            ...incNode,
+            id: String(existingMatch.id),
+            diffState: isModified ? "modified" : undefined,
+          });
         }
-      } else if (cleanPrompt.includes("state") || cleanPrompt.includes("redux") || cleanPrompt.includes("zustand")) {
-        const stateNode = updatedNodes.find(n => n.title.toLowerCase().includes("state") || n.title.toLowerCase().includes("react"));
-        if (stateNode) {
-          stateNode.title = "Advanced State Management";
-          stateNode.description = "Master Zustand, Redux Toolkit, and React Context API for global state architecture.";
-          stateNode.tags = [...(stateNode.tags || []), "zustand", "redux", "state"];
-          stateNode.diffState = "modified";
-        } else {
-          const newNodeId = "temp-" + Date.now();
-          const newNode = {
-            id: newNodeId,
-            title: "Zustand & Redux State Management",
-            description: "Learn global state management in modern React applications.",
-            tags: ["state", "react", "redux", "zustand"],
-            resources: [],
-            isCompleted: false,
-            diffState: "added" as const
-          };
-          updatedNodes.push(newNode);
-          if (updatedNodes.length > 1) {
-            updatedEdges.push({ source: updatedNodes[updatedNodes.length - 2].id!, target: newNodeId });
-          }
+      });
+
+      // 2. Find deleted nodes (nodes in original that are not in incomingNodes)
+      nodes.forEach((origNode) => {
+        const stillExists = incomingNodes.some(
+          (incNode) => incNode.title.toLowerCase().trim() === origNode.title.toLowerCase().trim()
+        );
+
+        if (!stillExists) {
+          updatedNodes.push({
+            ...origNode,
+            diffState: "deleted",
+          });
         }
-      } else if (cleanPrompt.includes("test") || cleanPrompt.includes("jest")) {
-        const newNodeId = "temp-" + Date.now();
-        const newNode = {
-          id: newNodeId,
-          title: "Testing & Automation",
-          description: "Write unit and integration tests using Jest and React Testing Library.",
-          tags: ["testing", "jest", "rtl"],
-          resources: [],
-          isCompleted: false,
-          diffState: "added" as const
-        };
-        updatedNodes.push(newNode);
-        if (updatedNodes.length > 1) {
-          updatedEdges.push({ source: updatedNodes[updatedNodes.length - 2].id!, target: newNodeId });
-        }
-      } else {
-        const newNodeId = "temp-" + Date.now();
-        updatedNodes.push({
-          id: newNodeId,
-          title: "AI Suggested Extension",
-          description: "AI proposed topic: " + prompt,
-          tags: ["ai", "suggested"],
-          resources: [],
-          isCompleted: false,
-          diffState: "added"
+      });
+
+      // Rebuild preview edges linearly for the preview representation
+      const updatedEdges = [];
+      const nonDeletedNodes = updatedNodes.filter(n => n.diffState !== "deleted");
+      for (let i = 0; i < nonDeletedNodes.length - 1; i++) {
+        updatedEdges.push({
+          source: nonDeletedNodes[i].id!,
+          target: nonDeletedNodes[i + 1].id!,
         });
-        if (updatedNodes.length > 1) {
-          updatedEdges.push({ source: updatedNodes[updatedNodes.length - 2].id!, target: newNodeId });
-        }
-
-        if (updatedNodes.length > 1) {
-          const firstNode = updatedNodes[0];
-          firstNode.description = (firstNode.description || "") + " (Updated by AI matching prompt)";
-          firstNode.diffState = "modified";
-        }
       }
 
       setProposedNodes(updatedNodes);
@@ -345,14 +338,18 @@ export default function RoadmapPage() {
   const handleApplyAiEdits = async () => {
     setIsApplyingEdits(true);
     try {
-      const deletedNodes = proposedNodes.filter(n => (n as any).diffState === "deleted");
+      const deletedNodes = proposedNodes.filter(
+        (n) => (n as any).diffState === "deleted",
+      );
       for (const node of deletedNodes) {
         if (node.id && !node.id.startsWith("temp-")) {
           await deleteNode(parseInt(node.id, 10));
         }
       }
 
-      const modifiedNodes = proposedNodes.filter(n => (n as any).diffState === "modified");
+      const modifiedNodes = proposedNodes.filter(
+        (n) => (n as any).diffState === "modified",
+      );
       for (const node of modifiedNodes) {
         if (node.id) {
           await updateNode({
@@ -366,7 +363,9 @@ export default function RoadmapPage() {
         }
       }
 
-      const addedNodes = proposedNodes.filter(n => (n as any).diffState === "added");
+      const addedNodes = proposedNodes.filter(
+        (n) => (n as any).diffState === "added",
+      );
       for (const node of addedNodes) {
         await createNode({
           roadmapId,
@@ -595,7 +594,9 @@ export default function RoadmapPage() {
                 onClick={() => setIsPublishConfirmOpen(true)}
                 disabled={isPublishing}
                 className={`p-2.5 rounded-xl transition-all disabled:opacity-50 hover:bg-accent ${
-                  isPublished ? "text-sky-500 hover:text-sky-400" : "text-muted-foreground hover:text-sky-500"
+                  isPublished
+                    ? "text-sky-500 hover:text-sky-400"
+                    : "text-muted-foreground hover:text-sky-500"
                 }`}
                 title={isPublished ? "Make Private" : "Publish Roadmap"}
               >

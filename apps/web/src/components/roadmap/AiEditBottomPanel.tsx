@@ -10,13 +10,6 @@ interface AiEditBottomPanelProps {
   isLoading: boolean;
 }
 
-const PRESETS = [
-  "Add a docker section before deployment",
-  "Expand the advanced state management section",
-  "Add a testing section using Jest and React Testing Library",
-  "Insert an introductory topic about Git and version control at the start",
-];
-
 export function AiEditBottomPanel({
   isOpen,
   onClose,
@@ -43,9 +36,12 @@ export function AiEditBottomPanel({
               <Sparkles className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-foreground">Edit Roadmap by AI</h3>
+              <h3 className="text-sm font-bold text-foreground">
+                Edit Roadmap by AI
+              </h3>
               <p className="text-xs text-muted-foreground">
-                Describe the changes you want to make, and AI will propose a new structure.
+                Describe the changes you want to make, and AI will propose a new
+                structure.
               </p>
             </div>
           </div>
@@ -88,28 +84,6 @@ export function AiEditBottomPanel({
             )}
           </button>
         </form>
-
-        {/* Preset suggestions */}
-        {!isLoading && (
-          <div className="space-y-1.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              Suggestions
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {PRESETS.map((preset, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => setPrompt(preset)}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-border bg-muted/30 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-all text-left"
-                >
-                  <span>{preset}</span>
-                  <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

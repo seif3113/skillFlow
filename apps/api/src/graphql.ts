@@ -106,6 +106,7 @@ export interface IMutation {
     addQuestionToQuiz(quizId: number, question: string, choices: JSON, answer: number, explanation?: Nullable<string>): Question | Promise<Question>;
     createRoadmap(input: CreateRoadmapInput): Roadmap | Promise<Roadmap>;
     updateRoadmap(input: UpdateRoadmapInput): Roadmap | Promise<Roadmap>;
+    updateRoadmapAi(id: number, message: string): Node[] | Promise<Node[]>;
     deleteRoadmap(id: number): DeleteRoadmapResult | Promise<DeleteRoadmapResult>;
     publishRoadmap(id: number): Roadmap | Promise<Roadmap>;
     forkRoadmap(id: number, userId: number): Roadmap | Promise<Roadmap>;

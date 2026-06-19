@@ -8,9 +8,16 @@ import {
 import { RoadmapRepository } from './roadmap.repository';
 import { CreateRoadmapInput } from './dto/create-roadmap.input';
 import { UpdateRoadmapInput } from './dto/update-roadmap.input';
-import { RoadmapType, DeleteRoadmapResult } from './types/roadmap.types';
+import {
+  RoadmapType,
+  DeleteRoadmapResult,
+  UpdatedRoadmapResult,
+} from './types/roadmap.types';
 import { RoadmapRow } from './roadmap.schema';
 import { genericFetch } from '@/utils/fetch';
+import { NodeRepository } from '../node/node.repository';
+import { NodeService } from '../node/node.service';
+import { NodeType } from '../node/types/node.types';
 
 type RoadmapCustomizationResponse = {
   signal?: string;
@@ -24,7 +31,10 @@ type RoadmapCustomizationQuestion = {
 
 @Injectable()
 export class RoadmapService {
-  constructor(private readonly roadmapRepository: RoadmapRepository) {}
+  constructor(
+    private readonly roadmapRepository: RoadmapRepository,
+    private readonly nodeService: NodeService,
+  ) {}
 
   private mapRow(row: RoadmapRow): RoadmapType {
     return {
@@ -130,6 +140,46 @@ export class RoadmapService {
     });
 
     return this.mapRow(updated);
+  }
+
+  async updateRoadmapAi(
+    id: number,
+    message: string,
+  ): Promise<UpdatedRoadmapResult['roadmap']> {
+    const cleanedMessage = message.trim();
+
+    if (!cleanedMessage) {
+      throw new BadRequestException('message is required');
+    }
+
+    const nodes = await this.nodeService.findByRoadmapId(id);
+    const roadmapNodes = nodes.map((node) => ({
+      id: node.id,
+      title: node.title,
+      description: node.description,
+      tags: node.tags,
+      resources: node.resources,
+    }));
+
+    const baseUrl = process.env.RAG_URI;
+
+    if (!baseUrl) {
+      throw new InternalServerErrorException('RAG_URI is not configured');
+    }
+
+    const url = `${baseUrl.replace(/\/$/, '')}/api/v1/nlp/edit-roadmap-rag`;
+    const payload = await genericFetch<UpdatedRoadmapResult>(url, {
+      method: 'POST',
+      body: JSON.stringify({ prompt: cleanedMessage, roadmap: roadmapNodes }),
+    });
+
+    if (!payload || !payload.roadmap) {
+      throw new InternalServerErrorException(
+        'RAG service response did not include updated roadmap',
+      );
+    }
+
+    return payload.roadmap;
   }
 
   async delete(id: number): Promise<DeleteRoadmapResult> {
