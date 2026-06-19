@@ -1,3 +1,4 @@
+import { useRef } from "react"
 import { ReactFlow, Background, Controls, type NodeMouseHandler } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
 import { HugeiconsIcon } from "@hugeicons/react"
@@ -257,6 +258,13 @@ function RoadmapViewNodeDetail() {
   const { state, actions } = useRoadmapView()
   const node = state.selectedNode
 
+  // `open` alone drives the drawer's enter/exit animation. We keep rendering
+  // the last selected node so the content doesn't blank out mid-close; it's
+  // hidden once the drawer has animated away.
+  const lastNodeRef = useRef<RoadmapNode | null>(node)
+  if (node) lastNodeRef.current = node
+  const shown = node ?? lastNodeRef.current
+
   return (
     <Drawer
       open={node !== null}
@@ -264,11 +272,11 @@ function RoadmapViewNodeDetail() {
       position="right"
     >
       <DrawerPopup>
-        {node ? (
+        {shown ? (
           <NodeDetailContent
-            key={node.id}
-            node={node}
-            onPassed={() => actions.markCompleted(node.id)}
+            key={shown.id}
+            node={shown}
+            onPassed={() => actions.markCompleted(shown.id)}
           />
         ) : null}
       </DrawerPopup>
