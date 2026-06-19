@@ -12,7 +12,7 @@ import { serverGraphQL } from "@/lib/assistant/server-graphql"
 import { buildAssistantTools } from "@/lib/assistant/tools"
 
 const groq = createGroq({ apiKey: process.env.GROQ_API_KEY })
-const MODEL = process.env.GROQ_ASSISTANT_MODEL ?? "llama-3.3-70b-versatile"
+const MODEL = process.env.GROQ_ASSISTANT_MODEL ?? "openai/gpt-oss-120b"
 
 // Serialize the roadmap so the agent can answer questions and reference node ids
 // when editing. Refetched each turn so it sees its own prior edits.
