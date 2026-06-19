@@ -133,4 +133,65 @@ export class NodeService {
       message: `Node ${id} has been deleted successfully`,
     };
   }
+
+  async findChats(nodeId: number, userId: number) {
+    return this.nodeRepository.findChats(nodeId, userId);
+  }
+
+  async sendChatMessage(
+    nodeId: number,
+    userId: number,
+    sender: 'user' | 'ai',
+    message: any,
+  ) {
+    // 1. Save user message to database
+    await this.nodeRepository.createChat({
+      nodeId,
+      userId,
+      sender,
+      message,
+    });
+
+    // Fetch node info for context topic
+    const node = await this.findNodeOrFail(nodeId);
+
+    // 2. Fetch AI response from nlp service
+    const baseUrl = process.env.RAG_URI;
+    if (!baseUrl) {
+      throw new InternalServerErrorException('RAG_URI is not configured');
+    }
+
+    const url = `${baseUrl.replace(/\/$/, '')}/nlp/explain-node`;
+    const promptText =
+      typeof message === 'string'
+        ? message
+        : message.text || JSON.stringify(message);
+
+    const payload = await genericFetch<{ signal: string; answer: string }>(
+      url,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          message: promptText,
+          node_name: node.title,
+        }),
+      },
+    );
+
+    if (!payload || !payload.answer) {
+      throw new InternalServerErrorException(
+        'NLP service did not return an answer',
+      );
+    }
+
+    // 3. Save AI message response to database
+    const aiChat = await this.nodeRepository.createChat({
+      nodeId,
+      userId,
+      sender: 'ai',
+      message: { text: payload.answer },
+    });
+
+    return aiChat;
+  }
 }

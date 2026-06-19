@@ -2,12 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import {
-  Clock,
-  Trash2,
-  ArrowUpRight,
-  Zap,
-} from "lucide-react";
+import { Clock, Trash2, ArrowUpRight, Zap } from "lucide-react";
 
 interface Roadmap {
   id: number;
@@ -38,8 +33,8 @@ export function RoadmapList({ roadmaps, onDelete, onEdit }: RoadmapListProps) {
             No Roadmaps Found
           </h3>
           <p className="text-muted-foreground max-w-sm mb-10 leading-relaxed font-medium">
-            Your learning journey is a blank canvas. Start your first manual or AI
-            roadmap to start mastering new skills today.
+            Your learning journey is a blank canvas. Start your first manual or
+            AI roadmap to start mastering new skills today.
           </p>
           <div className="flex gap-4 justify-center">
             <Link href="/roadmap/manual">
@@ -99,8 +94,11 @@ export function RoadmapList({ roadmaps, onDelete, onEdit }: RoadmapListProps) {
               <div className="mt-auto space-y-4">
                 {(() => {
                   const total = roadmap.nodes?.length || 0;
-                  const completed = roadmap.nodes?.filter((n: any) => n.isCompleted).length || 0;
-                  const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
+                  const completed =
+                    roadmap.nodes?.filter((n: any) => n.isCompleted).length ||
+                    0;
+                  const percent =
+                    total === 0 ? 0 : Math.round((completed / total) * 100);
 
                   if (total === 0) return null;
 
@@ -108,11 +106,13 @@ export function RoadmapList({ roadmaps, onDelete, onEdit }: RoadmapListProps) {
                     <div className="space-y-2">
                       <div className="flex justify-between text-xs font-semibold">
                         <span className="text-muted-foreground">Progress</span>
-                        <span className="text-foreground">{percent}% ({completed}/{total})</span>
+                        <span className="text-foreground">
+                          {percent}% ({completed}/{total})
+                        </span>
                       </div>
                       <div className="h-1.5 w-full bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-linear-to-r from-teal-500 to-sky-500 transition-all duration-500" 
+                        <div
+                          className="h-full bg-linear-to-r from-teal-500 to-sky-500 transition-all duration-500"
                           style={{ width: `${percent}%` }}
                         />
                       </div>
@@ -123,8 +123,7 @@ export function RoadmapList({ roadmaps, onDelete, onEdit }: RoadmapListProps) {
                 <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
                   <Clock className="w-3.5 h-3.5" />
                   <span>
-                    Created{" "}
-                    {new Date(roadmap.createdAt).toLocaleDateString()}
+                    Created {new Date(roadmap.createdAt).toLocaleDateString()}
                   </span>
                 </div>
 
@@ -140,7 +139,21 @@ export function RoadmapList({ roadmaps, onDelete, onEdit }: RoadmapListProps) {
                       onClick={() => onEdit(roadmap)}
                       className="p-3 bg-muted hover:bg-accent text-foreground rounded-xl transition-all"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-pencil"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="lucide lucide-pencil"
+                      >
+                        <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
+                        <path d="m15 5 4 4" />
+                      </svg>
                     </button>
                   )}
                   {onDelete && (

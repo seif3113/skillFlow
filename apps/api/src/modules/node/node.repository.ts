@@ -1,8 +1,8 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { eq, and, asc } from 'drizzle-orm';
 
 import * as databaseProvider from '../../database/database.provider';
-import { nodes, NodeRow, NewNodeRow } from './node.schema';
+import { nodes, nodeExplanationChats, NodeRow, NewNodeRow } from './node.schema';
 
 export type CreateNodeData = Omit<NewNodeRow, 'id' | 'createdAt' | 'updatedAt'>;
 
@@ -59,5 +59,31 @@ export class NodeRepository {
 
   async delete(id: number): Promise<void> {
     await this.db.delete(nodes).where(eq(nodes.id, id));
+  }
+
+  async findChats(nodeId: number, userId: number) {
+    return this.db
+      .select()
+      .from(nodeExplanationChats)
+      .where(
+        and(
+          eq(nodeExplanationChats.nodeId, nodeId),
+          eq(nodeExplanationChats.userId, userId),
+        ),
+      )
+      .orderBy(asc(nodeExplanationChats.sentAt));
+  }
+
+  async createChat(data: {
+    nodeId: number;
+    userId: number;
+    sender: 'user' | 'ai';
+    message: any;
+  }) {
+    const [inserted] = await this.db
+      .insert(nodeExplanationChats)
+      .values(data)
+      .returning();
+    return inserted;
   }
 }

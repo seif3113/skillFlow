@@ -49,11 +49,14 @@ export type Mutation = {
   createRoadmapLearningProfile: RoadmapLearningProfile;
   deleteNode: DeleteNodeResult;
   deleteRoadmap: DeleteRoadmapResult;
+  forkRoadmap: Roadmap;
+  generateRoadmapStream: Scalars['Boolean']['output'];
   publishRoadmap: Roadmap;
   removeUser: User;
   sendNodeChatMessage: NodeExplanationChat;
   updateNode: Node;
   updateRoadmap: Roadmap;
+  updateRoadmapAi: Array<Node>;
   updateUser: User;
 };
 
@@ -103,6 +106,19 @@ export type MutationDeleteRoadmapArgs = {
 };
 
 
+export type MutationForkRoadmapArgs = {
+  id: Scalars['Int']['input'];
+  userId: Scalars['Int']['input'];
+};
+
+
+export type MutationGenerateRoadmapStreamArgs = {
+  customizationAnswers?: InputMaybe<Array<Scalars['String']['input']>>;
+  roadmapId: Scalars['Int']['input'];
+  topic: Scalars['String']['input'];
+};
+
+
 export type MutationPublishRoadmapArgs = {
   id: Scalars['Int']['input'];
 };
@@ -128,6 +144,12 @@ export type MutationUpdateNodeArgs = {
 
 export type MutationUpdateRoadmapArgs = {
   input: UpdateRoadmapInput;
+};
+
+
+export type MutationUpdateRoadmapAiArgs = {
+  id: Scalars['Int']['input'];
+  message: Scalars['String']['input'];
 };
 
 
@@ -177,6 +199,7 @@ export type Query = {
   node?: Maybe<Node>;
   nodeChats: Array<NodeExplanationChat>;
   nodesByRoadmap: Array<Node>;
+  publicRoadmap?: Maybe<PublicRoadmap>;
   publicRoadmaps: Array<PublicRoadmap>;
   questionsByQuiz: Array<Question>;
   quiz?: Maybe<Quiz>;
@@ -205,6 +228,11 @@ export type QueryNodeChatsArgs = {
 
 export type QueryNodesByRoadmapArgs = {
   roadmapId: Scalars['Int']['input'];
+};
+
+
+export type QueryPublicRoadmapArgs = {
+  id: Scalars['Int']['input'];
 };
 
 
@@ -314,6 +342,23 @@ export type RoadmapLearningProfile = {
   preferences: Scalars['JSON']['output'];
   timeAvailability?: Maybe<Scalars['String']['output']>;
   userId: Scalars['Int']['output'];
+};
+
+export type RoadmapStreamEvent = {
+  __typename?: 'RoadmapStreamEvent';
+  event: Scalars['String']['output'];
+  message?: Maybe<Scalars['String']['output']>;
+  node?: Maybe<Node>;
+};
+
+export type Subscription = {
+  __typename?: 'Subscription';
+  roadmapGenerationStream: RoadmapStreamEvent;
+};
+
+
+export type SubscriptionRoadmapGenerationStreamArgs = {
+  roadmapId: Scalars['Int']['input'];
 };
 
 export type UpdateNodeInput = {

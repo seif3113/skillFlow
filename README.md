@@ -3,6 +3,7 @@
 SkillFlow is a monorepo project built with **Next.js**, **NestJS GraphQL**, and **Fastify**.
 
 It includes:
+
 - A `web` app (Next.js + Apollo Client + shadcn/ui)
 - An `api` app (NestJS + GraphQL via Mercurius + Fastify adapter)
 
@@ -84,9 +85,9 @@ From the repository root:
 ## Current Feature Demo
 
 The current demo in `apps/web` includes user management with GraphQL:
+
 - List users
 - Get single user by ID
 - Create user
 - Update user
 - Delete user
-

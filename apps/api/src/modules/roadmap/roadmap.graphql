@@ -71,6 +71,12 @@ type RoadmapCustomizationQuestion {
   choices: [String!]!
 }
 
+type RoadmapStreamEvent {
+  event: String!
+  node: Node
+  message: String
+}
+
 extend type Query {
   roadmaps: [Roadmap!]!
   roadmap(id: Int!): Roadmap
@@ -78,16 +84,23 @@ extend type Query {
   roadmapsByLearningProfile(learningProfileId: Int!): [Roadmap!]!
   roadmapLearningProfiles(userId: Int!): [RoadmapLearningProfile!]!
   publicRoadmaps: [PublicRoadmap!]!
+  publicRoadmap(id: Int!): PublicRoadmap
   roadmapCustomizationQuestions(
     message: String!
   ): [RoadmapCustomizationQuestion!]!
 }
 
+type Subscription {
+  roadmapGenerationStream(roadmapId: Int!): RoadmapStreamEvent!
+}
+
 extend type Mutation {
   createRoadmap(input: CreateRoadmapInput!): Roadmap!
   updateRoadmap(input: UpdateRoadmapInput!): Roadmap!
+  updateRoadmapAi(id: Int!, message: String!): [Node!]!
   deleteRoadmap(id: Int!): DeleteRoadmapResult!
   publishRoadmap(id: Int!): Roadmap!
+  forkRoadmap(id: Int!, userId: Int!): Roadmap!
   createRoadmapLearningProfile(
     userId: Int!
     goal: String
@@ -96,4 +109,9 @@ extend type Mutation {
     timeAvailability: String
     preferences: JSON
   ): RoadmapLearningProfile!
+  generateRoadmapStream(
+    roadmapId: Int!
+    topic: String!
+    customizationAnswers: [String!]
+  ): Boolean!
 }

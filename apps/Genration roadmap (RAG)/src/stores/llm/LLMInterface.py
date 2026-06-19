@@ -27,6 +27,14 @@ class LLMInterface(ABC):
         """Generate a response using the Ollama /api/chat endpoint"""
         pass
 
+    def generate_text_stream(self,
+                             prompt: str,
+                             chat_history: list = None,
+                             max_output_tokens: Optional[int] = None,
+                             temperature: Optional[float] = None):
+        """Stream generated text chunks. Providers may implement this for streaming routes."""
+        raise NotImplementedError("Streaming is not supported by this provider.")
+
     @abstractmethod
     def embed_text(self, text: Union[str, List[str]], document_type: Optional[str] = None) -> Optional[List[List[float]]]:
         """Convert text into vectors using the Ollama /api/embeddings endpoint"""

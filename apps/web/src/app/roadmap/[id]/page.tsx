@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import {
   ReactFlow,
   Controls,
   Background,
   BackgroundVariant,
   Node as FlowNode,
+  useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import Link from "next/link";
@@ -21,6 +22,9 @@ import {
   Plus,
   Settings,
   Trash2,
+  Sparkles,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
@@ -32,7 +36,9 @@ import {
   useUpdateNode,
   useDeleteNode,
   usePublishRoadmap,
+  useUpdateRoadmapAi,
 } from "@/hooks/useRoadmap";
+import { useRoadmapStream } from "@/hooks/useRoadmapStream";
 import { getLayoutedElements } from "@/lib/layout";
 import { RoadmapNode } from "@/components/roadmap/RoadmapNode";
 import { InitRoadmapDialog } from "@/components/roadmap/InitRoadmapDialog";
@@ -40,6 +46,11 @@ import {
   NodeEditorSidebar,
   NodeDraft,
 } from "@/components/roadmap/NodeEditorSidebar";
+import {
+  NodeChatPanel,
+  AiEditBottomPanel,
+  PreviewBanner,
+} from "@/components/roadmap";
 import { ConfirmDialog } from "@/components/roadmap/ConfirmDialog";
 import { toast } from "sonner";
 
@@ -50,12 +61,49 @@ const nodeTypes = {
 export default function RoadmapPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const idStr = params.id as string;
   const roadmapId = parseInt(idStr, 10);
+  const topic = searchParams.get("topic");
+  const answersJson = searchParams.get("answers");
 
   // Load existing roadmap
-  const { data: existingRoadmap, isLoading: isLoadingRoadmap } =
-    useGetRoadmap(roadmapId);
+  const {
+    data: existingRoadmap,
+    isLoading: isLoadingRoadmap,
+    refetch,
+  } = useGetRoadmap(roadmapId);
+
+  const {
+    nodes: streamedNodes,
+    status: streamStatus,
+    error: streamError,
+    startGeneration,
+  } = useRoadmapStream();
+
+  const customizationAnswers = useMemo(() => {
+    if (!answersJson) return undefined;
+    try {
+      return JSON.parse(answersJson) as string[];
+    } catch {
+      return undefined;
+    }
+  }, [answersJson]);
+
+  useEffect(() => {
+    if (roadmapId && topic && streamStatus === "idle") {
+      startGeneration(roadmapId, topic, customizationAnswers);
+    }
+  }, [roadmapId, topic, streamStatus, startGeneration, customizationAnswers]);
+
+  useEffect(() => {
+    if (streamStatus === "done" || streamStatus === "error") {
+      refetch();
+      if (streamStatus === "done") {
+        router.replace(`/roadmap/${roadmapId}`);
+      }
+    }
+  }, [streamStatus, refetch, router, roadmapId]);
 
   // Roadmap Metadata
   const [title, setTitle] = useState("");
@@ -73,6 +121,36 @@ export default function RoadmapPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
+  // Chatbot Panel State
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatNodeTitle, setChatNodeTitle] = useState("");
+  const [chatNodeId, setChatNodeId] = useState<string | null>(null);
+
+  // AI Edit States
+  const [isAiEditPanelOpen, setIsAiEditPanelOpen] = useState(false);
+  const [isAiEditingLoading, setIsAiEditingLoading] = useState(false);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [originalNodes, setOriginalNodes] = useState<NodeDraft[]>([]);
+  const [originalEdges, setOriginalEdges] = useState<
+    { source: string; target: string }[]
+  >([]);
+  const [proposedNodes, setProposedNodes] = useState<NodeDraft[]>([]);
+  const [proposedEdges, setProposedEdges] = useState<
+    { source: string; target: string }[]
+  >([]);
+
+  useEffect(() => {
+    const handleOpenChat = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      setChatNodeId(customEvent.detail.id);
+      setChatNodeTitle(customEvent.detail.title);
+      setIsChatOpen(true);
+      setIsSidebarOpen(false); // Close other sidebars when chat opens
+    };
+    window.addEventListener("open-ai-chat", handleOpenChat);
+    return () => window.removeEventListener("open-ai-chat", handleOpenChat);
+  }, []);
+
   // Mutations
   const { mutateAsync: createRoadmap, isPending: isCreatingRoadmap } =
     useCreateRoadmap();
@@ -88,7 +166,9 @@ export default function RoadmapPage() {
   const { mutateAsync: updateNode, isPending: isUpdatingNode } =
     useUpdateNode();
   const { mutateAsync: deleteNode } = useDeleteNode();
-  const isSavingNode = isCreatingNode || isUpdatingNode;
+  const { mutateAsync: updateRoadmapAi } = useUpdateRoadmapAi();
+  const [isApplyingEdits, setIsApplyingEdits] = useState(false);
+  const isSavingNode = isCreatingNode || isUpdatingNode || isApplyingEdits;
 
   const handlePublish = async () => {
     if (!roadmapId) return;
@@ -96,7 +176,11 @@ export default function RoadmapPage() {
       const response = await publishRoadmap(roadmapId);
       const nextState = response.publishRoadmap.isPublished;
       setIsPublished(nextState);
-      toast.success(nextState ? "Roadmap published successfully!" : "Roadmap is now private.");
+      toast.success(
+        nextState
+          ? "Roadmap published successfully!"
+          : "Roadmap is now private.",
+      );
     } catch (e) {
       console.error(e);
       toast.error("Failed to update publication status.");
@@ -115,6 +199,9 @@ export default function RoadmapPage() {
           ...n,
           id: String(n.id),
         })) || [];
+
+      // Sort nodes by numeric ID ascending
+      loadedNodes.sort((a: any, b: any) => Number(a.id) - Number(b.id));
 
       setNodes(loadedNodes);
 
@@ -137,21 +224,87 @@ export default function RoadmapPage() {
   }, [existingRoadmap]);
 
   const selectedNodeData = useMemo(() => {
+    const activeNodes = isPreviewMode ? proposedNodes : nodes;
     if (!selectedNodeId) return null;
-    return nodes.find((n) => n.id === selectedNodeId) || null;
-  }, [nodes, selectedNodeId]);
+    return activeNodes.find((n) => n.id === selectedNodeId) || null;
+  }, [nodes, proposedNodes, isPreviewMode, selectedNodeId]);
 
   const { nodes: flowNodes, edges: flowEdges } = useMemo(() => {
-    const layoutNodes = nodes.map((n) => ({
+    let activeNodes = isPreviewMode ? proposedNodes : nodes;
+    let activeEdges = isPreviewMode ? proposedEdges : edges;
+
+    if (streamStatus !== "idle") {
+      const mergedNodes = [...activeNodes];
+
+      streamedNodes.forEach((sn) => {
+        if (
+          !mergedNodes.find(
+            (n) =>
+              String(n.id) === String(sn.id) ||
+              n.title.toLowerCase() === sn.title.toLowerCase(),
+          )
+        ) {
+          mergedNodes.push({
+            id: String(sn.id),
+            title: sn.title,
+            description: sn.description || "",
+            tags: sn.tags,
+            resources: sn.resources || [],
+            isCompleted: sn.isCompleted,
+          });
+        }
+      });
+
+      // Add shimmer skeleton nodes at the end to indicate AI is working
+      if (streamStatus === "connecting" || streamStatus === "streaming") {
+        const skeletonCount = 1;
+        for (let i = 0; i < skeletonCount; i++) {
+          mergedNodes.push({
+            id: `skeleton-${i}`,
+            title: "Generating...",
+            description: "",
+            tags: [],
+            resources: [],
+            isCompleted: false,
+            isSkeleton: true,
+          } as any);
+        }
+      }
+
+      activeNodes = mergedNodes;
+
+      const newEdges = [];
+      for (let i = 0; i < activeNodes.length - 1; i++) {
+        if (activeNodes[i].id && activeNodes[i + 1].id) {
+          newEdges.push({
+            source: activeNodes[i].id!,
+            target: activeNodes[i + 1].id!,
+          });
+        }
+      }
+      activeEdges = newEdges;
+    }
+
+    const layoutNodes = activeNodes.map((n) => ({
       id: n.id!,
       label: n.title,
       description: n.description,
       resources: n.resources,
       completed: n.isCompleted,
-      isReadOnly: false,
+      isReadOnly: streamStatus !== "idle",
+      diffState: (n as any).diffState,
+      isSkeleton: (n as any).isSkeleton,
     }));
-    return getLayoutedElements(layoutNodes, edges);
-  }, [nodes, edges]);
+    return getLayoutedElements(layoutNodes, activeEdges);
+  }, [
+    nodes,
+    proposedNodes,
+    edges,
+    proposedEdges,
+    isPreviewMode,
+    streamedNodes,
+    streamStatus,
+  ]);
 
   // Calculate progress (mocked since backend doesn't store 'completed' yet)
   const completedCount = flowNodes.filter((n) => n.data.completed).length;
@@ -178,6 +331,200 @@ export default function RoadmapPage() {
     }
   };
 
+  const handleAiEditSubmit = async (prompt: string) => {
+    setIsAiEditingLoading(true);
+    try {
+      setOriginalNodes(nodes);
+      setOriginalEdges(edges);
+
+      // Call the NestJS graphql updateRoadmapAi mutation
+      const resultNodes = await updateRoadmapAi({
+        id: roadmapId,
+        message: prompt,
+      });
+
+      // Map backend response nodes to NodeDraft format
+      const incomingNodes: (NodeDraft & {
+        id?: string;
+        diffState?: "added" | "modified" | "deleted";
+      })[] = resultNodes.map((n: any) => {
+        const existsInOriginal = nodes.some(
+          (origNode) => String(origNode.id) === String(n.id),
+        );
+        return {
+          id: existsInOriginal && n.id ? String(n.id) : undefined,
+          title: n.title,
+          description: n.description || "",
+          tags: n.tags || [],
+          resources: n.resources || [],
+          isCompleted: n.isCompleted || false,
+        };
+      });
+
+      const updatedNodes: (NodeDraft & {
+        id?: string;
+        diffState?: "added" | "modified" | "deleted";
+      })[] = [];
+
+      // 1. Find added or modified nodes
+      incomingNodes.forEach((incNode) => {
+        const existingMatch = incNode.id
+          ? nodes.find((origNode) => String(origNode.id) === String(incNode.id))
+          : nodes.find(
+              (origNode) =>
+                origNode.title.toLowerCase().trim() ===
+                incNode.title.toLowerCase().trim(),
+            );
+
+        if (!existingMatch) {
+          updatedNodes.push({
+            ...incNode,
+            id: incNode.id
+              ? String(incNode.id)
+              : "temp-" + Date.now() + Math.random(),
+            diffState: "added",
+          });
+        } else {
+          // Normalize descriptions
+          const desc1 = (existingMatch.description || "").trim();
+          const desc2 = (incNode.description || "").trim();
+          const isDescChanged = desc1 !== desc2;
+
+          // Normalize tags
+          const tags1 = (existingMatch.tags || [])
+            .map((t) => t.toLowerCase().trim())
+            .sort();
+          const tags2 = (incNode.tags || [])
+            .map((t) => t.toLowerCase().trim())
+            .sort();
+          const isTagsChanged = JSON.stringify(tags1) !== JSON.stringify(tags2);
+
+          // Normalize resources (compare key fields: title, url)
+          const normalizeRes = (r: any) => ({
+            title: (r.title || "").trim().toLowerCase(),
+            url: (r.url || "").trim().toLowerCase(),
+          });
+          const res1 = (existingMatch.resources || [])
+            .map(normalizeRes)
+            .sort((a, b) => a.url.localeCompare(b.url));
+          const res2 = (incNode.resources || [])
+            .map(normalizeRes)
+            .sort((a, b) => a.url.localeCompare(b.url));
+          const isResourcesChanged =
+            JSON.stringify(res1) !== JSON.stringify(res2);
+
+          const isModified =
+            isDescChanged || isTagsChanged || isResourcesChanged;
+
+          updatedNodes.push({
+            ...incNode,
+            id: String(existingMatch.id),
+            diffState: isModified ? "modified" : undefined,
+          });
+        }
+      });
+
+      // 2. Find deleted nodes (nodes in original that are not in incomingNodes)
+      nodes.forEach((origNode) => {
+        const stillExists = incomingNodes.some(
+          (incNode) =>
+            incNode.title.toLowerCase().trim() ===
+            origNode.title.toLowerCase().trim(),
+        );
+
+        if (!stillExists) {
+          updatedNodes.push({
+            ...origNode,
+            diffState: "deleted",
+          });
+        }
+      });
+
+      // Rebuild preview edges linearly for the preview representation
+      const updatedEdges = [];
+      const nonDeletedNodes = updatedNodes.filter(
+        (n) => n.diffState !== "deleted",
+      );
+      for (let i = 0; i < nonDeletedNodes.length - 1; i++) {
+        updatedEdges.push({
+          source: nonDeletedNodes[i].id!,
+          target: nonDeletedNodes[i + 1].id!,
+        });
+      }
+
+      setProposedNodes(updatedNodes);
+      setProposedEdges(updatedEdges);
+      setIsAiEditingLoading(false);
+      setIsAiEditPanelOpen(false);
+      setIsPreviewMode(true);
+      toast.success("AI edits proposed! Review the preview on canvas.");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to generate AI edits.");
+      setIsAiEditingLoading(false);
+    }
+  };
+
+  const handleApplyAiEdits = async () => {
+    setIsApplyingEdits(true);
+    try {
+      const deletedNodes = proposedNodes.filter(
+        (n) => (n as any).diffState === "deleted",
+      );
+      for (const node of deletedNodes) {
+        if (node.id && !node.id.startsWith("temp-")) {
+          await deleteNode(parseInt(node.id, 10));
+        }
+      }
+
+      const modifiedNodes = proposedNodes.filter(
+        (n) => (n as any).diffState === "modified",
+      );
+      for (const node of modifiedNodes) {
+        if (node.id) {
+          await updateNode({
+            id: parseInt(node.id, 10),
+            title: node.title,
+            description: node.description,
+            tags: node.tags,
+            resources: node.resources,
+            isCompleted: node.isCompleted,
+          });
+        }
+      }
+
+      const addedNodes = proposedNodes.filter(
+        (n) => (n as any).diffState === "added",
+      );
+      for (const node of addedNodes) {
+        await createNode({
+          roadmapId,
+          title: node.title,
+          description: node.description,
+          tags: node.tags,
+          resources: node.resources,
+          isCompleted: node.isCompleted,
+        });
+      }
+
+      toast.success("AI changes applied successfully!");
+      refetch();
+      setIsPreviewMode(false);
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to apply AI changes.");
+    } finally {
+      setIsApplyingEdits(false);
+    }
+  };
+
+  const handleDiscardAiEdits = () => {
+    setIsPreviewMode(false);
+    setProposedNodes([]);
+    setProposedEdges([]);
+    toast.info("AI proposed changes discarded.");
+  };
+
   const openAddNode = () => {
     setSelectedNodeId(null);
     setIsSidebarOpen(true);
@@ -185,7 +532,12 @@ export default function RoadmapPage() {
 
   const handleNodeClick = (_: React.MouseEvent, node: FlowNode) => {
     setSelectedNodeId(node.id);
-    setIsSidebarOpen(true);
+    if (isChatOpen) {
+      setChatNodeId(node.id);
+      setChatNodeTitle((node.data as any)?.label || node.id);
+    } else {
+      setIsSidebarOpen(true);
+    }
   };
 
   const handleSaveNode = async (nodeDraft: NodeDraft) => {
@@ -373,7 +725,9 @@ export default function RoadmapPage() {
                 onClick={() => setIsPublishConfirmOpen(true)}
                 disabled={isPublishing}
                 className={`p-2.5 rounded-xl transition-all disabled:opacity-50 hover:bg-accent ${
-                  isPublished ? "text-sky-500 hover:text-sky-400" : "text-muted-foreground hover:text-sky-500"
+                  isPublished
+                    ? "text-sky-500 hover:text-sky-400"
+                    : "text-muted-foreground hover:text-sky-500"
                 }`}
                 title={isPublished ? "Make Private" : "Publish Roadmap"}
               >
@@ -414,6 +768,15 @@ export default function RoadmapPage() {
           )}
 
           <button
+            onClick={() => setIsAiEditPanelOpen(true)}
+            disabled={isSavingNode || isPreviewMode}
+            className="flex items-center gap-2 px-4 py-2 border border-border bg-card hover:bg-accent disabled:opacity-50 text-foreground text-sm font-medium rounded-xl transition-colors"
+          >
+            <Sparkles className="w-4 h-4 text-sky-500 animate-pulse" />
+            <span>Edit by AI</span>
+          </button>
+
+          <button
             onClick={openAddNode}
             disabled={isSavingNode}
             className="flex items-center gap-2 px-4 py-2 bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-white text-sm font-medium rounded-xl transition-colors shadow-lg shadow-sky-500/20"
@@ -435,7 +798,6 @@ export default function RoadmapPage() {
           onSubmit={handleInitSubmit}
           initialData={title ? { title, description } : undefined}
         />
-
         <NodeEditorSidebar
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
@@ -443,6 +805,27 @@ export default function RoadmapPage() {
           onSave={handleSaveNode}
           onDelete={handleDeleteNodeClick}
           isSaving={isSavingNode}
+        />
+
+        <NodeChatPanel
+          isOpen={isChatOpen}
+          onClose={() => setIsChatOpen(false)}
+          nodeId={chatNodeId ? parseInt(chatNodeId, 10) : undefined}
+          nodeTitle={chatNodeTitle}
+        />
+
+        <PreviewBanner
+          isOpen={isPreviewMode}
+          onApply={handleApplyAiEdits}
+          onDiscard={handleDiscardAiEdits}
+          isSaving={isSavingNode}
+        />
+
+        <AiEditBottomPanel
+          isOpen={isAiEditPanelOpen}
+          onClose={() => setIsAiEditPanelOpen(false)}
+          onSubmit={handleAiEditSubmit}
+          isLoading={isAiEditingLoading}
         />
 
         <ConfirmDialog
@@ -478,7 +861,7 @@ export default function RoadmapPage() {
           variant="danger"
         />
 
-        {nodes.length === 0 ? (
+        {flowNodes.length === 0 ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10 pointer-events-none">
             <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mb-4 border border-border shadow-xl">
               <Plus className="w-8 h-8 text-muted-foreground" />
@@ -505,9 +888,10 @@ export default function RoadmapPage() {
               onNodeClick={handleNodeClick}
               fitView
               fitViewOptions={{ padding: 0.2 }}
-              minZoom={0.5}
+              minZoom={0.1}
               maxZoom={2}
             >
+              <AutoFitView streamStatus={streamStatus} />
               <Background
                 variant={BackgroundVariant.Dots}
                 gap={20}
@@ -521,4 +905,32 @@ export default function RoadmapPage() {
       </main>
     </div>
   );
+}
+
+function AutoFitView({ streamStatus }: { streamStatus: string }) {
+  const { setViewport, getNodes } = useReactFlow();
+
+  useEffect(() => {
+    if (streamStatus === 'connecting') {
+      const timeoutId = setTimeout(() => {
+        const nodes = getNodes();
+        if (nodes.length > 0) {
+          const firstNode = nodes[0];
+          const targetZoom = 0.45; // Fixed zoomed-out scale
+          
+          // Node width is approximately 260px, so center X is position.x + 130
+          const nodeCenterX = firstNode.position.x + 130;
+          
+          // Center horizontally in the window, and place the first node 120px from the top
+          const viewportX = (window.innerWidth / 2) - (nodeCenterX * targetZoom);
+          const viewportY = 20 - (firstNode.position.y * targetZoom);
+
+          setViewport({ x: viewportX, y: viewportY, zoom: targetZoom }, { duration: 800 });
+        }
+      }, 50);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [streamStatus, getNodes, setViewport]);
+
+  return null;
 }

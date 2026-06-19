@@ -230,3 +230,9 @@ html {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}

@@ -40,4 +40,19 @@ export class NodeResolver {
   deleteNode(@Args('id') id: number) {
     return this.nodeService.delete(id);
   }
+
+  @Query('nodeChats')
+  nodeChats(@Args('nodeId') nodeId: number, @Args('userId') userId: number) {
+    return this.nodeService.findChats(nodeId, userId);
+  }
+
+  @Mutation('sendNodeChatMessage')
+  sendNodeChatMessage(
+    @Args('nodeId') nodeId: number,
+    @Args('userId') userId: number,
+    @Args('sender') sender: 'user' | 'ai',
+    @Args('message') message: any,
+  ) {
+    return this.nodeService.sendChatMessage(nodeId, userId, sender, message);
+  }
 }

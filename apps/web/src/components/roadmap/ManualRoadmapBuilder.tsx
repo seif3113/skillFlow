@@ -2,17 +2,23 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ReactFlow, Controls, Background, BackgroundVariant, Node as FlowNode } from "@xyflow/react";
+import {
+  ReactFlow,
+  Controls,
+  Background,
+  BackgroundVariant,
+  Node as FlowNode,
+} from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
-import { 
-  useGetRoadmap, 
-  useCreateRoadmap, 
-  useUpdateRoadmap, 
+import {
+  useGetRoadmap,
+  useCreateRoadmap,
+  useUpdateRoadmap,
   useDeleteRoadmap,
   useCreateNode,
   useUpdateNode,
-  useDeleteNode
+  useDeleteNode,
 } from "@/hooks/useRoadmap";
 import { RoadmapNode } from "@/components/roadmap/RoadmapNode";
 import { getLayoutedElements } from "@/lib/layout";
@@ -32,7 +38,8 @@ export function ManualRoadmapBuilder({ roadmapId }: ManualRoadmapBuilderProps) {
   const router = useRouter();
 
   // Load existing roadmap if ID is provided
-  const { data: existingRoadmap, isLoading: isLoadingRoadmap } = useGetRoadmap(roadmapId);
+  const { data: existingRoadmap, isLoading: isLoadingRoadmap } =
+    useGetRoadmap(roadmapId);
 
   // Roadmap Metadata
   const [title, setTitle] = useState("");
@@ -51,10 +58,13 @@ export function ManualRoadmapBuilder({ roadmapId }: ManualRoadmapBuilderProps) {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   // Mutations
-  const { mutateAsync: createRoadmap, isPending: isCreatingRoadmap } = useCreateRoadmap();
-  const { mutateAsync: updateRoadmap, isPending: isUpdatingRoadmap } = useUpdateRoadmap();
-  const { mutateAsync: deleteRoadmap, isPending: isDeletingRoadmap } = useDeleteRoadmap();
-  
+  const { mutateAsync: createRoadmap, isPending: isCreatingRoadmap } =
+    useCreateRoadmap();
+  const { mutateAsync: updateRoadmap, isPending: isUpdatingRoadmap } =
+    useUpdateRoadmap();
+  const { mutateAsync: deleteRoadmap, isPending: isDeletingRoadmap } =
+    useDeleteRoadmap();
+
   const { mutateAsync: createNode } = useCreateNode();
   const { mutateAsync: updateNode } = useUpdateNode();
   const { mutateAsync: deleteNode } = useDeleteNode();
@@ -66,16 +76,20 @@ export function ManualRoadmapBuilder({ roadmapId }: ManualRoadmapBuilderProps) {
       setDescription(existingRoadmap.description || "");
       setIsInitDialogOpen(false);
 
-      const loadedNodes = existingRoadmap.nodes?.map((n: any) => ({
-        ...n,
-        id: String(n.id),
-      })) || [];
-      
+      const loadedNodes =
+        existingRoadmap.nodes?.map((n: any) => ({
+          ...n,
+          id: String(n.id),
+        })) || [];
+
       setNodes(loadedNodes);
 
       const loadedEdges = [];
       for (let i = 0; i < loadedNodes.length - 1; i++) {
-        loadedEdges.push({ source: loadedNodes[i].id, target: loadedNodes[i+1].id });
+        loadedEdges.push({
+          source: loadedNodes[i].id,
+          target: loadedNodes[i + 1].id,
+        });
       }
       setEdges(loadedEdges);
     }
@@ -114,7 +128,9 @@ export function ManualRoadmapBuilder({ roadmapId }: ManualRoadmapBuilderProps) {
   const handleSaveNode = (nodeDraft: NodeDraft) => {
     if (selectedNodeId) {
       setNodes((prev) =>
-        prev.map((n) => (n.id === selectedNodeId ? { ...nodeDraft, id: selectedNodeId } : n))
+        prev.map((n) =>
+          n.id === selectedNodeId ? { ...nodeDraft, id: selectedNodeId } : n,
+        ),
       );
     } else {
       const newNodeId = `node_${Date.now()}`;
@@ -123,7 +139,10 @@ export function ManualRoadmapBuilder({ roadmapId }: ManualRoadmapBuilderProps) {
 
       if (nodes.length > 0) {
         const lastNode = nodes[nodes.length - 1];
-        setEdges((prev) => [...prev, { source: lastNode.id!, target: newNodeId }]);
+        setEdges((prev) => [
+          ...prev,
+          { source: lastNode.id!, target: newNodeId },
+        ]);
       }
     }
     setIsSidebarOpen(false);
@@ -138,12 +157,14 @@ export function ManualRoadmapBuilder({ roadmapId }: ManualRoadmapBuilderProps) {
     }
 
     setNodes((prev) => prev.filter((n) => n.id !== selectedNodeId));
-    
+
     setEdges((prev) => {
       const incoming = prev.find((e) => e.target === selectedNodeId);
       const outgoing = prev.find((e) => e.source === selectedNodeId);
-      const remaining = prev.filter((e) => e.source !== selectedNodeId && e.target !== selectedNodeId);
-      
+      const remaining = prev.filter(
+        (e) => e.source !== selectedNodeId && e.target !== selectedNodeId,
+      );
+
       if (incoming && outgoing) {
         remaining.push({ source: incoming.source, target: outgoing.target });
       }
@@ -155,8 +176,9 @@ export function ManualRoadmapBuilder({ roadmapId }: ManualRoadmapBuilderProps) {
   };
 
   const handleDeleteRoadmap = async () => {
-    if (!roadmapId || !confirm("Are you sure you want to delete this roadmap?")) return;
-    
+    if (!roadmapId || !confirm("Are you sure you want to delete this roadmap?"))
+      return;
+
     try {
       await deleteRoadmap(roadmapId);
       router.push("/dashboard");
@@ -215,7 +237,7 @@ export function ManualRoadmapBuilder({ roadmapId }: ManualRoadmapBuilderProps) {
         const roadmapResponse = await createRoadmap({
           title,
           description,
-          userId: 1, 
+          userId: 1,
         });
 
         finalRoadmapId = roadmapResponse.createRoadmap.id;
@@ -239,7 +261,11 @@ export function ManualRoadmapBuilder({ roadmapId }: ManualRoadmapBuilderProps) {
   };
 
   if (roadmapId && isLoadingRoadmap) {
-    return <div className="flex h-full items-center justify-center text-zinc-500">Loading roadmap...</div>;
+    return (
+      <div className="flex h-full items-center justify-center text-zinc-500">
+        Loading roadmap...
+      </div>
+    );
   }
 
   const isSaving = isCreatingRoadmap || isUpdatingRoadmap;
@@ -264,7 +290,9 @@ export function ManualRoadmapBuilder({ roadmapId }: ManualRoadmapBuilderProps) {
       <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md z-10">
         <div>
           <h1 className="text-xl font-bold">{title || "Untitled Roadmap"}</h1>
-          {description && <p className="text-sm text-zinc-400">{description}</p>}
+          {description && (
+            <p className="text-sm text-zinc-400">{description}</p>
+          )}
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -274,7 +302,7 @@ export function ManualRoadmapBuilder({ roadmapId }: ManualRoadmapBuilderProps) {
           >
             <Settings className="w-5 h-5" />
           </button>
-          
+
           {roadmapId && (
             <button
               onClick={handleDeleteRoadmap}
@@ -298,7 +326,8 @@ export function ManualRoadmapBuilder({ roadmapId }: ManualRoadmapBuilderProps) {
             disabled={isSaving || nodes.length === 0}
             className="flex items-center gap-2 px-4 py-2 bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-white text-sm font-medium rounded-xl transition-colors shadow-lg shadow-sky-500/20"
           >
-            <Save className="w-4 h-4" /> {isSaving ? "Saving..." : "Save Roadmap"}
+            <Save className="w-4 h-4" />{" "}
+            {isSaving ? "Saving..." : "Save Roadmap"}
           </button>
         </div>
       </div>
@@ -309,7 +338,9 @@ export function ManualRoadmapBuilder({ roadmapId }: ManualRoadmapBuilderProps) {
             <div className="w-16 h-16 bg-zinc-900 rounded-2xl flex items-center justify-center mb-4 border border-zinc-800 shadow-xl">
               <Plus className="w-8 h-8 text-zinc-500" />
             </div>
-            <h3 className="text-lg font-medium text-zinc-300">Your roadmap is empty</h3>
+            <h3 className="text-lg font-medium text-zinc-300">
+              Your roadmap is empty
+            </h3>
             <p className="text-sm text-zinc-500 max-w-sm mt-2">
               Start adding nodes to build your learning path step by step.
             </p>
@@ -331,7 +362,12 @@ export function ManualRoadmapBuilder({ roadmapId }: ManualRoadmapBuilderProps) {
             minZoom={0.5}
             maxZoom={2}
           >
-            <Background color="#27272a" variant={BackgroundVariant.Dots} gap={16} size={2} />
+            <Background
+              color="#27272a"
+              variant={BackgroundVariant.Dots}
+              gap={16}
+              size={2}
+            />
             <Controls className="bg-zinc-900 border-zinc-800 fill-zinc-400" />
           </ReactFlow>
         )}

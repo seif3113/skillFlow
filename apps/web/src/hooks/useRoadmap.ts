@@ -13,6 +13,12 @@ import {
   UpdateNodeDocument,
   DeleteNodeDocument,
   PublishRoadmapDocument,
+  GetPublicRoadmapDocument,
+  RoadmapCustomizationQuestionsDocument,
+  NodeChatsDocument,
+  ForkRoadmapDocument,
+  UpdateRoadmapAiDocument,
+  SendNodeChatMessageDocument,
   type CreateRoadmapInput,
   type UpdateRoadmapInput,
   type CreateNodeInput,
@@ -184,4 +190,120 @@ export function usePublishRoadmap() {
     if (!res.data) throw new Error("publishRoadmap returned no data");
     return res.data;
   }, loading);
+}
+
+// ----------------------------------------------------------------------
+// QUERIES / MUTATIONS re-added on Apollo after the main merge.
+// These back the AI-chat, AI-edit, fork, and customization-question
+// features that live on `main`. Shapes mirror the previous react-query
+// hooks so the consuming components compile unchanged.
+// ----------------------------------------------------------------------
+
+export function useGetPublicRoadmap(id?: number) {
+  const { data, loading, error, refetch } = useQuery(GetPublicRoadmapDocument, {
+    variables: { id: id ?? 0 },
+    skip: !id,
+  });
+  return {
+    data: data?.publicRoadmap ?? null,
+    isLoading: loading,
+    isFetching: loading,
+    error,
+    refetch,
+  };
+}
+
+export function useRoadmapCustomizationQuestions(
+  message: string,
+  enabled: boolean = false,
+) {
+  const { data, loading, error, refetch } = useQuery(
+    RoadmapCustomizationQuestionsDocument,
+    {
+      variables: { message },
+      skip: !enabled || !message,
+    },
+  );
+  // Callers `await fetchQuestions()` then read `res.data.length`, so unwrap the
+  // Apollo result down to the questions array to match the old hook's contract.
+  const unwrappedRefetch = async () => {
+    const res = await refetch();
+    return { ...res, data: res.data?.roadmapCustomizationQuestions ?? [] };
+  };
+  return {
+    data: data?.roadmapCustomizationQuestions ?? [],
+    isLoading: loading,
+    isFetching: loading,
+    error,
+    refetch: unwrappedRefetch,
+  };
+}
+
+export function useNodeChats(nodeId?: number, userId?: number) {
+  const { data, loading, error, refetch } = useQuery(NodeChatsDocument, {
+    variables: { nodeId: nodeId ?? 0, userId: userId ?? 0 },
+    skip: !nodeId || !userId,
+  });
+  return {
+    data: data?.nodeChats ?? [],
+    isLoading: loading,
+    isFetching: loading,
+    error,
+    refetch,
+  };
+}
+
+export function useForkRoadmap() {
+  const [mutate, { loading }] = useMutation(ForkRoadmapDocument);
+  return asMutation(
+    async ({ id, userId }: { id: number; userId: number }) => {
+      const res = await mutate({
+        variables: { id, userId },
+        refetchQueries: ["RoadmapsByUser", "PublicRoadmaps"],
+      });
+      if (!res.data) throw new Error("forkRoadmap returned no data");
+      return res.data;
+    },
+    loading,
+  );
+}
+
+export function useUpdateRoadmapAi() {
+  const [mutate, { loading }] = useMutation(UpdateRoadmapAiDocument);
+  return asMutation(
+    async ({ id, message }: { id: number; message: string }) => {
+      const res = await mutate({ variables: { id, message } });
+      if (!res.data) throw new Error("updateRoadmapAi returned no data");
+      return res.data.updateRoadmapAi;
+    },
+    loading,
+  );
+}
+
+export function useSendNodeChatMessage() {
+  const [mutate, { loading }] = useMutation(SendNodeChatMessageDocument);
+  return asMutation(
+    async ({
+      nodeId,
+      userId,
+      sender,
+      message,
+    }: {
+      nodeId: number;
+      userId: number;
+      sender: string;
+      message: unknown;
+    }) => {
+      const res = await mutate({
+        variables: { nodeId, userId, sender, message },
+        // The backend persists both the user message and the AI reply, so
+        // refetch the chat thread to surface the assistant's response.
+        refetchQueries: ["NodeChats"],
+        awaitRefetchQueries: true,
+      });
+      if (!res.data) throw new Error("sendNodeChatMessage returned no data");
+      return res.data.sendNodeChatMessage;
+    },
+    loading,
+  );
 }

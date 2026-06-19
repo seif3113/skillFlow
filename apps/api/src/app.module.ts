@@ -20,6 +20,10 @@ import { ScalarsResolver } from './graphql/scalars.resolver';
         outputAs: 'interface',
       },
       graphiql: true,
+      subscription: {
+        context: (connection, request) => ({ req: request || { headers: {} }, connection }),
+      },
+      context: (request, reply) => ({ req: request || { headers: {} }, request, reply }),
     }),
     DatabaseModule,
     RoadmapModule,

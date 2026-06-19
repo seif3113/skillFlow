@@ -18,7 +18,9 @@ export function InitRoadmapDialog({
   initialData,
 }: InitRoadmapDialogProps) {
   const [title, setTitle] = useState(initialData?.title || "");
-  const [description, setDescription] = useState(initialData?.description || "");
+  const [description, setDescription] = useState(
+    initialData?.description || "",
+  );
 
   useEffect(() => {
     if (open) {
@@ -53,7 +55,10 @@ export function InitRoadmapDialog({
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="title" className="text-sm font-medium text-zinc-200">
+                <label
+                  htmlFor="title"
+                  className="text-sm font-medium text-zinc-200"
+                >
                   Title
                 </label>
                 <input
@@ -68,7 +73,10 @@ export function InitRoadmapDialog({
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="description" className="text-sm font-medium text-zinc-200">
+                <label
+                  htmlFor="description"
+                  className="text-sm font-medium text-zinc-200"
+                >
                   Description <span className="text-zinc-500">(Optional)</span>
                 </label>
                 <textarea

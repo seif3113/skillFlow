@@ -8,6 +8,9 @@ import Image from "next/image";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { authClient } from "@/lib/auth-client";
 
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
+
 export default function NewRoadmapPage() {
   const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
@@ -23,8 +26,14 @@ export default function NewRoadmapPage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 bg-sky-400 rounded-full animate-bounce" />
-          <div className="w-2 h-2 bg-sky-500 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
-          <div className="w-2 h-2 bg-sky-600 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
+          <div
+            className="w-2 h-2 bg-sky-500 rounded-full animate-bounce"
+            style={{ animationDelay: "0.1s" }}
+          />
+          <div
+            className="w-2 h-2 bg-sky-600 rounded-full animate-bounce"
+            style={{ animationDelay: "0.2s" }}
+          />
         </div>
       </div>
     );
@@ -60,8 +69,22 @@ export default function NewRoadmapPage() {
         </div>
       </header>
       <main className="max-w-7xl mx-auto py-12 px-6">
-        <RoadmapCreator userId={parseInt(session.user.id, 10) || 1} />
+        <Suspense
+          fallback={
+            <div className="flex justify-center p-12">
+              <div className="w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          }
+        >
+          <NewRoadmapContent userId={parseInt(session.user.id, 10) || 1} />
+        </Suspense>
       </main>
     </div>
   );
+}
+
+function NewRoadmapContent({ userId }: { userId: number }) {
+  const searchParams = useSearchParams();
+  const topic = searchParams.get("topic") || undefined;
+  return <RoadmapCreator userId={userId} initialTopic={topic} />;
 }

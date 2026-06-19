@@ -92,6 +92,7 @@ export interface IQuery {
     roadmapsByLearningProfile(learningProfileId: number): Roadmap[] | Promise<Roadmap[]>;
     roadmapLearningProfiles(userId: number): RoadmapLearningProfile[] | Promise<RoadmapLearningProfile[]>;
     publicRoadmaps(): PublicRoadmap[] | Promise<PublicRoadmap[]>;
+    publicRoadmap(id: number): Nullable<PublicRoadmap> | Promise<Nullable<PublicRoadmap>>;
     roadmapCustomizationQuestions(message: string): RoadmapCustomizationQuestion[] | Promise<RoadmapCustomizationQuestion[]>;
     user(id: number): Nullable<User> | Promise<Nullable<User>>;
 }
@@ -105,9 +106,12 @@ export interface IMutation {
     addQuestionToQuiz(quizId: number, question: string, choices: JSON, answer: number, explanation?: Nullable<string>): Question | Promise<Question>;
     createRoadmap(input: CreateRoadmapInput): Roadmap | Promise<Roadmap>;
     updateRoadmap(input: UpdateRoadmapInput): Roadmap | Promise<Roadmap>;
+    updateRoadmapAi(id: number, message: string): Node[] | Promise<Node[]>;
     deleteRoadmap(id: number): DeleteRoadmapResult | Promise<DeleteRoadmapResult>;
     publishRoadmap(id: number): Roadmap | Promise<Roadmap>;
+    forkRoadmap(id: number, userId: number): Roadmap | Promise<Roadmap>;
     createRoadmapLearningProfile(userId: number, goal?: Nullable<string>, level?: Nullable<string>, background?: Nullable<string>, timeAvailability?: Nullable<string>, preferences?: Nullable<JSON>): RoadmapLearningProfile | Promise<RoadmapLearningProfile>;
+    generateRoadmapStream(roadmapId: number, topic: string, customizationAnswers?: Nullable<string[]>): boolean | Promise<boolean>;
     updateUser(updateUserInput: UpdateUserInput): User | Promise<User>;
     removeUser(id: number): User | Promise<User>;
 }
@@ -182,6 +186,16 @@ export interface DeleteRoadmapResult {
 export interface RoadmapCustomizationQuestion {
     question: string;
     choices: string[];
+}
+
+export interface RoadmapStreamEvent {
+    event: string;
+    node?: Nullable<Node>;
+    message?: Nullable<string>;
+}
+
+export interface ISubscription {
+    roadmapGenerationStream(roadmapId: number): RoadmapStreamEvent | Promise<RoadmapStreamEvent>;
 }
 
 export interface User {

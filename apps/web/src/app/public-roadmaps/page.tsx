@@ -2,14 +2,44 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronRight, LayoutDashboard } from "lucide-react";
+import { ChevronRight, LayoutDashboard, GitFork } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { useGetPublicRoadmaps } from "@/hooks/useRoadmap";
+import { useGetPublicRoadmaps, useForkRoadmap } from "@/hooks/useRoadmap";
 import { RoadmapPreview } from "@/components/roadmap/RoadmapPreview";
 import { useState } from "react";
+import { authClient } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function PublicRoadmapsPage() {
+  const router = useRouter();
   const { data: roadmaps, isLoading } = useGetPublicRoadmaps();
+  const { data: session } = authClient.useSession();
+  const { mutate: forkRoadmap } = useForkRoadmap();
+  const [forkingId, setForkingId] = useState<number | null>(null);
+
+  const handleFork = (roadmapId: number) => {
+    if (!session?.user?.id) {
+      toast.error("Please sign in to fork this roadmap.");
+      router.push("/signin");
+      return;
+    }
+    setForkingId(roadmapId);
+    forkRoadmap(
+      { id: roadmapId, userId: parseInt(session.user.id, 10) },
+      {
+        onSuccess: (res: any) => {
+          toast.success("Roadmap forked successfully!");
+          router.push(`/roadmap/${res.forkRoadmap.id}`);
+        },
+        onError: (err) => {
+          console.error(err);
+          toast.error("Failed to fork roadmap.");
+          setForkingId(null);
+        },
+      },
+    );
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground selection:bg-sky-500/30 overflow-x-hidden">
@@ -88,10 +118,17 @@ export default function PublicRoadmapsPage() {
                     {roadmap.description}
                   </p>
                 )}
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">
-                    {roadmap.nodes?.length || 0} nodes
-                  </span>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => handleFork(roadmap.id)}
+                    disabled={forkingId === roadmap.id}
+                    className="text-xs bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 font-bold px-3 py-1.5 rounded-lg border border-sky-500/25 transition-all flex items-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer"
+                  >
+                    <GitFork className="w-3.5 h-3.5" />
+                    <span>
+                      {forkingId === roadmap.id ? "Forking..." : "Fork"}
+                    </span>
+                  </button>
                   <Link
                     href={`/public-roadmaps/${roadmap.id}`}
                     className="text-sky-500 font-bold text-sm hover:text-sky-400 transition-colors"

@@ -8,9 +8,11 @@ export interface LayoutNode {
   resources: { title: string; url: string }[];
   completed?: boolean;
   isReadOnly?: boolean;
+  diffState?: "added" | "modified" | "deleted";
+  isSkeleton?: boolean;
 }
 
-export interface LayoutEdge {
+interface LayoutEdge {
   source: string;
   target: string;
 }
@@ -67,6 +69,8 @@ export function getLayoutedElements(
         resources: node.resources,
         completed: node.completed || false,
         isReadOnly: node.isReadOnly || false,
+        diffState: node.diffState,
+        isSkeleton: node.isSkeleton,
       },
     };
   });

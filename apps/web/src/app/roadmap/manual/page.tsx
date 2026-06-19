@@ -9,7 +9,8 @@ import { InitRoadmapDialog } from "@/components/roadmap/InitRoadmapDialog";
 export default function ManualRoadmapPage() {
   const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
-  const { mutateAsync: createRoadmap, isPending: isCreating } = useCreateRoadmap();
+  const { mutateAsync: createRoadmap, isPending: isCreating } =
+    useCreateRoadmap();
   const [isDialogOpen, setIsDialogOpen] = useState(true);
 
   useEffect(() => {
@@ -18,7 +19,10 @@ export default function ManualRoadmapPage() {
     }
   }, [isPending, session, router]);
 
-  const handleInitSubmit = async (data: { title: string; description: string }) => {
+  const handleInitSubmit = async (data: {
+    title: string;
+    description: string;
+  }) => {
     if (!session) return;
     try {
       const response = await createRoadmap({
@@ -55,7 +59,9 @@ export default function ManualRoadmapPage() {
       {isCreating ? (
         <div className="flex flex-col items-center gap-4">
           <div className="w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-zinc-400 text-sm font-medium">Creating your new roadmap...</p>
+          <p className="text-zinc-400 text-sm font-medium">
+            Creating your new roadmap...
+          </p>
         </div>
       ) : (
         <InitRoadmapDialog

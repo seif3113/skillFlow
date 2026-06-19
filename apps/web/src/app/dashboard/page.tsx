@@ -9,7 +9,13 @@ import { useRouter } from "next/navigation";
 import { Plus, LogOut, Search, Sparkles, PenTool } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { useRoadmapsByUser, useDeleteRoadmap, useUpdateRoadmap } from "@/hooks/useRoadmap";
+import {
+  useRoadmapsByUser,
+  useDeleteRoadmap,
+  useUpdateRoadmap,
+  useCreateRoadmap,
+  useRoadmapCustomizationQuestions,
+} from "@/hooks/useRoadmap";
 import { ConfirmDialog } from "@/components/roadmap/ConfirmDialog";
 import { InitRoadmapDialog } from "@/components/roadmap/InitRoadmapDialog";
 import { toast } from "sonner";
@@ -21,18 +27,33 @@ export default function DashboardPage() {
 function Dashboard() {
   const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
-  const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
 
   const [roadmapToDelete, setRoadmapToDelete] = useState<number | null>(null);
   const [roadmapToEdit, setRoadmapToEdit] = useState<any | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // AI Generator Panel states
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [customize, setCustomize] = useState(false);
+  const [runQuery, setRunQuery] = useState(false);
+  const [isCreatingAiRoadmap, setIsCreatingAiRoadmap] = useState(false);
+
+  // Customization questions panel states
+  const [isCustomizationOpen, setIsCustomizationOpen] = useState(false);
+  const [customizationQuestions, setCustomizationQuestions] = useState<any[]>(
+    [],
+  );
+  const [answers, setAnswers] = useState<string[]>([]);
+
   const { data: roadmaps, isLoading: isLoadingRoadmaps } = useRoadmapsByUser(
-    session?.user?.id ? parseInt(session.user.id, 10) : undefined
+    session?.user?.id ? parseInt(session.user.id, 10) : undefined,
   );
   const { mutate: deleteRoadmap } = useDeleteRoadmap();
   const { mutateAsync: updateRoadmap } = useUpdateRoadmap();
+  const { mutateAsync: createRoadmap } = useCreateRoadmap();
+
+  const { refetch: fetchQuestions, isFetching: isQuestionsLoading } =
+    useRoadmapCustomizationQuestions(aiPrompt, runQuery);
 
   const handleDelete = (id: number) => {
     setRoadmapToDelete(id);
@@ -47,13 +68,93 @@ function Dashboard() {
         onError: (err) => {
           console.error("Failed to delete roadmap", err);
           toast.error("Failed to delete roadmap.");
-        }
+        },
       });
       setRoadmapToDelete(null);
     }
   };
 
-  const handleEditSubmit = async (data: { title: string; description: string }) => {
+  const handleCreateNewManual = async () => {
+    if (!session?.user?.id) return;
+    try {
+      const response = await createRoadmap({
+        title: "Untitled",
+        description: "",
+        userId: parseInt(session.user.id, 10),
+      });
+      toast.success("Manual roadmap created successfully!");
+      router.push(`/roadmap/${response.createRoadmap.id}`);
+    } catch (error) {
+      console.error("Failed to create roadmap", error);
+      toast.error("Failed to create roadmap.");
+    }
+  };
+
+  const handleAiSubmit = async () => {
+    if (!aiPrompt.trim()) return;
+    if (customize) {
+      setRunQuery(true);
+      setTimeout(() => {
+        fetchQuestions().then((res) => {
+          if (res.data && res.data.length > 0) {
+            setCustomizationQuestions(res.data);
+            setAnswers(new Array(res.data.length).fill(""));
+            setIsCustomizationOpen(true);
+          } else {
+            toast.error("Failed to load customization questions.");
+          }
+          setRunQuery(false);
+        });
+      }, 50);
+    } else {
+      if (!session?.user?.id) return;
+      setIsCreatingAiRoadmap(true);
+      try {
+        const response = await createRoadmap({
+          title: aiPrompt.trim(),
+          userId: parseInt(session.user.id, 10),
+        });
+        router.push(
+          `/roadmap/${response.createRoadmap.id}?topic=${encodeURIComponent(
+            aiPrompt.trim()
+          )}`
+        );
+      } catch (error) {
+        console.error("Failed to create roadmap", error);
+        toast.error("Failed to create roadmap.");
+      } finally {
+        setIsCreatingAiRoadmap(false);
+      }
+    }
+  };
+
+  const handleCustomizationSubmit = async () => {
+    if (!session?.user?.id) return;
+    setIsCreatingAiRoadmap(true);
+    try {
+      const response = await createRoadmap({
+        title: aiPrompt.trim() || "Tailored Roadmap",
+        userId: parseInt(session.user.id, 10),
+      });
+      setIsCustomizationOpen(false);
+      const formattedAnswers = customizationQuestions.map((q, idx) => answers[idx]);
+      router.push(
+        `/roadmap/${response.createRoadmap.id}?topic=${encodeURIComponent(
+          aiPrompt.trim()
+        )}&answers=${encodeURIComponent(JSON.stringify(formattedAnswers))}`
+      );
+    } catch (e) {
+      console.error("Failed to create tailored roadmap", e);
+      toast.error("Failed to create tailored roadmap.");
+    } finally {
+      setIsCreatingAiRoadmap(false);
+    }
+  };
+
+  const handleEditSubmit = async (data: {
+    title: string;
+    description: string;
+  }) => {
     if (!roadmapToEdit) return;
     try {
       await updateRoadmap({
@@ -76,7 +177,7 @@ function Dashboard() {
     return roadmaps.filter(
       (r: any) =>
         r.title.toLowerCase().includes(cleanQuery) ||
-        (r.description && r.description.toLowerCase().includes(cleanQuery))
+        (r.description && r.description.toLowerCase().includes(cleanQuery)),
     );
   }, [roadmaps, searchQuery]);
 
@@ -85,16 +186,6 @@ function Dashboard() {
       router.push("/signin");
     }
   }, [isPending, session, router]);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsCreateMenuOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   const handleSignOut = async () => {
     await authClient.signOut();
@@ -179,47 +270,83 @@ function Dashboard() {
               />
             </div>
 
-            <div className="relative" ref={menuRef}>
-              <button 
-                onClick={() => setIsCreateMenuOpen(!isCreateMenuOpen)}
-                className="group relative flex items-center gap-2 px-6 py-3 bg-foreground text-background rounded-xl font-bold transition-all hover:scale-[1.05] active:scale-[0.98] shadow-2xl shadow-foreground/5 overflow-hidden"
+            <div>
+              <button
+                onClick={handleCreateNewManual}
+                className="group relative flex items-center gap-2 px-6 py-3 bg-foreground text-background rounded-xl font-bold transition-all hover:scale-[1.05] active:scale-[0.98] shadow-2xl shadow-foreground/5 overflow-hidden cursor-pointer"
               >
                 <div className="absolute inset-0 bg-linear-to-r from-sky-400 to-teal-400 opacity-0 group-hover:opacity-10 transition-opacity" />
                 <Plus className="w-5 h-5" />
                 <span>Create New</span>
               </button>
-
-              {isCreateMenuOpen && (
-                <div className="absolute right-0 mt-2 w-56 rounded-xl border border-border bg-card p-1 shadow-xl animate-in fade-in slide-in-from-top-2 z-50">
-                  <Link 
-                    href="/roadmap/new"
-                    className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors group"
-                    onClick={() => setIsCreateMenuOpen(false)}
-                  >
-                    <div className="p-1.5 rounded-md bg-purple-500/10 text-purple-500 group-hover:bg-purple-500/20">
-                      <Sparkles className="w-4 h-4" />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-semibold">AI Generated</span>
-                      <span className="text-xs text-muted-foreground">Answer questions to generate</span>
-                    </div>
-                  </Link>
-                  <Link 
-                    href="/roadmap/manual"
-                    className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors group"
-                    onClick={() => setIsCreateMenuOpen(false)}
-                  >
-                    <div className="p-1.5 rounded-md bg-sky-500/10 text-sky-500 group-hover:bg-sky-500/20">
-                      <PenTool className="w-4 h-4" />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-semibold">Manual Setup</span>
-                      <span className="text-xs text-muted-foreground">Build node by node</span>
-                    </div>
-                  </Link>
-                </div>
-              )}
             </div>
+          </div>
+        </div>
+
+        {/* AI Generator Panel */}
+        <div className="bg-card/30 border border-border rounded-2xl p-6 mb-12 relative overflow-hidden backdrop-blur-md z-10">
+          <div className="absolute inset-0 bg-linear-to-r from-sky-500/5 to-teal-500/5 pointer-events-none" />
+          <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-sky-400" />
+            AI Roadmap Generator
+          </h2>
+          <p className="text-sm text-muted-foreground mb-4 font-medium">
+            Enter a skill or topic you want to learn. SkillFlow will construct a
+            personalized learning path.
+          </p>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col md:flex-row gap-3">
+              <input
+                type="text"
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                placeholder="e.g. Next.js 16 with Typescript, Kubernetes for Beginners, Learn Piano..."
+                className="flex-1 bg-zinc-900/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 text-zinc-50"
+              />
+              <button
+                onClick={handleAiSubmit}
+                disabled={!aiPrompt.trim() || isQuestionsLoading || isCreatingAiRoadmap}
+                className="bg-sky-500 hover:bg-sky-400 text-white font-bold px-6 py-3 rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-sky-500/20 text-sm"
+              >
+                {(isQuestionsLoading || isCreatingAiRoadmap) && (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                )}
+                <span>Generate Path</span>
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => setCustomize(!customize)}
+              className={`flex items-center justify-between p-4 rounded-xl border transition-all duration-300 max-w-md text-left cursor-pointer group ${
+                customize
+                  ? "bg-sky-500/10 border-sky-500/40 hover:bg-sky-500/15"
+                  : "bg-zinc-900/50 border-zinc-800 hover:border-zinc-700"
+              }`}
+            >
+              <div className="flex flex-col gap-0.5 mr-6">
+                <span className="text-sm font-bold text-zinc-200 transition-colors group-hover:text-zinc-100">
+                  Customization Questions
+                </span>
+                <span className="text-xs text-muted-foreground font-medium">
+                  Tailor the learning path options using AI questions
+                </span>
+              </div>
+
+              <div className="relative flex items-center shrink-0">
+                <div
+                  className={`w-10 h-6 rounded-full transition-all duration-300 border ${
+                    customize
+                      ? "bg-sky-500/25 border-sky-500/50"
+                      : "bg-zinc-800 border-zinc-700"
+                  }`}
+                />
+                <div
+                  className={`absolute w-4 h-4 bg-zinc-400 rounded-full transition-all duration-300 ${
+                    customize ? "translate-x-5 bg-sky-400" : "translate-x-1"
+                  }`}
+                />
+              </div>
+            </button>
           </div>
         </div>
 
@@ -258,6 +385,83 @@ function Dashboard() {
               description: roadmapToEdit.description || "",
             }}
           />
+        )}
+
+        {isCustomizationOpen && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-zinc-950 border border-zinc-800 rounded-2xl max-w-xl w-full max-h-[85vh] flex flex-col p-6 shadow-2xl animate-in fade-in zoom-in-95">
+              <h3 className="text-xl font-extrabold text-foreground mb-1 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-teal-400" />
+                Tailor Your Learning Path
+              </h3>
+              <p className="text-xs text-muted-foreground mb-6 font-medium">
+                Answer these questions to customize your path for "{aiPrompt}".
+              </p>
+
+              <div className="flex-1 overflow-y-auto space-y-8 pr-2 pb-4">
+                {customizationQuestions.map((q, idx) => (
+                  <div key={idx} className="space-y-3">
+                    <label className="text-sm font-bold text-zinc-200 leading-relaxed block">
+                      {idx + 1}. {q.question}
+                    </label>
+                    {q.choices && q.choices.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {q.choices.map((choice: string) => (
+                          <button
+                            key={choice}
+                            type="button"
+                            onClick={() => {
+                              const newAnswers = [...answers];
+                              newAnswers[idx] = choice;
+                              setAnswers(newAnswers);
+                            }}
+                            className={`text-left text-xs px-4 py-3 rounded-xl border transition-all cursor-pointer font-semibold ${
+                              answers[idx] === choice
+                                ? "bg-sky-500/15 border-sky-500 text-sky-400"
+                                : "bg-zinc-900/50 border-zinc-800 hover:border-zinc-700 text-zinc-300"
+                            }`}
+                          >
+                            {choice}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <input
+                        type="text"
+                        value={answers[idx] || ""}
+                        onChange={(e) => {
+                          const newAnswers = [...answers];
+                          newAnswers[idx] = e.target.value;
+                          setAnswers(newAnswers);
+                        }}
+                        placeholder="Type your answer..."
+                        className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-2.5 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-zinc-800">
+                <button
+                  onClick={() => setIsCustomizationOpen(false)}
+                  className="px-5 py-2.5 text-xs font-semibold text-zinc-400 hover:text-zinc-50 hover:bg-zinc-800 rounded-xl transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCustomizationSubmit}
+                  disabled={answers.some((ans) => !ans || !ans.trim()) || isCreatingAiRoadmap}
+                  className="px-6 py-2.5 text-xs font-bold text-white bg-sky-500 hover:bg-sky-400 rounded-xl transition-all disabled:opacity-50 disabled:hover:scale-100 cursor-pointer shadow-lg shadow-sky-500/20 flex items-center gap-2"
+                >
+                  {isCreatingAiRoadmap && (
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  )}
+                  Create Roadmap
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </main>
     </div>
