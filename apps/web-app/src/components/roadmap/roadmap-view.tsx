@@ -269,8 +269,12 @@ function RoadmapViewNodeDetail() {
     <Drawer
       open={node !== null}
       onOpenChange={(open) => !open && actions.selectNode(null)}
+      position="right"
     >
-      <DrawerPopup showBar>
+      {/* keepMounted: the drawer stays in the DOM and animates purely off the
+          open/closed state, instead of mounting/unmounting (which skipped the
+          enter/exit transition). */}
+      <DrawerPopup portalProps={{ keepMounted: true }}>
         {shown ? (
           <NodeDetailContent
             key={shown.id}
