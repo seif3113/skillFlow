@@ -40,6 +40,7 @@ import {
   NodeEditorSidebar,
   NodeDraft,
 } from "@/components/roadmap/NodeEditorSidebar";
+import { NodeChatPanel } from "@/components/roadmap/NodeChatPanel";
 import { ConfirmDialog } from "@/components/roadmap/ConfirmDialog";
 import { toast } from "sonner";
 
@@ -72,6 +73,21 @@ export default function RoadmapPage() {
   // Editor Sidebar State
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+
+  // Chatbot Panel State
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatNodeTitle, setChatNodeTitle] = useState("");
+
+  useEffect(() => {
+    const handleOpenChat = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      setChatNodeTitle(customEvent.detail.title);
+      setIsChatOpen(true);
+      setIsSidebarOpen(false); // Close other sidebars when chat opens
+    };
+    window.addEventListener("open-ai-chat", handleOpenChat);
+    return () => window.removeEventListener("open-ai-chat", handleOpenChat);
+  }, []);
 
   // Mutations
   const { mutateAsync: createRoadmap, isPending: isCreatingRoadmap } =
@@ -185,7 +201,11 @@ export default function RoadmapPage() {
 
   const handleNodeClick = (_: React.MouseEvent, node: FlowNode) => {
     setSelectedNodeId(node.id);
-    setIsSidebarOpen(true);
+    if (isChatOpen) {
+      setChatNodeTitle((node.data as any)?.label || node.id);
+    } else {
+      setIsSidebarOpen(true);
+    }
   };
 
   const handleSaveNode = async (nodeDraft: NodeDraft) => {
@@ -435,7 +455,6 @@ export default function RoadmapPage() {
           onSubmit={handleInitSubmit}
           initialData={title ? { title, description } : undefined}
         />
-
         <NodeEditorSidebar
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
@@ -443,6 +462,12 @@ export default function RoadmapPage() {
           onSave={handleSaveNode}
           onDelete={handleDeleteNodeClick}
           isSaving={isSavingNode}
+        />
+
+        <NodeChatPanel
+          isOpen={isChatOpen}
+          onClose={() => setIsChatOpen(false)}
+          nodeTitle={chatNodeTitle}
         />
 
         <ConfirmDialog

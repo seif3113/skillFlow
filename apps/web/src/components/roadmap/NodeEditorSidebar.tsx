@@ -151,15 +151,15 @@ export function NodeEditorSidebar({
   };
 
   return (
-    <div className="fixed inset-y-0 right-0 z-40 flex w-full max-w-sm flex-col bg-zinc-950 border-l border-zinc-800 shadow-2xl transition-transform duration-300 translate-x-0">
-      <div className="flex items-center justify-between border-b border-zinc-800 px-6 py-4">
-        <h2 className="text-lg font-bold text-zinc-50">
+    <div className="fixed inset-y-0 right-0 z-40 flex w-full max-w-sm flex-col bg-background border-l border-border shadow-2xl transition-transform duration-300 translate-x-0">
+      <div className="flex items-center justify-between border-b border-border px-6 py-4">
+        <h2 className="text-lg font-bold text-foreground">
           {initialData ? "Edit Node" : "Add Node"}
         </h2>
         <button
           onClick={handleCancel}
           disabled={isSaving}
-          className="rounded-full p-2 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-50 transition-colors disabled:opacity-55"
+          className="rounded-full p-2 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors disabled:opacity-55"
         >
           <X className="h-5 w-5" />
         </button>
@@ -168,52 +168,52 @@ export function NodeEditorSidebar({
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         <div className="space-y-4">
           <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Title *
             </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-2.5 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
+              className="w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-sky-500"
               placeholder="e.g., React Hooks"
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Description
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full min-h-[80px] rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-2.5 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none"
+              className="w-full min-h-[80px] rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none"
               placeholder="Briefly explain this topic..."
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Tags
             </label>
             <input
               type="text"
               value={tagsInput}
               onChange={(e) => setTagsInput(e.target.value)}
-              className="w-full rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-2.5 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
+              className="w-full rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-sky-500"
               placeholder="frontend, react, hooks (comma separated)"
             />
           </div>
 
           <label
             htmlFor="isCompleted"
-            className="flex items-center justify-between p-4 bg-zinc-900/50 hover:bg-zinc-900/80 border border-zinc-800/80 rounded-xl transition-all duration-300 cursor-pointer group"
+            className="flex items-center justify-between p-4 bg-muted/30 hover:bg-muted/65 border border-border rounded-xl transition-all duration-300 cursor-pointer group"
           >
             <div className="flex flex-col gap-0.5">
-              <span className="text-sm font-bold text-zinc-200 group-hover:text-zinc-100 transition-colors">
+              <span className="text-sm font-bold text-foreground group-hover:text-foreground/90 transition-colors">
                 Mark topic as completed
               </span>
-              <span className="text-xs text-zinc-500 font-medium">
+              <span className="text-xs text-muted-foreground font-medium">
                 Update progress on this roadmap
               </span>
             </div>
@@ -226,16 +226,16 @@ export function NodeEditorSidebar({
                 onChange={(e) => setIsCompleted(e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-10 h-6 bg-zinc-800 rounded-full transition-all duration-300 peer-checked:bg-teal-500/20 peer-checked:border-teal-500/40 border border-zinc-700/85" />
-              <div className="absolute left-1 w-4 h-4 bg-zinc-400 rounded-full transition-all duration-300 peer-checked:translate-x-4 peer-checked:bg-teal-400" />
+              <div className="w-10 h-6 bg-muted border border-border rounded-full transition-all duration-300 peer-checked:bg-teal-500/20 peer-checked:border-teal-500/40" />
+              <div className="absolute left-1 w-4 h-4 bg-muted-foreground rounded-full transition-all duration-300 peer-checked:translate-x-4 peer-checked:bg-teal-400" />
             </div>
           </label>
         </div>
 
         {/* Resources Section */}
-        <div className="space-y-4 pt-4 border-t border-zinc-800">
+        <div className="space-y-4 pt-4 border-t border-border">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Resources ({resources.length})
             </label>
             <button
@@ -259,7 +259,7 @@ export function NodeEditorSidebar({
               {resources.map((res, i) => (
                 <div
                   key={i}
-                  className="flex items-start justify-between gap-3 p-3 rounded-xl bg-zinc-900 border border-zinc-800 group transition-all hover:bg-zinc-900/80"
+                  className="flex items-start justify-between gap-3 p-3 rounded-xl bg-card border border-border group transition-all hover:bg-accent/40"
                 >
                   <div className="mt-1 shrink-0 bg-sky-500/5 p-2 rounded-xl border border-sky-500/10">
                     <ResourceIcon type={res.type} />
@@ -267,19 +267,19 @@ export function NodeEditorSidebar({
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
                       <p
-                        className="text-sm font-medium text-zinc-200 truncate max-w-[200px]"
+                        className="text-sm font-medium text-foreground truncate max-w-[200px]"
                         title={res.title}
                       >
                         {res.title}
                       </p>
                       {res.type && (
-                        <span className="px-1.5 py-0.5 bg-zinc-800 text-zinc-400 text-[9px] rounded uppercase font-bold tracking-wider shrink-0 border border-zinc-700">
+                        <span className="px-1.5 py-0.5 bg-secondary text-secondary-foreground text-[9px] rounded uppercase font-bold tracking-wider shrink-0 border border-border">
                           {res.type}
                         </span>
                       )}
                     </div>
                     {res.description && (
-                      <p className="text-[11px] text-zinc-500 mb-1 line-clamp-1 italic">
+                      <p className="text-[11px] text-muted-foreground mb-1 line-clamp-1 italic">
                         {res.description}
                       </p>
                     )}
@@ -297,7 +297,7 @@ export function NodeEditorSidebar({
                   </div>
                   <button
                     onClick={() => removeResource(res.url)}
-                    className="text-zinc-500 hover:text-red-400 transition-colors mt-0.5 shrink-0"
+                    className="text-muted-foreground hover:text-red-400 transition-colors mt-0.5 shrink-0"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -309,26 +309,26 @@ export function NodeEditorSidebar({
           {showSearch && (
             <div className="space-y-3 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
               <div className="relative group">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-sky-500 transition-colors" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-sky-500 transition-colors" />
                 <input
                   ref={searchInputRef}
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-xl border border-zinc-800 bg-zinc-900/50 pl-10 pr-4 py-2.5 text-sm text-zinc-50 placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all shadow-inner"
+                  className="w-full rounded-xl border border-border bg-card pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all shadow-inner"
                   placeholder="Find more resources..."
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                     Type
                   </label>
                   <select
                     value={searchType}
                     onChange={(e) => setSearchType(e.target.value)}
-                    className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-zinc-300 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    className="w-full rounded-xl border border-border bg-card px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-sky-500"
                   >
                     <option value="all">All Types</option>
                     <option value="course">Course</option>
@@ -337,7 +337,7 @@ export function NodeEditorSidebar({
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                     Limit (1-20)
                   </label>
                   <input
@@ -353,29 +353,29 @@ export function NodeEditorSidebar({
                         setSearchLimit(1);
                       }
                     }}
-                    className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-3.5 py-1.5 text-xs text-zinc-300 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    className="w-full rounded-xl border border-border bg-card px-3.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-sky-500"
                   />
                 </div>
               </div>
 
               {/* Search Results */}
               {searchQuery.length > 2 && (
-                <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden max-h-64 overflow-y-auto shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+                <div className="bg-card rounded-xl border border-border overflow-hidden max-h-64 overflow-y-auto shadow-2xl animate-in fade-in zoom-in-95 duration-200">
                   {isFetching && (
                     <div className="flex items-center justify-center p-8">
                       <div className="w-4 h-4 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
-                      <span className="ml-3 text-xs text-zinc-500 font-medium uppercase tracking-widest text-[10px]">
+                      <span className="ml-3 text-xs text-muted-foreground font-medium uppercase tracking-widest text-[10px]">
                         Scanning content...
                       </span>
                     </div>
                   )}
                   {!isFetching && searchResults?.length === 0 && (
-                    <p className="text-xs text-zinc-500 p-6 text-center italic">
+                    <p className="text-xs text-muted-foreground p-6 text-center italic">
                       No results found for "{searchQuery}"
                     </p>
                   )}
                   {!isFetching && searchResults && searchResults.length > 0 && (
-                    <div className="divide-y divide-zinc-800/50">
+                    <div className="divide-y divide-border/50">
                       {searchResults.map((res: any, i: number) => {
                         const item = res?.resource || res;
                         const resTitle = item.title || "Untitled Resource";
@@ -388,7 +388,7 @@ export function NodeEditorSidebar({
                         return (
                           <div
                             key={i}
-                            className="p-4 flex items-start gap-4 hover:bg-zinc-800/30 transition-colors group/item"
+                            className="p-4 flex items-start gap-4 hover:bg-accent/40 transition-colors group/item"
                           >
                             <div className="mt-1 shrink-0 bg-sky-500/5 p-2 rounded-xl border border-sky-500/10 group-hover/item:border-sky-500/30 transition-colors">
                               <ResourceIcon type={resType} />
@@ -396,7 +396,7 @@ export function NodeEditorSidebar({
                             <div className="flex-1 min-w-0 flex flex-col gap-1">
                               <div className="flex items-center justify-between gap-2">
                                 <p
-                                  className="text-sm font-bold text-zinc-100 leading-snug line-clamp-2"
+                                  className="text-sm font-bold text-foreground leading-snug line-clamp-2"
                                   title={resTitle}
                                 >
                                   {resTitle}
@@ -405,7 +405,7 @@ export function NodeEditorSidebar({
 
                               {resDescription && (
                                 <p
-                                  className="text-[11px] text-zinc-400 line-clamp-1 italic font-medium"
+                                  className="text-[11px] text-muted-foreground line-clamp-1 italic font-medium"
                                   title={resDescription}
                                 >
                                   {resDescription}
@@ -415,7 +415,7 @@ export function NodeEditorSidebar({
                               <div className="flex flex-wrap gap-x-3 gap-y-1.5 mt-2">
                                 <div className="flex items-center gap-1.5">
                                   {resType && (
-                                    <span className="px-1.5 py-0.5 bg-zinc-800 text-zinc-300 text-[9px] rounded uppercase font-black tracking-tighter border border-zinc-700">
+                                    <span className="px-1.5 py-0.5 bg-secondary text-secondary-foreground text-[9px] rounded uppercase font-black tracking-tighter border border-border">
                                       {resType}
                                     </span>
                                   )}
@@ -435,7 +435,7 @@ export function NodeEditorSidebar({
                               className={`p-2 rounded-xl transition-all shrink-0 ${
                                 isAdded
                                   ? "text-emerald-500 bg-emerald-500/10 cursor-default"
-                                  : "text-zinc-400 hover:text-zinc-50 hover:bg-zinc-700 bg-zinc-800 border border-zinc-700 shadow-sm"
+                                  : "text-muted-foreground hover:text-foreground hover:bg-accent bg-secondary border border-border shadow-sm"
                               }`}
                             >
                               {isAdded ? (
@@ -456,7 +456,7 @@ export function NodeEditorSidebar({
         </div>
       </div>
 
-      <div className="border-t border-zinc-800 p-6 flex items-center justify-between bg-zinc-950/80 backdrop-blur-md">
+      <div className="border-t border-border p-6 flex items-center justify-between bg-background/80 backdrop-blur-md">
         {initialData && onDelete ? (
           <button
             onClick={onDelete}
@@ -472,7 +472,7 @@ export function NodeEditorSidebar({
           <button
             onClick={handleCancel}
             disabled={isSaving}
-            className="px-5 py-2.5 text-sm font-semibold text-zinc-300 hover:text-zinc-50 hover:bg-zinc-800 rounded-xl transition-all disabled:opacity-50"
+            className="px-5 py-2.5 text-sm font-semibold text-muted-foreground hover:text-foreground hover:bg-accent rounded-xl transition-all disabled:opacity-50"
           >
             Cancel
           </button>

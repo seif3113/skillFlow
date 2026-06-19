@@ -3,7 +3,7 @@
 import { memo } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, BookOpen } from "lucide-react";
+import { CheckCircle2, BookOpen, Sparkles } from "lucide-react";
 
 export interface RoadmapNodeData {
   label: string;
@@ -13,7 +13,7 @@ export interface RoadmapNodeData {
   isReadOnly?: boolean;
 }
 
-function RoadmapNodeComponent({ data, selected }: NodeProps) {
+function RoadmapNodeComponent({ id, data, selected }: NodeProps) {
   const nodeData = data as unknown as RoadmapNodeData;
 
   return (
@@ -100,6 +100,24 @@ function RoadmapNodeComponent({ data, selected }: NodeProps) {
           className="w-4! h-4! bg-muted! border-2! border-border! -bottom-2!"
         />
       </div>
+
+      {/* AI Icon Button on Bottom Left when selected */}
+      {selected && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            window.dispatchEvent(
+              new CustomEvent("open-ai-chat", {
+                detail: { id, title: nodeData.label },
+              })
+            );
+          }}
+          className="absolute -bottom-3 -left-3 z-30 p-2 bg-gradient-to-r from-sky-500 to-teal-500 hover:from-sky-400 hover:to-teal-400 text-white rounded-xl shadow-lg hover:scale-110 active:scale-95 transition-all cursor-pointer border border-sky-400/20 animate-in zoom-in duration-300"
+          title="Chat with AI about this topic"
+        >
+          <Sparkles className="w-4 h-4" />
+        </button>
+      )}
     </div>
   );
 }
