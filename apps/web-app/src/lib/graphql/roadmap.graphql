@@ -18,6 +18,28 @@ fragment RoadmapEdgeFields on NodeEdge {
   targetNodeId
 }
 
+query MyRoadmaps {
+  roadmaps {
+    id
+    title
+    description
+    isPublished
+    createdAt
+    updatedAt
+    nodes {
+      id
+      isCompleted
+    }
+  }
+}
+
+mutation DeleteRoadmap($id: Int!) {
+  deleteRoadmap(id: $id) {
+    success
+    message
+  }
+}
+
 query GetRoadmap($id: Int!) {
   roadmap(id: $id) {
     id
