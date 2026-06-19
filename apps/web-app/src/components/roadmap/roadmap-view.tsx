@@ -1,20 +1,32 @@
 import { ReactFlow, Background, Controls, type NodeMouseHandler } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { LinkSquare02Icon } from "@hugeicons/core-free-icons"
+import {
+  LinkSquare02Icon,
+  Quiz01Icon,
+  CheckmarkCircle02Icon,
+} from "@hugeicons/core-free-icons"
 
-import { asTags, asResources, type RoadmapFlowNode } from "@/lib/roadmap-graph"
+import {
+  asTags,
+  asResources,
+  type RoadmapNode,
+  type RoadmapFlowNode,
+} from "@/lib/roadmap-graph"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
+  Drawer,
+  DrawerPopup,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerPanel,
+  DrawerFooter,
+} from "@/components/ui/drawer"
 import { RoadmapFlowNodeCard } from "./roadmap-flow-node"
-import { NodeQuizPanel } from "./node-quiz-panel"
+import { useNodeQuiz, QuizQuestions, QuizResults } from "./node-quiz"
 import { RoadmapViewProvider } from "./roadmap-view-provider"
 import { useRoadmapView } from "./roadmap-view-context"
 
@@ -115,74 +127,152 @@ function RoadmapViewHint() {
   )
 }
 
+// The full drawer body + footer for a node. Mounted with a per-node `key` so
+// quiz state resets when the selected node changes. The quiz (taking/results)
+// replaces the node info entirely; actions live in the footer.
+function NodeDetailContent({
+  node,
+  onPassed,
+}: {
+  node: RoadmapNode
+  onPassed: () => void
+}) {
+  const quiz = useNodeQuiz(node.id, onPassed)
+
+  return (
+    <>
+      <DrawerHeader>
+        <DrawerTitle>{node.title}</DrawerTitle>
+      </DrawerHeader>
+
+      <DrawerPanel>
+        {quiz.mode === "idle" ? (
+          <div className="flex flex-col gap-4">
+            {node.description ? (
+              <p className="text-muted-foreground text-sm">
+                {node.description}
+              </p>
+            ) : null}
+
+            {asTags(node.tags).length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {asTags(node.tags).map((tag) => (
+                  <Badge key={tag} variant="secondary">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            ) : null}
+
+            {asResources(node.resources).length > 0 ? (
+              <div className="flex flex-col gap-2">
+                <p className="font-medium text-sm">Resources</p>
+                {asResources(node.resources).map((r, i) => (
+                  <a
+                    key={i}
+                    href={r.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm hover:bg-muted"
+                  >
+                    <HugeiconsIcon
+                      icon={LinkSquare02Icon}
+                      className="size-4 shrink-0 text-muted-foreground"
+                    />
+                    <span className="truncate">{r.title ?? r.url}</span>
+                  </a>
+                ))}
+              </div>
+            ) : null}
+
+            {node.isCompleted ? (
+              <div className="flex items-center gap-2 font-medium text-primary text-sm">
+                <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-4" />
+                Completed
+              </div>
+            ) : null}
+          </div>
+        ) : quiz.mode === "taking" && quiz.quiz ? (
+          <QuizQuestions
+            quiz={quiz.quiz}
+            answers={quiz.answers}
+            onAnswer={quiz.setAnswer}
+          />
+        ) : quiz.mode === "result" && quiz.quiz && quiz.result ? (
+          <QuizResults
+            quiz={quiz.quiz}
+            result={quiz.result}
+            answers={quiz.answers}
+          />
+        ) : null}
+      </DrawerPanel>
+
+      <DrawerFooter>
+        {quiz.mode === "idle" ? (
+          <Button
+            className="w-full"
+            variant={node.isCompleted ? "outline" : "default"}
+            disabled={quiz.generating}
+            onClick={quiz.start}
+          >
+            {quiz.generating ? (
+              <Spinner data-icon="inline-start" />
+            ) : (
+              <HugeiconsIcon icon={Quiz01Icon} data-icon="inline-start" />
+            )}
+            {node.isCompleted ? "Retake quiz" : "Take quiz to complete"}
+          </Button>
+        ) : quiz.mode === "taking" ? (
+          <>
+            <Button
+              variant="ghost"
+              onClick={quiz.reset}
+              disabled={quiz.submitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={quiz.submitAttempt}
+              disabled={!quiz.allAnswered || quiz.submitting}
+            >
+              {quiz.submitting ? <Spinner data-icon="inline-start" /> : null}
+              Submit answers
+            </Button>
+          </>
+        ) : quiz.result?.passed ? (
+          <Button className="w-full" onClick={quiz.reset}>
+            Done
+          </Button>
+        ) : (
+          <Button className="w-full" onClick={quiz.retry}>
+            Try again
+          </Button>
+        )}
+      </DrawerFooter>
+    </>
+  )
+}
+
 function RoadmapViewNodeDetail() {
   const { state, actions } = useRoadmapView()
   const node = state.selectedNode
 
   return (
-    <Sheet
+    <Drawer
       open={node !== null}
       onOpenChange={(open) => !open && actions.selectNode(null)}
+      position="right"
     >
-      <SheetContent className="w-full gap-0 sm:max-w-md">
+      <DrawerPopup>
         {node ? (
-          <>
-            <SheetHeader>
-              <SheetTitle>{node.title}</SheetTitle>
-            </SheetHeader>
-            <div className="flex flex-1 flex-col overflow-y-auto">
-              <div className="flex flex-col gap-4 px-4 pb-4">
-                {node.description ? (
-                  <p className="text-muted-foreground text-sm">
-                    {node.description}
-                  </p>
-                ) : null}
-
-                {asTags(node.tags).length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5">
-                    {asTags(node.tags).map((tag) => (
-                      <Badge key={tag} variant="secondary">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                ) : null}
-
-                {asResources(node.resources).length > 0 ? (
-                  <div className="flex flex-col gap-2">
-                    <p className="font-medium text-sm">Resources</p>
-                    {asResources(node.resources).map((r, i) => (
-                      <a
-                        key={i}
-                        href={r.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm hover:bg-muted"
-                      >
-                        <HugeiconsIcon
-                          icon={LinkSquare02Icon}
-                          className="size-4 shrink-0 text-muted-foreground"
-                        />
-                        <span className="truncate">{r.title ?? r.url}</span>
-                      </a>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-
-              {/* Quiz-gated completion: passing the quiz is the only way to
-                  complete the node. `key` resets the panel per node. */}
-              <NodeQuizPanel
-                key={node.id}
-                nodeId={node.id}
-                isCompleted={node.isCompleted}
-                onPassed={() => actions.markCompleted(node.id)}
-              />
-            </div>
-          </>
+          <NodeDetailContent
+            key={node.id}
+            node={node}
+            onPassed={() => actions.markCompleted(node.id)}
+          />
         ) : null}
-      </SheetContent>
-    </Sheet>
+      </DrawerPopup>
+    </Drawer>
   )
 }
 
