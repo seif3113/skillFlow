@@ -1,5 +1,5 @@
 from fastapi import FastAPI, APIRouter, status, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from controllers.NLPController import NLPController
 from controllers.document_loader import load_chunks
 from models.schemes import (
@@ -67,6 +67,13 @@ def _format_search_result(result, requested_type: str = "all") -> dict:
             "type": _get_resource_type(source, requested_type),
         },
     }
+
+
+def _json_stream_event(event: str, payload: dict = None) -> str:
+    data = {"event": event}
+    if payload:
+        data.update(payload)
+    return json.dumps(data, ensure_ascii=False) + "\n"
 
 
 @nlp_router.post("/index/push/vector")
@@ -283,35 +290,130 @@ async def generate_roadmap_rag(request: Request, roadmap_request: RoadmapRequest
         embedding_helper=request.app.embedding_helper,
     )
 
-    try:
-        roadmap = nlp_controller.generate_customized_roadmap_rag(
-            topic=topic, customization_answers=roadmap_request.customization_answers
-        )
-    except Exception as e:
-        logger.error(f"Roadmap RAG generation failed: {str(e)}")
-        return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={
-                "signal": "error",
-                "message": "Roadmap generation failed.",
-                "details": str(e),
-            },
-        )
+    def stream_roadmap():
+        full_response = ""
+        nodes = []
+        scan_index = 0
+        in_array = False
+        object_start = None
+        depth = 0
+        in_string = False
+        escape = False
 
-    if not roadmap:
-        return JSONResponse(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            content={
-                "signal": "error",
-                "message": "Failed to generate customized roadmap.",
-            },
-        )
+        yield _json_stream_event("start", {"signal": "success"})
 
-    return JSONResponse(
-        content={
-            "signal": "success",
-            "results": roadmap,
-        }
+        try:
+            stream = nlp_controller.generate_customized_roadmap_rag_stream(
+                topic=topic, customization_answers=roadmap_request.customization_answers
+            )
+
+            if not stream:
+                yield _json_stream_event(
+                    "error",
+                    {
+                        "signal": "error",
+                        "message": "Failed to start roadmap generation stream.",
+                    },
+                )
+                return
+
+            for chunk in stream:
+                if not chunk:
+                    continue
+
+                chunk = str(chunk)
+                full_response += chunk
+
+                while scan_index < len(full_response):
+                    char = full_response[scan_index]
+
+                    if not in_array:
+                        if char == "[":
+                            in_array = True
+                        scan_index += 1
+                        continue
+
+                    if object_start is None:
+                        if char == "{":
+                            object_start = scan_index
+                            depth = 1
+                            in_string = False
+                            escape = False
+                        scan_index += 1
+                        continue
+
+                    if in_string:
+                        if escape:
+                            escape = False
+                        elif char == "\\":
+                            escape = True
+                        elif char == '"':
+                            in_string = False
+                    else:
+                        if char == '"':
+                            in_string = True
+                        elif char == "{":
+                            depth += 1
+                        elif char == "}":
+                            depth -= 1
+
+                    scan_index += 1
+
+                    if depth == 0 and object_start is not None:
+                        node_text = full_response[object_start:scan_index]
+                        object_start = None
+                        try:
+                            node = json.loads(node_text)
+                        except json.JSONDecodeError:
+                            continue
+
+                        nodes.append(node)
+                        yield _json_stream_event("node", {"node": node})
+
+            try:
+                parsed_nodes = nlp_controller._extract_json_from_llm_response(
+                    full_response
+                )
+                if isinstance(parsed_nodes, list):
+                    nodes = parsed_nodes
+                elif isinstance(parsed_nodes, dict):
+                    # Try to extract list from dictionary values
+                    for value in parsed_nodes.values():
+                        if isinstance(value, list):
+                            nodes = value
+                            break
+                    if not nodes:
+                        nodes = [parsed_nodes]
+            except Exception as e:
+                logger.error(f"Failed to parse streamed final roadmap: {e}")
+                yield _json_stream_event(
+                    "error",
+                    {
+                        "signal": "error",
+                        "message": "Roadmap stream finished but final JSON parsing failed.",
+                        "details": str(e),
+                    },
+                )
+                return
+
+            yield _json_stream_event("nodes", {"nodes": nodes})
+            yield _json_stream_event("done", {"signal": "success"})
+
+        except Exception as e:
+            logger.error(f"Roadmap RAG streaming failed: {str(e)}")
+            yield _json_stream_event(
+                "error",
+                {
+                    "signal": "error",
+                    "message": "Roadmap generation failed.",
+                    "details": str(e),
+                },
+            )
+
+    return StreamingResponse(
+        stream_roadmap(),
+        media_type="application/x-ndjson",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
 
 
