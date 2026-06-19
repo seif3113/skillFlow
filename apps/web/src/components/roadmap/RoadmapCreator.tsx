@@ -74,7 +74,12 @@ export function RoadmapCreator({ userId, initialTopic }: RoadmapCreatorProps) {
       return { nodes: [] as Node[], edges: [] as Edge[] };
     }
 
-    const validNodes: { id: string; label: string; description: string; resources: { title: string; url: string }[] }[] = [];
+    const validNodes: {
+      id: string;
+      label: string;
+      description: string;
+      resources: { title: string; url: string }[];
+    }[] = [];
     const validEdges: { source: string; target: string }[] = [];
 
     for (const n of roadmapObject.nodes) {
@@ -129,7 +134,13 @@ export function RoadmapCreator({ userId, initialTopic }: RoadmapCreatorProps) {
     }
     // Default to topic input
     return "topic" as const;
-  }, [validQuestions, isLoadingQuestions, layoutedNodes, isLoadingRoadmap, questionsAnswered]);
+  }, [
+    validQuestions,
+    isLoadingQuestions,
+    layoutedNodes,
+    isLoadingRoadmap,
+    questionsAnswered,
+  ]);
 
   // Save roadmap to database when generation is fully complete
   useEffect(() => {
@@ -169,9 +180,17 @@ export function RoadmapCreator({ userId, initialTopic }: RoadmapCreatorProps) {
         }
       }
     }
-    
+
     saveGeneratedRoadmap();
-  }, [layoutedNodes, isLoadingRoadmap, roadmapObject?.title, createRoadmap, createNode, topic, userId]);
+  }, [
+    layoutedNodes,
+    isLoadingRoadmap,
+    roadmapObject?.title,
+    createRoadmap,
+    createNode,
+    topic,
+    userId,
+  ]);
 
   const handleTopicSubmit = useCallback(
     async (submittedTopic: string) => {
@@ -184,48 +203,63 @@ export function RoadmapCreator({ userId, initialTopic }: RoadmapCreatorProps) {
       // Generate questions
       submitQuestions({ topic: submittedTopic });
     },
-    [submitQuestions]
+    [submitQuestions],
   );
 
   const handleQuestionsSubmit = useCallback(
-    async (answers: { questionId: string; question: string; answer: string }[]) => {
+    async (
+      answers: { questionId: string; question: string; answer: string }[],
+    ) => {
       // Mark questions as answered to transition to generating step
       setQuestionsAnswered(true);
 
       // Generate roadmap
       submitRoadmap({
         topic,
-        answers: answers.map((a) => ({ question: a.question, answer: a.answer })),
+        answers: answers.map((a) => ({
+          question: a.question,
+          answer: a.answer,
+        })),
       });
     },
-    [topic, submitRoadmap]
+    [topic, submitRoadmap],
   );
 
   const handleNodeUpdate = useCallback(
-    async (nodeId: string, data: Partial<{ label: string; description: string; resources: { title: string; url: string }[]; completed: boolean }>) => {
+    async (
+      nodeId: string,
+      data: Partial<{
+        label: string;
+        description: string;
+        resources: { title: string; url: string }[];
+        completed: boolean;
+      }>,
+    ) => {
       // Update logic for layout in editor if needed
       // To keep it simple, we can ignore live DB updates during generation
     },
-    []
+    [],
   );
 
-  const handleLayoutChange = useCallback(
-    async (updatedNodes: Node[]) => {
-      // To keep it simple, we can ignore live layout updates for generated roadmaps
-    },
-    []
-  );
+  const handleLayoutChange = useCallback(async (updatedNodes: Node[]) => {
+    // To keep it simple, we can ignore live layout updates for generated roadmaps
+  }, []);
 
   // Count generated steps for progress display
   const generatedStepsCount = roadmapObject?.nodes
-    ? roadmapObject.nodes.filter((n: { label?: string } | undefined) => n && n.label).length
+    ? roadmapObject.nodes.filter(
+        (n: { label?: string } | undefined) => n && n.label,
+      ).length
     : 0;
 
   return (
     <div className="min-h-[calc(100vh-80px)]">
       {step === "topic" && (
         <div className="flex items-center justify-center min-h-[60vh] p-6">
-          <TopicInput onSubmit={handleTopicSubmit} isLoading={isLoadingQuestions} />
+          <TopicInput
+            onSubmit={handleTopicSubmit}
+            isLoading={isLoadingQuestions}
+          />
         </div>
       )}
 
@@ -242,7 +276,12 @@ export function RoadmapCreator({ userId, initialTopic }: RoadmapCreatorProps) {
 
       {step === "generating" && (
         <div className="flex flex-col items-center justify-center min-h-[60vh] p-6">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center mb-6 animate-pulse" style={{ background: 'linear-gradient(90deg, #0284c7 0%, #2dd4bf 100%)' }}>
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center mb-6 animate-pulse"
+            style={{
+              background: "linear-gradient(90deg, #0284c7 0%, #2dd4bf 100%)",
+            }}
+          >
             <svg
               className="w-8 h-8 text-white animate-spin"
               fill="none"
@@ -296,7 +335,9 @@ export function RoadmapCreator({ userId, initialTopic }: RoadmapCreatorProps) {
               </p>
             </div>
             <button
-              onClick={() => router.push(roadmapId ? `/roadmap/${roadmapId}` : "/dashboard")}
+              onClick={() =>
+                router.push(roadmapId ? `/roadmap/${roadmapId}` : "/dashboard")
+              }
               className="px-4 py-2 text-sm text-white bg-sky-500 rounded-xl hover:bg-sky-400 transition-colors font-medium"
             >
               Finish & View

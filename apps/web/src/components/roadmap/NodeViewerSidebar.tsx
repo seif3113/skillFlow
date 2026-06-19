@@ -1,9 +1,24 @@
 "use client";
 
-import { X, BookOpen, Star, Users, GraduationCap, Clock3, Video, FileText } from "lucide-react";
+import {
+  X,
+  BookOpen,
+  Star,
+  Users,
+  GraduationCap,
+  Clock3,
+  Video,
+  FileText,
+} from "lucide-react";
 import { useEffect } from "react";
 
-function ResourceIcon({ type, className }: { type?: string; className?: string }) {
+function ResourceIcon({
+  type,
+  className,
+}: {
+  type?: string;
+  className?: string;
+}) {
   const cn = className || "w-4 h-4 text-sky-500";
   switch (type?.toLowerCase()) {
     case "video":
@@ -66,7 +81,9 @@ export function NodeViewerSidebar({
             <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Title
             </label>
-            <h3 className="text-xl font-bold text-foreground">{initialData.title}</h3>
+            <h3 className="text-xl font-bold text-foreground">
+              {initialData.title}
+            </h3>
           </div>
 
           {initialData.description && (
@@ -150,7 +167,9 @@ export function NodeViewerSidebar({
               ))}
             </div>
           ) : (
-            <p className="text-xs text-muted-foreground italic">No resources added to this topic yet.</p>
+            <p className="text-xs text-muted-foreground italic">
+              No resources added to this topic yet.
+            </p>
           )}
         </div>
       </div>

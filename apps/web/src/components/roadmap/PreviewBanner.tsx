@@ -24,7 +24,9 @@ export function PreviewBanner({
           <Sparkles className="w-4 h-4" />
         </div>
         <div>
-          <h4 className="text-xs font-bold text-foreground">Review Proposed AI Changes</h4>
+          <h4 className="text-xs font-bold text-foreground">
+            Review Proposed AI Changes
+          </h4>
           <p className="text-[10px] text-muted-foreground">
             Review node updates before applying them to your roadmap.
           </p>

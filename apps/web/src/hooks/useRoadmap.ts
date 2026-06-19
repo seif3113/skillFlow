@@ -380,12 +380,18 @@ export function useGetPublicRoadmaps() {
   });
 }
 
-export function useRoadmapCustomizationQuestions(message: string, enabled: boolean = false) {
+export function useRoadmapCustomizationQuestions(
+  message: string,
+  enabled: boolean = false,
+) {
   return useQuery({
     queryKey: ["roadmapCustomizationQuestions", message],
     queryFn: async () => {
       if (!message) return [];
-      const data: any = await graphQLClient.request(ROADMAP_CUSTOMIZATION_QUESTIONS, { message });
+      const data: any = await graphQLClient.request(
+        ROADMAP_CUSTOMIZATION_QUESTIONS,
+        { message },
+      );
       return data.roadmapCustomizationQuestions || [];
     },
     enabled: enabled && !!message,

@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 interface TopicInputProps {
   onSubmit: (topic: string) => void;
@@ -23,11 +29,19 @@ export function TopicInput({ onSubmit, isLoading }: TopicInputProps) {
   return (
     <Card className="w-full max-w-2xl mx-auto border-border bg-card">
       <CardHeader className="text-center">
-        <CardTitle className="text-3xl font-bold text-transparent" style={{ backgroundImage: 'linear-gradient(90deg, #38bdf8 0%, #2dd4bf 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text' }}>
+        <CardTitle
+          className="text-3xl font-bold text-transparent"
+          style={{
+            backgroundImage: "linear-gradient(90deg, #38bdf8 0%, #2dd4bf 100%)",
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+          }}
+        >
           Create Your Learning Roadmap
         </CardTitle>
         <CardDescription className="text-muted-foreground text-lg font-medium">
-          Enter a topic you want to learn, and AI will create a personalized roadmap for you
+          Enter a topic you want to learn, and AI will create a personalized
+          roadmap for you
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -43,13 +57,27 @@ export function TopicInput({ onSubmit, isLoading }: TopicInputProps) {
             type="submit"
             disabled={!topic.trim() || isLoading}
             className="text-white font-bold px-8 border-none"
-            style={{ background: 'linear-gradient(90deg, #0284c7 0%, #0d9488 100%)' }}
+            style={{
+              background: "linear-gradient(90deg, #0284c7 0%, #0d9488 100%)",
+            }}
           >
             {isLoading ? (
               <span className="flex items-center gap-2">
                 <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    fill="none"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
                 </svg>
                 Generating...
               </span>

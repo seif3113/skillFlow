@@ -24,10 +24,18 @@ interface NodeSheetProps {
   onSave: (nodeId: string, data: Partial<RoadmapNodeData>) => void;
 }
 
-export function NodeSheet({ open, onOpenChange, nodeId, nodeData, onSave }: NodeSheetProps) {
+export function NodeSheet({
+  open,
+  onOpenChange,
+  nodeId,
+  nodeData,
+  onSave,
+}: NodeSheetProps) {
   const [label, setLabel] = useState("");
   const [description, setDescription] = useState("");
-  const [resources, setResources] = useState<{ title: string; url: string; description?: string; type?: string; }[]>([]);
+  const [resources, setResources] = useState<
+    { title: string; url: string; description?: string; type?: string }[]
+  >([]);
   const [completed, setCompleted] = useState(false);
   const [newResourceTitle, setNewResourceTitle] = useState("");
   const [newResourceUrl, setNewResourceUrl] = useState("");
@@ -62,7 +70,10 @@ export function NodeSheet({ open, onOpenChange, nodeId, nodeData, onSave }: Node
 
   const addResource = () => {
     if (newResourceTitle.trim() && newResourceUrl.trim()) {
-      setResources([...resources, { title: newResourceTitle.trim(), url: newResourceUrl.trim() }]);
+      setResources([
+        ...resources,
+        { title: newResourceTitle.trim(), url: newResourceUrl.trim() },
+      ]);
       setNewResourceTitle("");
       setNewResourceUrl("");
     }
@@ -127,15 +138,18 @@ export function NodeSheet({ open, onOpenChange, nodeId, nodeData, onSave }: Node
             <div className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border">
               <div>
                 <p className="text-foreground font-medium">Mark as Completed</p>
-                <p className="text-muted-foreground text-sm">Track your progress</p>
+                <p className="text-muted-foreground text-sm">
+                  Track your progress
+                </p>
               </div>
               <Button
                 variant={completed ? "default" : "outline"}
                 size="sm"
                 onClick={() => setCompleted(!completed)}
-                className={completed
-                  ? "bg-sky-500 hover:bg-sky-600 text-white border-none"
-                  : "border-border text-muted-foreground hover:text-foreground hover:bg-accent"
+                className={
+                  completed
+                    ? "bg-sky-500 hover:bg-sky-600 text-white border-none"
+                    : "border-border text-muted-foreground hover:text-foreground hover:bg-accent"
                 }
               >
                 {completed ? "Completed" : "Not Done"}
@@ -214,7 +228,9 @@ export function NodeSheet({ open, onOpenChange, nodeId, nodeData, onSave }: Node
             <Button
               onClick={handleSave}
               className="flex-1 text-white border-none"
-              style={{ background: 'linear-gradient(90deg, #0284c7 0%, #0d9488 100%)' }}
+              style={{
+                background: "linear-gradient(90deg, #0284c7 0%, #0d9488 100%)",
+              }}
             >
               Save Changes
             </Button>

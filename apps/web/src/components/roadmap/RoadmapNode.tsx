@@ -8,7 +8,12 @@ import { CheckCircle2, BookOpen, Sparkles } from "lucide-react";
 export interface RoadmapNodeData {
   label: string;
   description: string;
-  resources: { title: string; url: string; description?: string; type?: string; }[];
+  resources: {
+    title: string;
+    url: string;
+    description?: string;
+    type?: string;
+  }[];
   completed: boolean;
   isReadOnly?: boolean;
   diffState?: "added" | "modified" | "deleted";
@@ -21,11 +26,14 @@ function RoadmapNodeComponent({ id, data, selected }: NodeProps) {
   // Visual diff style mappings
   let diffContainerClass = "";
   if (diffState === "added") {
-    diffContainerClass = "border-emerald-500/80 bg-emerald-500/5 shadow-[0_0_15px_rgba(16,185,129,0.15)]";
+    diffContainerClass =
+      "border-emerald-500/80 bg-emerald-500/5 shadow-[0_0_15px_rgba(16,185,129,0.15)]";
   } else if (diffState === "modified") {
-    diffContainerClass = "border-amber-500/80 bg-amber-500/5 shadow-[0_0_15px_rgba(245,158,11,0.15)]";
+    diffContainerClass =
+      "border-amber-500/80 bg-amber-500/5 shadow-[0_0_15px_rgba(245,158,11,0.15)]";
   } else if (diffState === "deleted") {
-    diffContainerClass = "border-red-500/60 border-dashed opacity-50 bg-red-500/5 line-through decoration-red-500/40";
+    diffContainerClass =
+      "border-red-500/60 border-dashed opacity-50 bg-red-500/5 line-through decoration-red-500/40";
   }
 
   return (
@@ -89,11 +97,15 @@ function RoadmapNodeComponent({ id, data, selected }: NodeProps) {
             >
               {nodeData.label}
               {diffState && (
-                <span className={`ml-2 text-[9px] px-1.5 py-0.5 rounded-sm font-bold uppercase tracking-wider ${
-                  diffState === "added" ? "bg-emerald-500/20 text-emerald-400" :
-                  diffState === "modified" ? "bg-amber-500/20 text-amber-400" :
-                  "bg-red-500/20 text-red-400"
-                }`}>
+                <span
+                  className={`ml-2 text-[9px] px-1.5 py-0.5 rounded-sm font-bold uppercase tracking-wider ${
+                    diffState === "added"
+                      ? "bg-emerald-500/20 text-emerald-400"
+                      : diffState === "modified"
+                        ? "bg-amber-500/20 text-amber-400"
+                        : "bg-red-500/20 text-red-400"
+                  }`}
+                >
                   {diffState}
                 </span>
               )}
@@ -140,7 +152,7 @@ function RoadmapNodeComponent({ id, data, selected }: NodeProps) {
             window.dispatchEvent(
               new CustomEvent("open-ai-chat", {
                 detail: { id, title: nodeData.label },
-              })
+              }),
             );
           }}
           className="absolute -bottom-3 -left-3 z-30 p-2 bg-gradient-to-r from-sky-500 to-teal-500 hover:from-sky-400 hover:to-teal-400 text-white rounded-xl shadow-lg hover:scale-110 active:scale-95 transition-all cursor-pointer border border-sky-400/20 animate-in zoom-in duration-300"

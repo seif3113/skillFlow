@@ -43,9 +43,12 @@ export function AiEditBottomPanel({
               <Sparkles className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-foreground">Edit Roadmap by AI</h3>
+              <h3 className="text-sm font-bold text-foreground">
+                Edit Roadmap by AI
+              </h3>
               <p className="text-xs text-muted-foreground">
-                Describe the changes you want to make, and AI will propose a new structure.
+                Describe the changes you want to make, and AI will propose a new
+                structure.
               </p>
             </div>
           </div>
