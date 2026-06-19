@@ -628,7 +628,7 @@ class NLPController(BaseController):
         topic = (topic or "").strip()
 
         if not topic:
-            return None, None
+            return None, None, None
 
         customization_str = "None provided"
         if customization_answers:
@@ -670,7 +670,24 @@ class NLPController(BaseController):
             topic_objects = topic_objects[:8]
         except Exception as e:
             logger.error(f"Failed to parse sub-topics: {e}")
-            return None, None
+            return None, None, None
+
+        # Build the prerequisite plan from Pass 1, aligned to sub-topic order.
+        # The streaming endpoint injects each node's `ref`/`dependsOn` by
+        # position, so the dependency graph stays deterministic regardless of
+        # how the Pass 2 (resource compilation) model formats its output.
+        dependency_plan = []
+        for i, obj in enumerate(topic_objects):
+            ref = str(obj.get("id") or (i + 1))
+            raw_deps = obj.get("dependsOn")
+            if raw_deps is None:
+                raw_deps = obj.get("depends_on") or []
+            deps = (
+                [str(d) for d in raw_deps if d is not None]
+                if isinstance(raw_deps, list)
+                else []
+            )
+            dependency_plan.append({"ref": ref, "dependsOn": deps})
 
         # Step 2: Batch vector search with concise, sub-topic specific queries.
         search_queries = [
@@ -730,7 +747,7 @@ class NLPController(BaseController):
             )
             comp_user_prompt = f"Compact roadmap context: {compact_context}"
 
-        return comp_system_prompt, comp_user_prompt
+        return comp_system_prompt, comp_user_prompt, dependency_plan
 
     def generate_customized_roadmap_rag(
         self, topic: str, customization_answers: list = None
@@ -738,7 +755,7 @@ class NLPController(BaseController):
         """
         Generates a customized roadmap with compact RAG context and pre-selected resources.
         """
-        comp_system_prompt, comp_user_prompt = self._build_customized_roadmap_compilation_prompt(
+        comp_system_prompt, comp_user_prompt, _ = self._build_customized_roadmap_compilation_prompt(
             topic=topic, customization_answers=customization_answers
         )
 
@@ -769,13 +786,18 @@ class NLPController(BaseController):
         Streams the final roadmap JSON text after the RAG context has been prepared.
         This is intentionally separate from generate_customized_roadmap_rag so only
         the streaming endpoint opts into provider streaming.
+
+        Returns a tuple of (token_stream, dependency_plan) where dependency_plan
+        is the ordered list of {ref, dependsOn} the endpoint injects per node.
         """
-        comp_system_prompt, comp_user_prompt = self._build_customized_roadmap_compilation_prompt(
-            topic=topic, customization_answers=customization_answers
+        comp_system_prompt, comp_user_prompt, dependency_plan = (
+            self._build_customized_roadmap_compilation_prompt(
+                topic=topic, customization_answers=customization_answers
+            )
         )
 
         if not comp_system_prompt or not comp_user_prompt:
-            return None
+            return None, None
 
         chat_history = [
             self.generation_client.construct_prompt(
@@ -785,12 +807,13 @@ class NLPController(BaseController):
         ]
 
         try:
-            return self.generation_client.generate_text_stream(
+            stream = self.generation_client.generate_text_stream(
                 prompt=comp_user_prompt, chat_history=chat_history
             )
+            return stream, dependency_plan
         except NotImplementedError:
             logger.error("Configured generation provider does not support streaming.")
-            return None
+            return None, None
 
     def edit_roadmap_rag(self, prompt: str, roadmap: list):
         """

@@ -299,13 +299,16 @@ async def generate_roadmap_rag(request: Request, roadmap_request: RoadmapRequest
         depth = 0
         in_string = False
         escape = False
+        node_index = 0
+        dependency_plan = []
 
         yield _json_stream_event("start", {"signal": "success"})
 
         try:
-            stream = nlp_controller.generate_customized_roadmap_rag_stream(
+            stream, dependency_plan = nlp_controller.generate_customized_roadmap_rag_stream(
                 topic=topic, customization_answers=roadmap_request.customization_answers
             )
+            dependency_plan = dependency_plan or []
 
             if not stream:
                 yield _json_stream_event(
@@ -366,6 +369,15 @@ async def generate_roadmap_rag(request: Request, roadmap_request: RoadmapRequest
                             node = json.loads(node_text)
                         except json.JSONDecodeError:
                             continue
+
+                        # Inject the prerequisite plan (ref + dependsOn) by
+                        # position so the backend can wire DAG edges. Emitted in
+                        # topological order, matching Pass 1's sub-topic order.
+                        if node_index < len(dependency_plan):
+                            plan = dependency_plan[node_index]
+                            node["ref"] = plan["ref"]
+                            node["dependsOn"] = plan["dependsOn"]
+                        node_index += 1
 
                         nodes.append(node)
                         yield _json_stream_event("node", {"node": node})
