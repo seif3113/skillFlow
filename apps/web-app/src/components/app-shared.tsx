@@ -5,7 +5,6 @@ import {
 	DashboardSquare01Icon,
 	Route01Icon,
 	Compass01Icon,
-	Quiz01Icon,
 	ChartLineData01Icon,
 	Settings01Icon,
 	HelpCircleIcon,
@@ -48,11 +47,6 @@ export const navGroups: SidebarNavGroup[] = [
 	{
 		label: "Practice",
 		items: [
-			{
-				title: "Quizzes",
-				path: "/quizzes",
-				icon: <HugeiconsIcon icon={Quiz01Icon} />,
-			},
 			{
 				title: "Progress",
 				path: "/progress",

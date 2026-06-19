@@ -13,7 +13,9 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
 import { Route as ApiAssistantRouteImport } from './routes/api/assistant'
+import { Route as AuthedSettingsRouteImport } from './routes/_authed/settings'
 import { Route as AuthedProgressRouteImport } from './routes/_authed/progress'
+import { Route as AuthedHelpRouteImport } from './routes/_authed/help'
 import { Route as AuthedRoadmapsIndexRouteImport } from './routes/_authed/roadmaps/index'
 import { Route as AuthedExploreIndexRouteImport } from './routes/_authed/explore/index'
 import { Route as AuthedRoadmapsNewRouteImport } from './routes/_authed/roadmaps/new'
@@ -39,9 +41,19 @@ const ApiAssistantRoute = ApiAssistantRouteImport.update({
   path: '/api/assistant',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthedSettingsRoute = AuthedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedProgressRoute = AuthedProgressRouteImport.update({
   id: '/progress',
   path: '/progress',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedHelpRoute = AuthedHelpRouteImport.update({
+  id: '/help',
+  path: '/help',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedRoadmapsIndexRoute = AuthedRoadmapsIndexRouteImport.update({
@@ -73,7 +85,9 @@ const AuthedExploreIdRoute = AuthedExploreIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
   '/login': typeof LoginRoute
+  '/help': typeof AuthedHelpRoute
   '/progress': typeof AuthedProgressRoute
+  '/settings': typeof AuthedSettingsRoute
   '/api/assistant': typeof ApiAssistantRoute
   '/explore/$id': typeof AuthedExploreIdRoute
   '/roadmaps/$id': typeof AuthedRoadmapsIdRoute
@@ -83,7 +97,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/help': typeof AuthedHelpRoute
   '/progress': typeof AuthedProgressRoute
+  '/settings': typeof AuthedSettingsRoute
   '/api/assistant': typeof ApiAssistantRoute
   '/': typeof AuthedIndexRoute
   '/explore/$id': typeof AuthedExploreIdRoute
@@ -96,7 +112,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authed': typeof AuthedRouteWithChildren
   '/login': typeof LoginRoute
+  '/_authed/help': typeof AuthedHelpRoute
   '/_authed/progress': typeof AuthedProgressRoute
+  '/_authed/settings': typeof AuthedSettingsRoute
   '/api/assistant': typeof ApiAssistantRoute
   '/_authed/': typeof AuthedIndexRoute
   '/_authed/explore/$id': typeof AuthedExploreIdRoute
@@ -110,7 +128,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/help'
     | '/progress'
+    | '/settings'
     | '/api/assistant'
     | '/explore/$id'
     | '/roadmaps/$id'
@@ -120,7 +140,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
+    | '/help'
     | '/progress'
+    | '/settings'
     | '/api/assistant'
     | '/'
     | '/explore/$id'
@@ -132,7 +154,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authed'
     | '/login'
+    | '/_authed/help'
     | '/_authed/progress'
+    | '/_authed/settings'
     | '/api/assistant'
     | '/_authed/'
     | '/_authed/explore/$id'
@@ -178,11 +202,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAssistantRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/settings': {
+      id: '/_authed/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthedSettingsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/progress': {
       id: '/_authed/progress'
       path: '/progress'
       fullPath: '/progress'
       preLoaderRoute: typeof AuthedProgressRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/help': {
+      id: '/_authed/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof AuthedHelpRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/roadmaps/': {
@@ -224,7 +262,9 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthedRouteChildren {
+  AuthedHelpRoute: typeof AuthedHelpRoute
   AuthedProgressRoute: typeof AuthedProgressRoute
+  AuthedSettingsRoute: typeof AuthedSettingsRoute
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedExploreIdRoute: typeof AuthedExploreIdRoute
   AuthedRoadmapsIdRoute: typeof AuthedRoadmapsIdRoute
@@ -234,7 +274,9 @@ interface AuthedRouteChildren {
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedHelpRoute: AuthedHelpRoute,
   AuthedProgressRoute: AuthedProgressRoute,
+  AuthedSettingsRoute: AuthedSettingsRoute,
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedExploreIdRoute: AuthedExploreIdRoute,
   AuthedRoadmapsIdRoute: AuthedRoadmapsIdRoute,
