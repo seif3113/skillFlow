@@ -1,26 +1,43 @@
+# A quiz for a node. Questions are returned WITHOUT the correct answer — the
+# answer never leaves the server until an attempt is graded.
 type Quiz {
   id: Int!
-  title: String!
   nodeId: Int!
-  questions: [Question!]
+  title: String!
+  questions: [QuizQuestion!]!
 }
 
-type Question {
+type QuizQuestion {
   id: Int!
-  quizId: Int!
   question: String!
   choices: JSON!
-  answer: Int!
+}
+
+# Per-question outcome, revealed only in the graded result.
+type QuizQuestionResult {
+  questionId: Int!
+  correct: Boolean!
+  correctAnswer: Int!
   explanation: String
 }
 
+type QuizResult {
+  score: Int!
+  passed: Boolean!
+  passThreshold: Int!
+  results: [QuizQuestionResult!]!
+  # Whether passing this attempt completed the node (hard gate).
+  nodeCompleted: Boolean!
+}
+
 extend type Query {
-  quizzes: [Quiz!]!
-  quiz(id: Int!): Quiz
-  questionsByQuiz(quizId: Int!): [Question!]!
+  # The node's quiz, or null if one hasn't been generated yet.
+  nodeQuiz(nodeId: Int!): Quiz
 }
 
 extend type Mutation {
-  createQuiz(title: String!, nodeId: Int!): Quiz!
-  addQuestionToQuiz(quizId: Int!, question: String!, choices: JSON!, answer: Int!, explanation: String): Question!
+  # AI-generate the quiz for a node (idempotent: returns the existing one).
+  generateNodeQuiz(nodeId: Int!): Quiz!
+  # Grade an attempt server-side; a passing attempt completes the node.
+  submitQuizAttempt(nodeId: Int!, answers: [Int!]!): QuizResult!
 }

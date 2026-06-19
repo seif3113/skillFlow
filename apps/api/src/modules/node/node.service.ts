@@ -105,7 +105,8 @@ export class NodeService {
       description: input.description ?? null,
       tags: input.tags ?? [],
       resources: input.resources ?? [],
-      isCompleted: input.isCompleted ?? false,
+      // Completion is gated behind passing the node's quiz — never set on create.
+      isCompleted: false,
     });
 
     return this.mapRow(inserted);
@@ -114,12 +115,14 @@ export class NodeService {
   async update(input: UpdateNodeInput): Promise<NodeType> {
     await this.findNodeOrFail(input.id);
 
+    // `isCompleted` is intentionally NOT honored here: a node is completed only
+    // by passing its quiz (see QuizService.submitAttempt). Editing content must
+    // not be able to flip completion and bypass the gate.
     const updated = await this.nodeRepository.update(input.id, {
       title: input.title,
       description: input.description,
       tags: input.tags,
       resources: input.resources,
-      isCompleted: input.isCompleted,
     });
 
     return this.mapRow(updated);

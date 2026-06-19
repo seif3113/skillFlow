@@ -61,7 +61,6 @@ export interface Node {
     createdAt: DateTime;
     updatedAt: DateTime;
     chats?: Nullable<NodeExplanationChat[]>;
-    quiz?: Nullable<Quiz>;
 }
 
 export interface NodeExplanationChat {
@@ -90,9 +89,7 @@ export interface IQuery {
     nodesByRoadmap(roadmapId: number): Node[] | Promise<Node[]>;
     nodeChats(nodeId: number, userId: number): NodeExplanationChat[] | Promise<NodeExplanationChat[]>;
     searchNodeResources(topic: string, limit?: Nullable<number>, type?: Nullable<string>): Nullable<JSON>[] | Promise<Nullable<JSON>[]>;
-    quizzes(): Quiz[] | Promise<Quiz[]>;
-    quiz(id: number): Nullable<Quiz> | Promise<Nullable<Quiz>>;
-    questionsByQuiz(quizId: number): Question[] | Promise<Question[]>;
+    nodeQuiz(nodeId: number): Nullable<Quiz> | Promise<Nullable<Quiz>>;
     roadmaps(): Roadmap[] | Promise<Roadmap[]>;
     roadmap(id: number): Nullable<Roadmap> | Promise<Nullable<Roadmap>>;
     roadmapsByUser(userId: number): Roadmap[] | Promise<Roadmap[]>;
@@ -111,8 +108,8 @@ export interface IMutation {
     sendNodeChatMessage(nodeId: number, userId: number, sender: string, message: JSON): NodeExplanationChat | Promise<NodeExplanationChat>;
     createNodeEdge(roadmapId: number, sourceNodeId: number, targetNodeId: number): NodeEdge | Promise<NodeEdge>;
     deleteNodeEdge(id: number): DeleteNodeResult | Promise<DeleteNodeResult>;
-    createQuiz(title: string, nodeId: number): Quiz | Promise<Quiz>;
-    addQuestionToQuiz(quizId: number, question: string, choices: JSON, answer: number, explanation?: Nullable<string>): Question | Promise<Question>;
+    generateNodeQuiz(nodeId: number): Quiz | Promise<Quiz>;
+    submitQuizAttempt(nodeId: number, answers: number[]): QuizResult | Promise<QuizResult>;
     createRoadmap(input: CreateRoadmapInput): Roadmap | Promise<Roadmap>;
     updateRoadmap(input: UpdateRoadmapInput): Roadmap | Promise<Roadmap>;
     updateRoadmapAi(id: number, message: string): Node[] | Promise<Node[]>;
@@ -127,18 +124,30 @@ export interface IMutation {
 
 export interface Quiz {
     id: number;
-    title: string;
     nodeId: number;
-    questions?: Nullable<Question[]>;
+    title: string;
+    questions: QuizQuestion[];
 }
 
-export interface Question {
+export interface QuizQuestion {
     id: number;
-    quizId: number;
     question: string;
     choices: JSON;
-    answer: number;
+}
+
+export interface QuizQuestionResult {
+    questionId: number;
+    correct: boolean;
+    correctAnswer: number;
     explanation?: Nullable<string>;
+}
+
+export interface QuizResult {
+    score: number;
+    passed: boolean;
+    passThreshold: number;
+    results: QuizQuestionResult[];
+    nodeCompleted: boolean;
 }
 
 export interface Roadmap {

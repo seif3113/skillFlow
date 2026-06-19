@@ -9,7 +9,6 @@ type Node {
   createdAt: DateTime!
   updatedAt: DateTime!
   chats: [NodeExplanationChat!]
-  quiz: Quiz
 }
 
 type NodeExplanationChat {
