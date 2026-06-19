@@ -37,3 +37,9 @@ yarn-error.log*
 .DS_Store
 *.pem
 *__pycache__/
+*.pyc
+
+# Local tooling (Claude Code / agents)
+.claude/
+.agents/
+skills-lock.json
