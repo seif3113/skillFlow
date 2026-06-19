@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useRouterState } from "@tanstack/react-router";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
 	DashboardSquare01Icon,
@@ -32,7 +33,6 @@ export const navGroups: SidebarNavGroup[] = [
 				title: "Dashboard",
 				path: "/",
 				icon: <HugeiconsIcon icon={DashboardSquare01Icon} />,
-				isActive: true,
 			},
 			{
 				title: "My Roadmaps",
@@ -89,3 +89,22 @@ export const navLinks: SidebarNavItem[] = [
 	),
 	...footerNavLinks,
 ];
+
+// Returns the single nav path that best matches the current URL (longest
+// exact-or-prefix match), so exactly one item is highlighted — e.g. on
+// /roadmaps/new "Create Roadmap" wins over "My Roadmaps".
+export function useActiveNavPath(): string | null {
+	const pathname = useRouterState({ select: (s) => s.location.pathname });
+	let best: string | null = null;
+	for (const link of navLinks) {
+		if (!link.path) continue;
+		const matches =
+			link.path === "/"
+				? pathname === "/"
+				: pathname === link.path || pathname.startsWith(`${link.path}/`);
+		if (matches && (best === null || link.path.length > best.length)) {
+			best = link.path;
+		}
+	}
+	return best;
+}

@@ -10,7 +10,6 @@ import {
   GenerateRoadmapStreamDocument,
   RoadmapCustomizationQuestionsDocument,
 } from "@/gql/graphql"
-import { AppShell } from "@/components/app-shell"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -36,6 +35,10 @@ function NewRoadmapPage() {
   const [questions, setQuestions] = useState<Question[]>([])
   const [answers, setAnswers] = useState<Record<number, string>>({})
   const [step, setStep] = useState<"topic" | "questions">("topic")
+  // Stays true from the moment generation is requested until we navigate away,
+  // so the button shows one continuous loading state (no disable→re-enable flash
+  // while the create + kickoff requests run).
+  const [submitting, setSubmitting] = useState(false)
 
   const [fetchQuestions, { loading: loadingQuestions }] = useLazyQuery(
     RoadmapCustomizationQuestionsDocument,
@@ -66,30 +69,33 @@ function NewRoadmapPage() {
   }
 
   const startGeneration = async (finalTopic: string, finalAnswers: string[]) => {
+    setSubmitting(true)
     try {
       const res = await createRoadmap({
         variables: { input: { title: finalTopic } },
       })
       const id = res.data?.createRoadmap.id
       if (!id) throw new Error("createRoadmap returned no id")
-      // Kick off generation here, on the explicit user action — the mutation
-      // returns immediately while the server streams nodes in the background.
-      // The viewer then subscribes + polls to render them as they arrive.
-      await generateRoadmapStream({
+      // Fire the kickoff but don't await it — the request is dispatched
+      // immediately and the server streams in the background, so we navigate
+      // to the viewer right away instead of blocking the redirect on it.
+      void generateRoadmapStream({
         variables: {
           roadmapId: id,
           topic: finalTopic,
           customizationAnswers: finalAnswers,
         },
-      })
+      }).catch((e) => console.error("generation kickoff failed", e))
       navigate({
         to: "/roadmaps/$id",
         params: { id: String(id) },
         search: { topic: finalTopic },
       })
+      // Leave `submitting` true — we're navigating away.
     } catch (e) {
       console.error(e)
       toast.error("Couldn't start roadmap generation. Please try again.")
+      setSubmitting(false)
     }
   }
 
@@ -101,8 +107,7 @@ function NewRoadmapPage() {
   }
 
   return (
-    <AppShell>
-      <div className="mx-auto w-full max-w-xl py-8">
+    <div className="mx-auto w-full max-w-xl py-8">
         {step === "topic" ? (
           <Card>
             <CardHeader>
@@ -124,9 +129,9 @@ function NewRoadmapPage() {
             <CardFooter className="justify-end">
               <Button
                 onClick={handleTopicSubmit}
-                disabled={!topic.trim() || loadingQuestions}
+                disabled={!topic.trim() || loadingQuestions || submitting}
               >
-                {loadingQuestions ? (
+                {loadingQuestions || submitting ? (
                   <Spinner data-icon="inline-start" />
                 ) : (
                   <HugeiconsIcon
@@ -151,6 +156,8 @@ function NewRoadmapPage() {
                 <div key={i} className="flex flex-col gap-2">
                   <p className="font-medium text-sm">{q.question}</p>
                   <ToggleGroup
+                    variant="outline"
+                    spacing={2}
                     className="flex-wrap justify-start"
                     value={answers[i] ? [answers[i]] : []}
                     onValueChange={(v: string[]) =>
@@ -158,7 +165,11 @@ function NewRoadmapPage() {
                     }
                   >
                     {q.choices.map((choice) => (
-                      <ToggleGroupItem key={choice} value={choice}>
+                      <ToggleGroupItem
+                        key={choice}
+                        value={choice}
+                        className="cursor-pointer aria-pressed:border-primary aria-pressed:bg-primary/10 aria-pressed:text-foreground"
+                      >
                         {choice}
                       </ToggleGroupItem>
                     ))}
@@ -167,11 +178,18 @@ function NewRoadmapPage() {
               ))}
             </CardContent>
             <CardFooter className="justify-between">
-              <Button variant="ghost" onClick={() => setStep("topic")}>
+              <Button
+                variant="ghost"
+                onClick={() => setStep("topic")}
+                disabled={submitting}
+              >
                 Back
               </Button>
-              <Button onClick={handleGenerate} disabled={!allAnswered || creating}>
-                {creating ? (
+              <Button
+                onClick={handleGenerate}
+                disabled={!allAnswered || creating || submitting}
+              >
+                {creating || submitting ? (
                   <Spinner data-icon="inline-start" />
                 ) : (
                   <HugeiconsIcon
@@ -184,7 +202,6 @@ function NewRoadmapPage() {
             </CardFooter>
           </Card>
         )}
-      </div>
-    </AppShell>
+    </div>
   )
 }

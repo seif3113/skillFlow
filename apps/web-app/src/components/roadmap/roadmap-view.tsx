@@ -44,8 +44,10 @@ function RoadmapViewHeader() {
 function RoadmapViewCanvas() {
   const { state, actions, meta } = useRoadmapView()
 
-  const onNodeClick: NodeMouseHandler<RoadmapFlowNode> = (_, n) =>
+  const onNodeClick: NodeMouseHandler<RoadmapFlowNode> = (_, n) => {
     actions.selectNode(Number(n.id))
+    actions.focusNode(Number(n.id))
+  }
 
   return (
     <div className="h-[72vh] overflow-hidden rounded-2xl border bg-muted/20">

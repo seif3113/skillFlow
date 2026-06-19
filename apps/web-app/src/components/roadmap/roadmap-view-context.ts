@@ -15,7 +15,12 @@ import type {
 
 // Minimal structural view of the xyflow instance we actually use.
 export type FitViewInstance = {
-  fitView: (opts?: { duration?: number; padding?: number }) => void
+  fitView: (opts?: {
+    duration?: number
+    padding?: number
+    maxZoom?: number
+    nodes?: { id: string }[]
+  }) => void
 }
 
 // Generic contract for the roadmap view. Any provider that implements this
@@ -39,6 +44,7 @@ export interface RoadmapViewActions {
   deleteEdges: (edges: Edge[]) => void
   deleteNodes: (nodes: { id: string }[]) => void
   selectNode: (id: number | null) => void
+  focusNode: (id: number) => void
   toggleComplete: (node: RoadmapNode) => void
 }
 

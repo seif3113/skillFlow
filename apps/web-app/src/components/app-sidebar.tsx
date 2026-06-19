@@ -11,10 +11,15 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { footerNavLinks, navGroups } from "@/components/app-shared";
+import {
+	footerNavLinks,
+	navGroups,
+	useActiveNavPath,
+} from "@/components/app-shared";
 import { NavGroup } from "@/components/nav-group";
 
 export function AppSidebar() {
+	const activePath = useActiveNavPath();
 	return (
 		<Sidebar
 			className={cn(
@@ -26,7 +31,7 @@ export function AppSidebar() {
 			variant="sidebar"
 		>
 			<SidebarHeader className="h-14 justify-center border-b px-2">
-				<SidebarMenuButton render={<a href="#link" />}>
+				<SidebarMenuButton render={<a href="/" />}>
 					<LogoIcon />
 					<span className="font-medium text-foreground!">SkillFlow</span>
 				</SidebarMenuButton>
@@ -42,7 +47,7 @@ export function AppSidebar() {
 						<SidebarMenuItem key={item.title}>
 							<SidebarMenuButton
 								className="text-muted-foreground"
-								isActive={item.isActive}
+								isActive={item.path === activePath}
 								render={<a href={item.path} />}
 								size="sm"
 							>

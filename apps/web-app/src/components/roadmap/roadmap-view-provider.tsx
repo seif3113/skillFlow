@@ -236,6 +236,16 @@ export function RoadmapViewProvider({
     instanceRef.current = instance
   }, [])
 
+  // Pan/zoom the canvas to center a single node (on click).
+  const focusNode = useCallback((id: number) => {
+    instanceRef.current?.fitView({
+      nodes: [{ id: String(id) }],
+      duration: 400,
+      maxZoom: 1.3,
+      padding: 0.6,
+    })
+  }, [])
+
   const selectedNode = useMemo(
     () => rmNodes.find((n) => n.id === selectedId) ?? null,
     [rmNodes, selectedId],
@@ -260,6 +270,7 @@ export function RoadmapViewProvider({
         deleteEdges,
         deleteNodes,
         selectNode: setSelectedId,
+        focusNode,
         toggleComplete,
       },
       meta: { roadmapId, updating, registerInstance },
@@ -277,6 +288,7 @@ export function RoadmapViewProvider({
       reconnect,
       deleteEdges,
       deleteNodes,
+      focusNode,
       toggleComplete,
       roadmapId,
       updating,

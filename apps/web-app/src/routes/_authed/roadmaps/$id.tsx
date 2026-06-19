@@ -1,7 +1,6 @@
 import { useCallback } from "react"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 
-import { AppShell } from "@/components/app-shell"
 import { RoadmapView } from "@/components/roadmap/roadmap-view"
 
 export const Route = createFileRoute("/_authed/roadmaps/$id")({
@@ -35,14 +34,12 @@ function RoadmapViewPage() {
       generating={!!topic}
       onGenerationSettled={handleGenerationSettled}
     >
-      <AppShell>
-        <div className="flex flex-col gap-4">
-          <RoadmapView.Header />
-          <RoadmapView.Canvas />
-          <RoadmapView.Hint />
-        </div>
-      </AppShell>
-      {/* Lives outside AppShell but inside the provider — still reads view state. */}
+      <div className="flex flex-col gap-4">
+        <RoadmapView.Header />
+        <RoadmapView.Canvas />
+        <RoadmapView.Hint />
+      </div>
+      {/* Portals to body; lives inside the provider so it reads view state. */}
       <RoadmapView.NodeDetail />
     </RoadmapView.Provider>
   )
