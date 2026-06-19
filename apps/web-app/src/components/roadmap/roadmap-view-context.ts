@@ -46,12 +46,12 @@ export interface RoadmapViewActions {
   deleteNodes: (nodes: { id: string }[]) => void
   selectNode: (id: number | null) => void
   focusNode: (id: number) => void
-  toggleComplete: (node: RoadmapNode) => void
+  // Reflect a node's completion locally after a passing quiz attempt.
+  markCompleted: (nodeId: number) => void
 }
 
 export interface RoadmapViewMeta {
   roadmapId: number
-  updating: boolean
   registerInstance: (instance: FitViewInstance) => void
 }
 

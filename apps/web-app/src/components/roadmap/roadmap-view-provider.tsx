@@ -11,7 +11,6 @@ import { toast } from "sonner"
 
 import {
   GetRoadmapDocument,
-  UpdateNodeDocument,
   CreateNodeEdgeDocument,
   DeleteNodeEdgeDocument,
   DeleteNodeDocument,
@@ -134,26 +133,17 @@ export function RoadmapViewProvider({
   })
 
   // --- editing mutations ---
-  const [updateNode, { loading: updating }] = useMutation(UpdateNodeDocument)
   const [createNodeEdge] = useMutation(CreateNodeEdgeDocument)
   const [deleteNodeEdge] = useMutation(DeleteNodeEdgeDocument)
   const [deleteNode] = useMutation(DeleteNodeDocument)
 
-  const toggleComplete = useCallback(
-    async (node: RoadmapNode) => {
-      try {
-        const res = await updateNode({
-          variables: { input: { id: node.id, isCompleted: !node.isCompleted } },
-        })
-        const updated = res.data?.updateNode
-        if (updated) setRmNodes((prev) => upsertById(prev, updated))
-      } catch (e) {
-        console.error(e)
-        toast.error("Couldn't update the node.")
-      }
-    },
-    [updateNode],
-  )
+  // Completion is gated behind passing the node's quiz (server-side). The quiz
+  // panel calls this after a passing attempt to reflect it on the canvas.
+  const markCompleted = useCallback((nodeId: number) => {
+    setRmNodes((prev) =>
+      prev.map((n) => (n.id === nodeId ? { ...n, isCompleted: true } : n)),
+    )
+  }, [])
 
   const connect = useCallback(
     (conn: Connection) => {
@@ -272,9 +262,9 @@ export function RoadmapViewProvider({
         deleteNodes,
         selectNode: setSelectedId,
         focusNode,
-        toggleComplete,
+        markCompleted,
       },
-      meta: { roadmapId, updating, registerInstance },
+      meta: { roadmapId, registerInstance },
     }),
     [
       data,
@@ -291,9 +281,8 @@ export function RoadmapViewProvider({
       deleteEdges,
       deleteNodes,
       focusNode,
-      toggleComplete,
+      markCompleted,
       roadmapId,
-      updating,
       registerInstance,
     ],
   )
