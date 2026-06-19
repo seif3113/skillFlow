@@ -80,7 +80,7 @@ export class NodeService {
       throw new InternalServerErrorException('RAG_URI is not configured');
     }
 
-    const url = `${baseUrl.replace(/\/$/, '')}/api/v1/nlp/index/search`;
+    const url = `${baseUrl.replace(/\/$/, '')}/nlp/index/search`;
     const parsed = await genericFetch<VectorDbSearchResponse>(url, {
       method: 'POST',
       body: JSON.stringify(reqBody),
@@ -161,19 +161,27 @@ export class NodeService {
       throw new InternalServerErrorException('RAG_URI is not configured');
     }
 
-    const url = `${baseUrl.replace(/\/$/, '')}/api/v1/nlp/explain-node`;
-    const promptText = typeof message === 'string' ? message : message.text || JSON.stringify(message);
+    const url = `${baseUrl.replace(/\/$/, '')}/nlp/explain-node`;
+    const promptText =
+      typeof message === 'string'
+        ? message
+        : message.text || JSON.stringify(message);
 
-    const payload = await genericFetch<{ signal: string; answer: string }>(url, {
-      method: 'POST',
-      body: JSON.stringify({
-        message: promptText,
-        node_name: node.title,
-      }),
-    });
+    const payload = await genericFetch<{ signal: string; answer: string }>(
+      url,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          message: promptText,
+          node_name: node.title,
+        }),
+      },
+    );
 
     if (!payload || !payload.answer) {
-      throw new InternalServerErrorException('NLP service did not return an answer');
+      throw new InternalServerErrorException(
+        'NLP service did not return an answer',
+      );
     }
 
     // 3. Save AI message response to database
