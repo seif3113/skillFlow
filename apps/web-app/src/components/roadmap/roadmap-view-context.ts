@@ -31,6 +31,7 @@ export interface RoadmapViewState {
   status: GenerationStatus
   isStreaming: boolean
   isLoading: boolean
+  isPublished: boolean
   nodeCount: number
   flowNodes: RoadmapFlowNode[]
   flowEdges: RoadmapFlowEdge[]
@@ -48,6 +49,8 @@ export interface RoadmapViewActions {
   markCompleted: (nodeId: number) => void
   // Reflect an edited node (title/description/tags/resources) on the canvas.
   updateNode: (node: RoadmapNode) => void
+  // Toggle whether the roadmap is published to the public Explore directory.
+  togglePublish: () => void
 }
 
 export interface RoadmapViewMeta {

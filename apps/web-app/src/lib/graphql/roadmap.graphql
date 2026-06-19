@@ -138,3 +138,29 @@ mutation DeleteNodeEdge($id: Int!) {
     message
   }
 }
+
+query PublicRoadmaps {
+  publicRoadmaps {
+    id
+    userName
+    title
+    description
+    isPublished
+    nodes {
+      id
+    }
+  }
+}
+
+mutation PublishRoadmap($id: Int!) {
+  publishRoadmap(id: $id) {
+    id
+    isPublished
+  }
+}
+
+mutation ForkRoadmap($id: Int!, $userId: Int!) {
+  forkRoadmap(id: $id, userId: $userId) {
+    id
+  }
+}

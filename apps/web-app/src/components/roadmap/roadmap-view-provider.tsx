@@ -14,6 +14,7 @@ import {
   CreateNodeEdgeDocument,
   DeleteNodeEdgeDocument,
   DeleteNodeDocument,
+  PublishRoadmapDocument,
 } from "@/gql/graphql"
 import {
   layoutRoadmap,
@@ -136,6 +137,15 @@ export function RoadmapViewProvider({
   const [createNodeEdge] = useMutation(CreateNodeEdgeDocument)
   const [deleteNodeEdge] = useMutation(DeleteNodeEdgeDocument)
   const [deleteNode] = useMutation(DeleteNodeDocument)
+  const [publishRoadmap] = useMutation(PublishRoadmapDocument)
+
+  // Toggle public visibility. The mutation returns { id, isPublished } so
+  // Apollo updates the normalized roadmap and the header reflects it.
+  const togglePublish = useCallback(() => {
+    publishRoadmap({ variables: { id: roadmapId } }).catch(() =>
+      toast.error("Couldn't update visibility.")
+    )
+  }, [publishRoadmap, roadmapId])
 
   // Completion is gated behind passing the node's quiz (server-side). The quiz
   // panel calls this after a passing attempt to reflect it on the canvas.
@@ -250,6 +260,7 @@ export function RoadmapViewProvider({
         status,
         isStreaming: status === "streaming",
         isLoading: loading && !data,
+        isPublished: data?.roadmap?.isPublished ?? false,
         nodeCount: rmNodes.length,
         flowNodes,
         flowEdges,
@@ -264,6 +275,7 @@ export function RoadmapViewProvider({
         focusNode,
         markCompleted,
         updateNode,
+        togglePublish,
       },
       meta: { roadmapId, registerInstance },
     }),
@@ -283,6 +295,7 @@ export function RoadmapViewProvider({
       focusNode,
       markCompleted,
       updateNode,
+      togglePublish,
       roadmapId,
       registerInstance,
     ]

@@ -13,8 +13,10 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
 import { Route as AuthedRoadmapsIndexRouteImport } from './routes/_authed/roadmaps/index'
+import { Route as AuthedExploreIndexRouteImport } from './routes/_authed/explore/index'
 import { Route as AuthedRoadmapsNewRouteImport } from './routes/_authed/roadmaps/new'
 import { Route as AuthedRoadmapsIdRouteImport } from './routes/_authed/roadmaps/$id'
+import { Route as AuthedExploreIdRouteImport } from './routes/_authed/explore/$id'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -35,6 +37,11 @@ const AuthedRoadmapsIndexRoute = AuthedRoadmapsIndexRouteImport.update({
   path: '/roadmaps/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedExploreIndexRoute = AuthedExploreIndexRouteImport.update({
+  id: '/explore/',
+  path: '/explore/',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedRoadmapsNewRoute = AuthedRoadmapsNewRouteImport.update({
   id: '/roadmaps/new',
   path: '/roadmaps/new',
@@ -45,19 +52,28 @@ const AuthedRoadmapsIdRoute = AuthedRoadmapsIdRouteImport.update({
   path: '/roadmaps/$id',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedExploreIdRoute = AuthedExploreIdRouteImport.update({
+  id: '/explore/$id',
+  path: '/explore/$id',
+  getParentRoute: () => AuthedRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
   '/login': typeof LoginRoute
+  '/explore/$id': typeof AuthedExploreIdRoute
   '/roadmaps/$id': typeof AuthedRoadmapsIdRoute
   '/roadmaps/new': typeof AuthedRoadmapsNewRoute
+  '/explore/': typeof AuthedExploreIndexRoute
   '/roadmaps/': typeof AuthedRoadmapsIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/': typeof AuthedIndexRoute
+  '/explore/$id': typeof AuthedExploreIdRoute
   '/roadmaps/$id': typeof AuthedRoadmapsIdRoute
   '/roadmaps/new': typeof AuthedRoadmapsNewRoute
+  '/explore': typeof AuthedExploreIndexRoute
   '/roadmaps': typeof AuthedRoadmapsIndexRoute
 }
 export interface FileRoutesById {
@@ -65,22 +81,40 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/login': typeof LoginRoute
   '/_authed/': typeof AuthedIndexRoute
+  '/_authed/explore/$id': typeof AuthedExploreIdRoute
   '/_authed/roadmaps/$id': typeof AuthedRoadmapsIdRoute
   '/_authed/roadmaps/new': typeof AuthedRoadmapsNewRoute
+  '/_authed/explore/': typeof AuthedExploreIndexRoute
   '/_authed/roadmaps/': typeof AuthedRoadmapsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/roadmaps/$id' | '/roadmaps/new' | '/roadmaps/'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/explore/$id'
+    | '/roadmaps/$id'
+    | '/roadmaps/new'
+    | '/explore/'
+    | '/roadmaps/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/' | '/roadmaps/$id' | '/roadmaps/new' | '/roadmaps'
+  to:
+    | '/login'
+    | '/'
+    | '/explore/$id'
+    | '/roadmaps/$id'
+    | '/roadmaps/new'
+    | '/explore'
+    | '/roadmaps'
   id:
     | '__root__'
     | '/_authed'
     | '/login'
     | '/_authed/'
+    | '/_authed/explore/$id'
     | '/_authed/roadmaps/$id'
     | '/_authed/roadmaps/new'
+    | '/_authed/explore/'
     | '/_authed/roadmaps/'
   fileRoutesById: FileRoutesById
 }
@@ -119,6 +153,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedRoadmapsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/explore/': {
+      id: '/_authed/explore/'
+      path: '/explore'
+      fullPath: '/explore/'
+      preLoaderRoute: typeof AuthedExploreIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/roadmaps/new': {
       id: '/_authed/roadmaps/new'
       path: '/roadmaps/new'
@@ -133,20 +174,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedRoadmapsIdRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/explore/$id': {
+      id: '/_authed/explore/$id'
+      path: '/explore/$id'
+      fullPath: '/explore/$id'
+      preLoaderRoute: typeof AuthedExploreIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
   }
 }
 
 interface AuthedRouteChildren {
   AuthedIndexRoute: typeof AuthedIndexRoute
+  AuthedExploreIdRoute: typeof AuthedExploreIdRoute
   AuthedRoadmapsIdRoute: typeof AuthedRoadmapsIdRoute
   AuthedRoadmapsNewRoute: typeof AuthedRoadmapsNewRoute
+  AuthedExploreIndexRoute: typeof AuthedExploreIndexRoute
   AuthedRoadmapsIndexRoute: typeof AuthedRoadmapsIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedIndexRoute: AuthedIndexRoute,
+  AuthedExploreIdRoute: AuthedExploreIdRoute,
   AuthedRoadmapsIdRoute: AuthedRoadmapsIdRoute,
   AuthedRoadmapsNewRoute: AuthedRoadmapsNewRoute,
+  AuthedExploreIndexRoute: AuthedExploreIndexRoute,
   AuthedRoadmapsIndexRoute: AuthedRoadmapsIndexRoute,
 }
 

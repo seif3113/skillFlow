@@ -12,6 +12,7 @@ import {
   Quiz01Icon,
   CheckmarkCircle02Icon,
   PencilEdit02Icon,
+  Globe02Icon,
 } from "@hugeicons/core-free-icons"
 
 import {
@@ -47,9 +48,9 @@ import {
 const nodeTypes = { roadmap: RoadmapFlowNodeCard }
 
 function RoadmapViewHeader() {
-  const { state } = useRoadmapView()
+  const { state, actions } = useRoadmapView()
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between gap-3">
       <div>
         <h1 className="text-xl font-semibold">{state.title}</h1>
         <p className="text-sm text-muted-foreground">
@@ -58,7 +59,18 @@ function RoadmapViewHeader() {
             : `${state.nodeCount} topic${state.nodeCount === 1 ? "" : "s"}`}
         </p>
       </div>
-      {state.isStreaming ? <Spinner /> : null}
+      {state.isStreaming ? (
+        <Spinner />
+      ) : (
+        <Button
+          variant={state.isPublished ? "outline" : "default"}
+          size="sm"
+          onClick={actions.togglePublish}
+        >
+          <HugeiconsIcon icon={Globe02Icon} data-icon="inline-start" />
+          {state.isPublished ? "Published" : "Publish"}
+        </Button>
+      )}
     </div>
   )
 }
