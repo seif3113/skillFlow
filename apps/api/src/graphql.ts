@@ -78,6 +78,13 @@ export interface DeleteNodeResult {
     message: string;
 }
 
+export interface NodeEdge {
+    id: number;
+    roadmapId: number;
+    sourceNodeId: number;
+    targetNodeId: number;
+}
+
 export interface IQuery {
     node(id: number): Nullable<Node> | Promise<Nullable<Node>>;
     nodesByRoadmap(roadmapId: number): Node[] | Promise<Node[]>;
@@ -102,6 +109,8 @@ export interface IMutation {
     updateNode(input: UpdateNodeInput): Node | Promise<Node>;
     deleteNode(id: number): DeleteNodeResult | Promise<DeleteNodeResult>;
     sendNodeChatMessage(nodeId: number, userId: number, sender: string, message: JSON): NodeExplanationChat | Promise<NodeExplanationChat>;
+    createNodeEdge(roadmapId: number, sourceNodeId: number, targetNodeId: number): NodeEdge | Promise<NodeEdge>;
+    deleteNodeEdge(id: number): DeleteNodeResult | Promise<DeleteNodeResult>;
     createQuiz(title: string, nodeId: number): Quiz | Promise<Quiz>;
     addQuestionToQuiz(quizId: number, question: string, choices: JSON, answer: number, explanation?: Nullable<string>): Question | Promise<Question>;
     createRoadmap(input: CreateRoadmapInput): Roadmap | Promise<Roadmap>;
@@ -142,6 +151,7 @@ export interface Roadmap {
     createdAt: DateTime;
     updatedAt: DateTime;
     nodes?: Nullable<Node[]>;
+    edges?: Nullable<NodeEdge[]>;
     learningProfile?: Nullable<RoadmapLearningProfile>;
     editLogs?: Nullable<RoadmapEditLog[]>;
 }
@@ -191,6 +201,7 @@ export interface RoadmapCustomizationQuestion {
 export interface RoadmapStreamEvent {
     event: string;
     node?: Nullable<Node>;
+    edges?: Nullable<NodeEdge[]>;
     message?: Nullable<string>;
 }
 

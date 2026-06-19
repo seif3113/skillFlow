@@ -8,6 +8,7 @@ type Roadmap {
   createdAt: DateTime!
   updatedAt: DateTime!
   nodes: [Node!]
+  edges: [NodeEdge!]
   learningProfile: RoadmapLearningProfile
   editLogs: [RoadmapEditLog!]
 }
@@ -74,6 +75,7 @@ type RoadmapCustomizationQuestion {
 type RoadmapStreamEvent {
   event: String!
   node: Node
+  edges: [NodeEdge!]
   message: String
 }
 

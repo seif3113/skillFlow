@@ -26,6 +26,14 @@ type DeleteNodeResult {
   message: String!
 }
 
+# A prerequisite edge in a roadmap's DAG: source is a prerequisite of target.
+type NodeEdge {
+  id: Int!
+  roadmapId: Int!
+  sourceNodeId: Int!
+  targetNodeId: Int!
+}
+
 input CreateNodeInput {
   roadmapId: Int!
   title: String!
@@ -62,4 +70,10 @@ extend type Mutation {
     sender: String!
     message: JSON!
   ): NodeExplanationChat!
+  createNodeEdge(
+    roadmapId: Int!
+    sourceNodeId: Int!
+    targetNodeId: Int!
+  ): NodeEdge!
+  deleteNodeEdge(id: Int!): DeleteNodeResult!
 }

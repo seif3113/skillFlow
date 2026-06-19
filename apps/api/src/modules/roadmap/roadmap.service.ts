@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -57,6 +58,24 @@ export class RoadmapService {
     }
 
     return row;
+  }
+
+  // Throws unless `userId` owns the roadmap; returns the row for reuse.
+  async assertOwner(id: number, userId: number): Promise<RoadmapRow> {
+    const row = await this.findOneOrFail(id);
+    if (row.userId !== userId) {
+      throw new ForbiddenException(`You do not have access to roadmap ${id}`);
+    }
+    return row;
+  }
+
+  // Read access: the owner, or anyone if the roadmap is published.
+  async findByIdForUser(id: number, userId: number): Promise<RoadmapType> {
+    const row = await this.findOneOrFail(id);
+    if (!row.isPublished && row.userId !== userId) {
+      throw new ForbiddenException(`You do not have access to roadmap ${id}`);
+    }
+    return this.mapRow(row);
   }
 
   async findAll(): Promise<RoadmapType[]> {
@@ -117,9 +136,12 @@ export class RoadmapService {
     return payload.questions;
   }
 
-  async create(input: CreateRoadmapInput): Promise<RoadmapType> {
+  async create(
+    input: CreateRoadmapInput,
+    userId: number,
+  ): Promise<RoadmapType> {
     const inserted = await this.roadmapRepository.create({
-      userId: input.userId,
+      userId,
       title: input.title,
       description: input.description ?? null,
       learningProfileId: input.learningProfileId ?? null,
@@ -129,8 +151,11 @@ export class RoadmapService {
     return this.mapRow(inserted);
   }
 
-  async update(input: UpdateRoadmapInput): Promise<RoadmapType> {
-    await this.findOneOrFail(input.id);
+  async update(
+    input: UpdateRoadmapInput,
+    userId: number,
+  ): Promise<RoadmapType> {
+    await this.assertOwner(input.id, userId);
 
     const updated = await this.roadmapRepository.update(input.id, {
       title: input.title,
@@ -145,7 +170,9 @@ export class RoadmapService {
   async updateRoadmapAi(
     id: number,
     message: string,
+    userId: number,
   ): Promise<UpdatedRoadmapResult['roadmap']> {
+    await this.assertOwner(id, userId);
     const cleanedMessage = message.trim();
 
     if (!cleanedMessage) {
@@ -182,8 +209,8 @@ export class RoadmapService {
     return payload.roadmap;
   }
 
-  async delete(id: number): Promise<DeleteRoadmapResult> {
-    await this.findOneOrFail(id);
+  async delete(id: number, userId: number): Promise<DeleteRoadmapResult> {
+    await this.assertOwner(id, userId);
 
     await this.roadmapRepository.delete(id);
 
@@ -193,8 +220,8 @@ export class RoadmapService {
     };
   }
 
-  async togglePublish(id: number): Promise<RoadmapType> {
-    const existing = await this.findOneOrFail(id);
+  async togglePublish(id: number, userId: number): Promise<RoadmapType> {
+    const existing = await this.assertOwner(id, userId);
 
     const updated = await this.roadmapRepository.update(id, {
       isPublished: !existing.isPublished,
