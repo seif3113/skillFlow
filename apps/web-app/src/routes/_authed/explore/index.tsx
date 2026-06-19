@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { useQuery } from "@apollo/client/react"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Compass01Icon } from "@hugeicons/core-free-icons"
+import { Compass01Icon, ViewIcon } from "@hugeicons/core-free-icons"
 
 import { PublicRoadmapsDocument } from "@/gql/graphql"
 import { ForkButton } from "@/components/roadmap/public-roadmap-view"
@@ -82,6 +82,7 @@ function ExplorePage() {
                 <Button
                   variant="outline"
                   size="sm"
+                  className="flex-1"
                   render={
                     <Link
                       to="/explore/$id"
@@ -89,9 +90,10 @@ function ExplorePage() {
                     />
                   }
                 >
+                  <HugeiconsIcon icon={ViewIcon} data-icon="inline-start" />
                   View
                 </Button>
-                <ForkButton roadmapId={roadmap.id} />
+                <ForkButton roadmapId={roadmap.id} className="flex-1" />
               </CardFooter>
             </Card>
           ))}
