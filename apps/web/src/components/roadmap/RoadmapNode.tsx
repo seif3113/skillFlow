@@ -11,21 +11,42 @@ export interface RoadmapNodeData {
   resources: { title: string; url: string; description?: string; type?: string; }[];
   completed: boolean;
   isReadOnly?: boolean;
+  diffState?: "added" | "modified" | "deleted";
 }
 
 function RoadmapNodeComponent({ id, data, selected }: NodeProps) {
   const nodeData = data as unknown as RoadmapNodeData;
+  const { diffState } = nodeData;
+
+  // Visual diff style mappings
+  let diffContainerClass = "";
+  if (diffState === "added") {
+    diffContainerClass = "border-emerald-500/80 bg-emerald-500/5 shadow-[0_0_15px_rgba(16,185,129,0.15)]";
+  } else if (diffState === "modified") {
+    diffContainerClass = "border-amber-500/80 bg-amber-500/5 shadow-[0_0_15px_rgba(245,158,11,0.15)]";
+  } else if (diffState === "deleted") {
+    diffContainerClass = "border-red-500/60 border-dashed opacity-50 bg-red-500/5 line-through decoration-red-500/40";
+  }
 
   return (
     <div
       className={`
         relative group transition-all duration-300
         ${selected ? "scale-105" : "hover:scale-[1.02]"}
+        ${diffState === "deleted" ? "pointer-events-none" : ""}
       `}
     >
       {/* Dynamic Glow Background for Selected/Completed */}
       {selected && (
         <div className="absolute -inset-4 bg-sky-500/20 blur-2xl rounded-2xl animate-pulse pointer-events-none" />
+      )}
+
+      {/* Added / Modified AI glows */}
+      {diffState === "added" && (
+        <div className="absolute -inset-2 bg-emerald-500/10 blur-xl rounded-2xl pointer-events-none" />
+      )}
+      {diffState === "modified" && (
+        <div className="absolute -inset-2 bg-amber-500/10 blur-xl rounded-2xl pointer-events-none" />
       )}
 
       <div
@@ -41,6 +62,7 @@ function RoadmapNodeComponent({ id, data, selected }: NodeProps) {
               ? "bg-teal-500/5 border-teal-500/40"
               : ""
           }
+          ${diffContainerClass}
         `}
       >
         {/* Progress Strip */}
@@ -63,11 +85,20 @@ function RoadmapNodeComponent({ id, data, selected }: NodeProps) {
             <h3
               className={`font-black text-base leading-tight transition-colors ${
                 selected ? "text-primary" : "text-foreground"
-              }`}
+              } ${diffState === "deleted" ? "line-through text-muted-foreground/60" : ""}`}
             >
               {nodeData.label}
+              {diffState && (
+                <span className={`ml-2 text-[9px] px-1.5 py-0.5 rounded-sm font-bold uppercase tracking-wider ${
+                  diffState === "added" ? "bg-emerald-500/20 text-emerald-400" :
+                  diffState === "modified" ? "bg-amber-500/20 text-amber-400" :
+                  "bg-red-500/20 text-red-400"
+                }`}>
+                  {diffState}
+                </span>
+              )}
             </h3>
-            {nodeData.completed && (
+            {nodeData.completed && diffState !== "deleted" && (
               <CheckCircle2 className="w-5 h-5 text-teal-500 shrink-0" />
             )}
           </div>
