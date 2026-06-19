@@ -3,410 +3,120 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 /** Internal type. DO NOT USE DIRECTLY. */
 export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
 import type { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/core';
-export type Maybe<T> = T | null;
-export type InputMaybe<T> = Maybe<T>;
-/** All built-in and custom scalars, mapped to their actual values */
-export type Scalars = {
-  ID: { input: string; output: string; }
-  String: { input: string; output: string; }
-  Boolean: { input: boolean; output: boolean; }
-  Int: { input: number; output: number; }
-  Float: { input: number; output: number; }
-  DateTime: { input: string; output: string; }
-  JSON: { input: unknown; output: unknown; }
-};
-
 export type CreateNodeInput = {
-  description?: InputMaybe<Scalars['String']['input']>;
-  isCompleted?: InputMaybe<Scalars['Boolean']['input']>;
-  resources?: InputMaybe<Scalars['JSON']['input']>;
-  roadmapId: Scalars['Int']['input'];
-  tags?: InputMaybe<Scalars['JSON']['input']>;
-  title: Scalars['String']['input'];
+  description?: string | null | undefined;
+  isCompleted?: boolean | null | undefined;
+  resources?: unknown;
+  roadmapId: number;
+  tags?: unknown;
+  title: string;
 };
 
 export type CreateRoadmapInput = {
-  description?: InputMaybe<Scalars['String']['input']>;
-  isPublished?: InputMaybe<Scalars['Boolean']['input']>;
-  learningProfileId?: InputMaybe<Scalars['Int']['input']>;
-  title: Scalars['String']['input'];
-  userId: Scalars['Int']['input'];
-};
-
-export type DeleteNodeResult = {
-  __typename: 'DeleteNodeResult';
-  message: Scalars['String']['output'];
-  success: Scalars['Boolean']['output'];
-};
-
-export type DeleteRoadmapResult = {
-  __typename: 'DeleteRoadmapResult';
-  message: Scalars['String']['output'];
-  success: Scalars['Boolean']['output'];
-};
-
-export type Mutation = {
-  __typename: 'Mutation';
-  addQuestionToQuiz: Question;
-  createNode: Node;
-  createQuiz: Quiz;
-  createRoadmap: Roadmap;
-  createRoadmapLearningProfile: RoadmapLearningProfile;
-  deleteNode: DeleteNodeResult;
-  deleteRoadmap: DeleteRoadmapResult;
-  forkRoadmap: Roadmap;
-  generateRoadmapStream: Scalars['Boolean']['output'];
-  publishRoadmap: Roadmap;
-  removeUser: User;
-  sendNodeChatMessage: NodeExplanationChat;
-  updateNode: Node;
-  updateRoadmap: Roadmap;
-  updateRoadmapAi: Array<Node>;
-  updateUser: User;
-};
-
-
-export type MutationAddQuestionToQuizArgs = {
-  answer: Scalars['Int']['input'];
-  choices: Scalars['JSON']['input'];
-  explanation?: InputMaybe<Scalars['String']['input']>;
-  question: Scalars['String']['input'];
-  quizId: Scalars['Int']['input'];
-};
-
-
-export type MutationCreateNodeArgs = {
-  input: CreateNodeInput;
-};
-
-
-export type MutationCreateQuizArgs = {
-  nodeId: Scalars['Int']['input'];
-  title: Scalars['String']['input'];
-};
-
-
-export type MutationCreateRoadmapArgs = {
-  input: CreateRoadmapInput;
-};
-
-
-export type MutationCreateRoadmapLearningProfileArgs = {
-  background?: InputMaybe<Scalars['String']['input']>;
-  goal?: InputMaybe<Scalars['String']['input']>;
-  level?: InputMaybe<Scalars['String']['input']>;
-  preferences?: InputMaybe<Scalars['JSON']['input']>;
-  timeAvailability?: InputMaybe<Scalars['String']['input']>;
-  userId: Scalars['Int']['input'];
-};
-
-
-export type MutationDeleteNodeArgs = {
-  id: Scalars['Int']['input'];
-};
-
-
-export type MutationDeleteRoadmapArgs = {
-  id: Scalars['Int']['input'];
-};
-
-
-export type MutationForkRoadmapArgs = {
-  id: Scalars['Int']['input'];
-  userId: Scalars['Int']['input'];
-};
-
-
-export type MutationGenerateRoadmapStreamArgs = {
-  customizationAnswers?: InputMaybe<Array<Scalars['String']['input']>>;
-  roadmapId: Scalars['Int']['input'];
-  topic: Scalars['String']['input'];
-};
-
-
-export type MutationPublishRoadmapArgs = {
-  id: Scalars['Int']['input'];
-};
-
-
-export type MutationRemoveUserArgs = {
-  id: Scalars['Int']['input'];
-};
-
-
-export type MutationSendNodeChatMessageArgs = {
-  message: Scalars['JSON']['input'];
-  nodeId: Scalars['Int']['input'];
-  sender: Scalars['String']['input'];
-  userId: Scalars['Int']['input'];
-};
-
-
-export type MutationUpdateNodeArgs = {
-  input: UpdateNodeInput;
-};
-
-
-export type MutationUpdateRoadmapArgs = {
-  input: UpdateRoadmapInput;
-};
-
-
-export type MutationUpdateRoadmapAiArgs = {
-  id: Scalars['Int']['input'];
-  message: Scalars['String']['input'];
-};
-
-
-export type MutationUpdateUserArgs = {
-  updateUserInput: UpdateUserInput;
-};
-
-export type Node = {
-  __typename: 'Node';
-  chats: Maybe<Array<NodeExplanationChat>>;
-  createdAt: Scalars['DateTime']['output'];
-  description: Maybe<Scalars['String']['output']>;
-  id: Scalars['Int']['output'];
-  isCompleted: Scalars['Boolean']['output'];
-  quiz: Maybe<Quiz>;
-  resources: Maybe<Scalars['JSON']['output']>;
-  roadmapId: Scalars['Int']['output'];
-  tags: Maybe<Scalars['JSON']['output']>;
-  title: Scalars['String']['output'];
-  updatedAt: Scalars['DateTime']['output'];
-};
-
-export type NodeExplanationChat = {
-  __typename: 'NodeExplanationChat';
-  id: Scalars['Int']['output'];
-  message: Scalars['JSON']['output'];
-  nodeId: Scalars['Int']['output'];
-  sender: Scalars['String']['output'];
-  sentAt: Scalars['DateTime']['output'];
-  userId: Scalars['Int']['output'];
-};
-
-export type PublicRoadmap = {
-  __typename: 'PublicRoadmap';
-  createdAt: Scalars['DateTime']['output'];
-  description: Maybe<Scalars['String']['output']>;
-  id: Scalars['Int']['output'];
-  isPublished: Scalars['Boolean']['output'];
-  nodes: Maybe<Array<Node>>;
-  title: Scalars['String']['output'];
-  updatedAt: Scalars['DateTime']['output'];
-  userName: Scalars['String']['output'];
-};
-
-export type Query = {
-  __typename: 'Query';
-  node: Maybe<Node>;
-  nodeChats: Array<NodeExplanationChat>;
-  nodesByRoadmap: Array<Node>;
-  publicRoadmap: Maybe<PublicRoadmap>;
-  publicRoadmaps: Array<PublicRoadmap>;
-  questionsByQuiz: Array<Question>;
-  quiz: Maybe<Quiz>;
-  quizzes: Array<Quiz>;
-  roadmap: Maybe<Roadmap>;
-  roadmapCustomizationQuestions: Array<RoadmapCustomizationQuestion>;
-  roadmapLearningProfiles: Array<RoadmapLearningProfile>;
-  roadmaps: Array<Roadmap>;
-  roadmapsByLearningProfile: Array<Roadmap>;
-  roadmapsByUser: Array<Roadmap>;
-  searchNodeResources: Array<Maybe<Scalars['JSON']['output']>>;
-  user: Maybe<User>;
-};
-
-
-export type QueryNodeArgs = {
-  id: Scalars['Int']['input'];
-};
-
-
-export type QueryNodeChatsArgs = {
-  nodeId: Scalars['Int']['input'];
-  userId: Scalars['Int']['input'];
-};
-
-
-export type QueryNodesByRoadmapArgs = {
-  roadmapId: Scalars['Int']['input'];
-};
-
-
-export type QueryPublicRoadmapArgs = {
-  id: Scalars['Int']['input'];
-};
-
-
-export type QueryQuestionsByQuizArgs = {
-  quizId: Scalars['Int']['input'];
-};
-
-
-export type QueryQuizArgs = {
-  id: Scalars['Int']['input'];
-};
-
-
-export type QueryRoadmapArgs = {
-  id: Scalars['Int']['input'];
-};
-
-
-export type QueryRoadmapCustomizationQuestionsArgs = {
-  message: Scalars['String']['input'];
-};
-
-
-export type QueryRoadmapLearningProfilesArgs = {
-  userId: Scalars['Int']['input'];
-};
-
-
-export type QueryRoadmapsByLearningProfileArgs = {
-  learningProfileId: Scalars['Int']['input'];
-};
-
-
-export type QueryRoadmapsByUserArgs = {
-  userId: Scalars['Int']['input'];
-};
-
-
-export type QuerySearchNodeResourcesArgs = {
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  topic: Scalars['String']['input'];
-  type?: InputMaybe<Scalars['String']['input']>;
-};
-
-
-export type QueryUserArgs = {
-  id: Scalars['Int']['input'];
-};
-
-export type Question = {
-  __typename: 'Question';
-  answer: Scalars['Int']['output'];
-  choices: Scalars['JSON']['output'];
-  explanation: Maybe<Scalars['String']['output']>;
-  id: Scalars['Int']['output'];
-  question: Scalars['String']['output'];
-  quizId: Scalars['Int']['output'];
-};
-
-export type Quiz = {
-  __typename: 'Quiz';
-  id: Scalars['Int']['output'];
-  nodeId: Scalars['Int']['output'];
-  questions: Maybe<Array<Question>>;
-  title: Scalars['String']['output'];
-};
-
-export type Roadmap = {
-  __typename: 'Roadmap';
-  createdAt: Scalars['DateTime']['output'];
-  description: Maybe<Scalars['String']['output']>;
-  editLogs: Maybe<Array<RoadmapEditLog>>;
-  id: Scalars['Int']['output'];
-  isPublished: Scalars['Boolean']['output'];
-  learningProfile: Maybe<RoadmapLearningProfile>;
-  learningProfileId: Maybe<Scalars['Int']['output']>;
-  nodes: Maybe<Array<Node>>;
-  title: Scalars['String']['output'];
-  updatedAt: Scalars['DateTime']['output'];
-  userId: Scalars['Int']['output'];
-};
-
-export type RoadmapCustomizationQuestion = {
-  __typename: 'RoadmapCustomizationQuestion';
-  choices: Array<Scalars['String']['output']>;
-  question: Scalars['String']['output'];
-};
-
-export type RoadmapEditLog = {
-  __typename: 'RoadmapEditLog';
-  accept: Maybe<Scalars['Boolean']['output']>;
-  id: Scalars['Int']['output'];
-  intent: Scalars['String']['output'];
-  message: Scalars['JSON']['output'];
-  roadmapId: Scalars['Int']['output'];
-  sender: Scalars['String']['output'];
-  sentAt: Scalars['DateTime']['output'];
-};
-
-export type RoadmapLearningProfile = {
-  __typename: 'RoadmapLearningProfile';
-  background: Maybe<Scalars['String']['output']>;
-  createdAt: Scalars['DateTime']['output'];
-  goal: Maybe<Scalars['String']['output']>;
-  id: Scalars['Int']['output'];
-  level: Maybe<Scalars['String']['output']>;
-  preferences: Scalars['JSON']['output'];
-  timeAvailability: Maybe<Scalars['String']['output']>;
-  userId: Scalars['Int']['output'];
-};
-
-export type RoadmapStreamEvent = {
-  __typename: 'RoadmapStreamEvent';
-  event: Scalars['String']['output'];
-  message: Maybe<Scalars['String']['output']>;
-  node: Maybe<Node>;
-};
-
-export type Subscription = {
-  __typename: 'Subscription';
-  roadmapGenerationStream: RoadmapStreamEvent;
-};
-
-
-export type SubscriptionRoadmapGenerationStreamArgs = {
-  roadmapId: Scalars['Int']['input'];
+  description?: string | null | undefined;
+  isPublished?: boolean | null | undefined;
+  learningProfileId?: number | null | undefined;
+  title: string;
+  userId?: number | null | undefined;
 };
 
 export type UpdateNodeInput = {
-  description?: InputMaybe<Scalars['String']['input']>;
-  id: Scalars['Int']['input'];
-  isCompleted?: InputMaybe<Scalars['Boolean']['input']>;
-  resources?: InputMaybe<Scalars['JSON']['input']>;
-  roadmapId?: InputMaybe<Scalars['Int']['input']>;
-  tags?: InputMaybe<Scalars['JSON']['input']>;
-  title?: InputMaybe<Scalars['String']['input']>;
+  description?: string | null | undefined;
+  id: number;
+  isCompleted?: boolean | null | undefined;
+  resources?: unknown;
+  roadmapId?: number | null | undefined;
+  tags?: unknown;
+  title?: string | null | undefined;
 };
 
-export type UpdateRoadmapInput = {
-  description?: InputMaybe<Scalars['String']['input']>;
-  id: Scalars['Int']['input'];
-  isPublished?: InputMaybe<Scalars['Boolean']['input']>;
-  learningProfileId?: InputMaybe<Scalars['Int']['input']>;
-  title?: InputMaybe<Scalars['String']['input']>;
-  userId?: InputMaybe<Scalars['Int']['input']>;
-};
+export type RoadmapNodeFieldsFragment = { __typename: 'Node', id: number, roadmapId: number, title: string, description: string | null, tags: unknown, resources: unknown, isCompleted: boolean };
 
-export type UpdateUserInput = {
-  email?: InputMaybe<Scalars['String']['input']>;
-  id: Scalars['Int']['input'];
-  name?: InputMaybe<Scalars['String']['input']>;
-};
+export type RoadmapEdgeFieldsFragment = { __typename: 'NodeEdge', id: number, roadmapId: number, sourceNodeId: number, targetNodeId: number };
 
-export type User = {
-  __typename: 'User';
-  createdAt: Scalars['DateTime']['output'];
-  email: Scalars['String']['output'];
-  emailVerified: Scalars['Boolean']['output'];
-  id: Scalars['Int']['output'];
-  image: Maybe<Scalars['String']['output']>;
-  name: Scalars['String']['output'];
-  preferences: Scalars['JSON']['output'];
-  updatedAt: Scalars['DateTime']['output'];
-};
-
-export type PublicRoadmapsQueryVariables = Exact<{ [key: string]: never; }>;
+export type GetRoadmapQueryVariables = Exact<{
+  id: number;
+}>;
 
 
-export type PublicRoadmapsQuery = { publicRoadmaps: Array<{ __typename: 'PublicRoadmap', id: number, userName: string, title: string, description: string | null, isPublished: boolean }> };
+export type GetRoadmapQuery = { roadmap: { __typename: 'Roadmap', id: number, title: string, description: string | null, isPublished: boolean, nodes: Array<{ __typename: 'Node', id: number, roadmapId: number, title: string, description: string | null, tags: unknown, resources: unknown, isCompleted: boolean }> | null, edges: Array<{ __typename: 'NodeEdge', id: number, roadmapId: number, sourceNodeId: number, targetNodeId: number }> | null } | null };
+
+export type RoadmapCustomizationQuestionsQueryVariables = Exact<{
+  message: string;
+}>;
 
 
-export const PublicRoadmapsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"PublicRoadmaps"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"publicRoadmaps"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"userName"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"isPublished"}}]}}]}}]} as unknown as DocumentNode<PublicRoadmapsQuery, PublicRoadmapsQueryVariables>;
+export type RoadmapCustomizationQuestionsQuery = { roadmapCustomizationQuestions: Array<{ __typename: 'RoadmapCustomizationQuestion', question: string, choices: Array<string> }> };
+
+export type CreateRoadmapMutationVariables = Exact<{
+  input: CreateRoadmapInput;
+}>;
+
+
+export type CreateRoadmapMutation = { createRoadmap: { __typename: 'Roadmap', id: number, title: string, description: string | null } };
+
+export type GenerateRoadmapStreamMutationVariables = Exact<{
+  roadmapId: number;
+  topic: string;
+  customizationAnswers?: Array<string> | string | null | undefined;
+}>;
+
+
+export type GenerateRoadmapStreamMutation = { generateRoadmapStream: boolean };
+
+export type RoadmapGenerationStreamSubscriptionVariables = Exact<{
+  roadmapId: number;
+}>;
+
+
+export type RoadmapGenerationStreamSubscription = { roadmapGenerationStream: { __typename: 'RoadmapStreamEvent', event: string, message: string | null, node: { __typename: 'Node', id: number, roadmapId: number, title: string, description: string | null, tags: unknown, resources: unknown, isCompleted: boolean } | null, edges: Array<{ __typename: 'NodeEdge', id: number, roadmapId: number, sourceNodeId: number, targetNodeId: number }> | null } };
+
+export type CreateNodeMutationVariables = Exact<{
+  input: CreateNodeInput;
+}>;
+
+
+export type CreateNodeMutation = { createNode: { __typename: 'Node', id: number, roadmapId: number, title: string, description: string | null, tags: unknown, resources: unknown, isCompleted: boolean } };
+
+export type UpdateNodeMutationVariables = Exact<{
+  input: UpdateNodeInput;
+}>;
+
+
+export type UpdateNodeMutation = { updateNode: { __typename: 'Node', id: number, roadmapId: number, title: string, description: string | null, tags: unknown, resources: unknown, isCompleted: boolean } };
+
+export type DeleteNodeMutationVariables = Exact<{
+  id: number;
+}>;
+
+
+export type DeleteNodeMutation = { deleteNode: { __typename: 'DeleteNodeResult', success: boolean, message: string } };
+
+export type CreateNodeEdgeMutationVariables = Exact<{
+  roadmapId: number;
+  sourceNodeId: number;
+  targetNodeId: number;
+}>;
+
+
+export type CreateNodeEdgeMutation = { createNodeEdge: { __typename: 'NodeEdge', id: number, roadmapId: number, sourceNodeId: number, targetNodeId: number } };
+
+export type DeleteNodeEdgeMutationVariables = Exact<{
+  id: number;
+}>;
+
+
+export type DeleteNodeEdgeMutation = { deleteNodeEdge: { __typename: 'DeleteNodeResult', success: boolean, message: string } };
+
+export const RoadmapNodeFieldsFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"RoadmapNodeFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Node"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"roadmapId"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"tags"}},{"kind":"Field","name":{"kind":"Name","value":"resources"}},{"kind":"Field","name":{"kind":"Name","value":"isCompleted"}}]}}]} as unknown as DocumentNode<RoadmapNodeFieldsFragment, unknown>;
+export const RoadmapEdgeFieldsFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"RoadmapEdgeFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"NodeEdge"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"roadmapId"}},{"kind":"Field","name":{"kind":"Name","value":"sourceNodeId"}},{"kind":"Field","name":{"kind":"Name","value":"targetNodeId"}}]}}]} as unknown as DocumentNode<RoadmapEdgeFieldsFragment, unknown>;
+export const GetRoadmapDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetRoadmap"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"roadmap"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"isPublished"}},{"kind":"Field","name":{"kind":"Name","value":"nodes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"RoadmapNodeFields"}}]}},{"kind":"Field","name":{"kind":"Name","value":"edges"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"RoadmapEdgeFields"}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"RoadmapNodeFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Node"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"roadmapId"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"tags"}},{"kind":"Field","name":{"kind":"Name","value":"resources"}},{"kind":"Field","name":{"kind":"Name","value":"isCompleted"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"RoadmapEdgeFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"NodeEdge"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"roadmapId"}},{"kind":"Field","name":{"kind":"Name","value":"sourceNodeId"}},{"kind":"Field","name":{"kind":"Name","value":"targetNodeId"}}]}}]} as unknown as DocumentNode<GetRoadmapQuery, GetRoadmapQueryVariables>;
+export const RoadmapCustomizationQuestionsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"RoadmapCustomizationQuestions"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"message"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"roadmapCustomizationQuestions"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"message"},"value":{"kind":"Variable","name":{"kind":"Name","value":"message"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"question"}},{"kind":"Field","name":{"kind":"Name","value":"choices"}}]}}]}}]} as unknown as DocumentNode<RoadmapCustomizationQuestionsQuery, RoadmapCustomizationQuestionsQueryVariables>;
+export const CreateRoadmapDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CreateRoadmap"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"CreateRoadmapInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createRoadmap"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"description"}}]}}]}}]} as unknown as DocumentNode<CreateRoadmapMutation, CreateRoadmapMutationVariables>;
+export const GenerateRoadmapStreamDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"GenerateRoadmapStream"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"roadmapId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"topic"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"customizationAnswers"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"generateRoadmapStream"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"roadmapId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"roadmapId"}}},{"kind":"Argument","name":{"kind":"Name","value":"topic"},"value":{"kind":"Variable","name":{"kind":"Name","value":"topic"}}},{"kind":"Argument","name":{"kind":"Name","value":"customizationAnswers"},"value":{"kind":"Variable","name":{"kind":"Name","value":"customizationAnswers"}}}]}]}}]} as unknown as DocumentNode<GenerateRoadmapStreamMutation, GenerateRoadmapStreamMutationVariables>;
+export const RoadmapGenerationStreamDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"subscription","name":{"kind":"Name","value":"RoadmapGenerationStream"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"roadmapId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"roadmapGenerationStream"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"roadmapId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"roadmapId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"event"}},{"kind":"Field","name":{"kind":"Name","value":"message"}},{"kind":"Field","name":{"kind":"Name","value":"node"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"RoadmapNodeFields"}}]}},{"kind":"Field","name":{"kind":"Name","value":"edges"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"RoadmapEdgeFields"}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"RoadmapNodeFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Node"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"roadmapId"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"tags"}},{"kind":"Field","name":{"kind":"Name","value":"resources"}},{"kind":"Field","name":{"kind":"Name","value":"isCompleted"}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"RoadmapEdgeFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"NodeEdge"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"roadmapId"}},{"kind":"Field","name":{"kind":"Name","value":"sourceNodeId"}},{"kind":"Field","name":{"kind":"Name","value":"targetNodeId"}}]}}]} as unknown as DocumentNode<RoadmapGenerationStreamSubscription, RoadmapGenerationStreamSubscriptionVariables>;
+export const CreateNodeDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CreateNode"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"CreateNodeInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createNode"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"RoadmapNodeFields"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"RoadmapNodeFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Node"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"roadmapId"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"tags"}},{"kind":"Field","name":{"kind":"Name","value":"resources"}},{"kind":"Field","name":{"kind":"Name","value":"isCompleted"}}]}}]} as unknown as DocumentNode<CreateNodeMutation, CreateNodeMutationVariables>;
+export const UpdateNodeDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateNode"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UpdateNodeInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateNode"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"RoadmapNodeFields"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"RoadmapNodeFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"Node"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"roadmapId"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"tags"}},{"kind":"Field","name":{"kind":"Name","value":"resources"}},{"kind":"Field","name":{"kind":"Name","value":"isCompleted"}}]}}]} as unknown as DocumentNode<UpdateNodeMutation, UpdateNodeMutationVariables>;
+export const DeleteNodeDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteNode"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteNode"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}}]}}]} as unknown as DocumentNode<DeleteNodeMutation, DeleteNodeMutationVariables>;
+export const CreateNodeEdgeDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CreateNodeEdge"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"roadmapId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"sourceNodeId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"targetNodeId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createNodeEdge"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"roadmapId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"roadmapId"}}},{"kind":"Argument","name":{"kind":"Name","value":"sourceNodeId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"sourceNodeId"}}},{"kind":"Argument","name":{"kind":"Name","value":"targetNodeId"},"value":{"kind":"Variable","name":{"kind":"Name","value":"targetNodeId"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"FragmentSpread","name":{"kind":"Name","value":"RoadmapEdgeFields"}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"RoadmapEdgeFields"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"NodeEdge"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"roadmapId"}},{"kind":"Field","name":{"kind":"Name","value":"sourceNodeId"}},{"kind":"Field","name":{"kind":"Name","value":"targetNodeId"}}]}}]} as unknown as DocumentNode<CreateNodeEdgeMutation, CreateNodeEdgeMutationVariables>;
+export const DeleteNodeEdgeDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteNodeEdge"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"Int"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteNodeEdge"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}}]}}]} as unknown as DocumentNode<DeleteNodeEdgeMutation, DeleteNodeEdgeMutationVariables>;

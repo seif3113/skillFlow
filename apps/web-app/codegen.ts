@@ -1,17 +1,18 @@
 import type { CodegenConfig } from "@graphql-codegen/cli"
 
-// GraphQL codegen for Apollo Client: scans source for `gql` operations and
-// emits a single typed module of `TypedDocumentNode`s (e.g. `FooDocument`) plus
-// their result/variable types. Apollo's hooks infer everything from the
-// document, so we never pass manual generics.
+// GraphQL codegen for Apollo Client: emits a single self-contained module of
+// `TypedDocumentNode`s (e.g. `FooDocument`) plus their result/variable/input
+// types. We use `typescript-operations` (self-contained) WITHOUT the standalone
+// `typescript` plugin — having both in one file duplicates input types.
+// Apollo's hooks infer everything from the document, so we never pass generics.
 const config: CodegenConfig = {
   overwrite: true,
   schema: "../api/src/**/*.graphql",
-  documents: ["src/**/*.{ts,tsx}", "!src/gql/**/*"],
+  documents: ["src/**/*.{ts,tsx,graphql}", "!src/gql/**/*"],
   ignoreNoDocuments: true,
   generates: {
     "./src/gql/graphql.ts": {
-      plugins: ["typescript", "typescript-operations", "typed-document-node"],
+      plugins: ["typescript-operations", "typed-document-node"],
       config: {
         // Emit `import type` so output satisfies verbatimModuleSyntax.
         useTypeImports: true,
