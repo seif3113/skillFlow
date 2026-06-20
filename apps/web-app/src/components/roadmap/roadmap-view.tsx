@@ -3,6 +3,7 @@ import {
   ReactFlow,
   Background,
   Controls,
+  Panel,
   type NodeMouseHandler,
 } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
@@ -20,6 +21,7 @@ import {
 } from "@hugeicons/core-free-icons"
 
 import { AdaptNodeDocument } from "@/gql/graphql"
+import { cn } from "@/lib/utils"
 
 import {
   asTags,
@@ -191,7 +193,30 @@ function RoadmapViewCanvas() {
       >
         <Background />
         <Controls showInteractive={false} />
+        <Panel position="top-right">
+          <CanvasLegend />
+        </Panel>
       </ReactFlow>
+    </div>
+  )
+}
+
+function LegendItem({ swatch, label }: { swatch: string; label: string }) {
+  return (
+    <div className="flex items-center gap-1.5 text-muted-foreground">
+      <span className={cn("size-2.5 rounded-full", swatch)} />
+      {label}
+    </div>
+  )
+}
+
+// Key for the node status styling on the canvas.
+function CanvasLegend() {
+  return (
+    <div className="flex flex-col gap-1 rounded-lg border bg-card/90 px-2.5 py-2 text-xs shadow-sm backdrop-blur">
+      <LegendItem swatch="bg-primary" label="Completed" />
+      <LegendItem swatch="border-2 border-primary/50" label="Available" />
+      <LegendItem swatch="bg-muted-foreground/30" label="Locked" />
     </div>
   )
 }

@@ -23,6 +23,7 @@ export function RoadmapFlowNodeCard({
       className={cn(
         "w-[260px] rounded-2xl border bg-card px-4 py-3 text-card-foreground shadow-sm ring-1 ring-foreground/5 transition-colors",
         selected && "border-primary ring-primary/30",
+        status === "available" && "ring-primary/25",
         status === "completed" && "border-primary/40 bg-primary/5",
         status === "locked" && "opacity-60"
       )}
