@@ -1,4 +1,6 @@
 import {
+  BadRequestException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -6,7 +8,7 @@ import {
 
 import { NodeRepository } from './node.repository';
 import { RoadmapRepository } from '../roadmap/roadmap.repository';
-import { NodeRow } from './node.schema';
+import { NodeRow, NodeEdgeRow } from './node.schema';
 import {
   NodeType,
   DeleteNodeResult,
@@ -51,11 +53,10 @@ export class NodeService {
   }
 
   async findByRoadmapId(roadmapId: number): Promise<NodeType[]> {
-    const roadmap = await this.roadmapRepository.findById(roadmapId);
-    if (!roadmap) {
-      throw new NotFoundException(`Roadmap with id ${roadmapId} not found`);
-    }
-
+    // No existence check here: this runs as the `Roadmap.nodes` field resolver
+    // (parent already loaded) and behind `assertRoadmapReadable` on the direct
+    // query — the extra findById was a redundant round-trip per roadmap (N+1
+    // on list views). A missing roadmap simply yields no nodes.
     const rows = await this.nodeRepository.findByRoadmapId(roadmapId);
     return rows.map((r) => this.mapRow(r));
   }
@@ -104,7 +105,8 @@ export class NodeService {
       description: input.description ?? null,
       tags: input.tags ?? [],
       resources: input.resources ?? [],
-      isCompleted: input.isCompleted ?? false,
+      // Completion is gated behind passing the node's quiz — never set on create.
+      isCompleted: false,
     });
 
     return this.mapRow(inserted);
@@ -113,12 +115,14 @@ export class NodeService {
   async update(input: UpdateNodeInput): Promise<NodeType> {
     await this.findNodeOrFail(input.id);
 
+    // `isCompleted` is intentionally NOT honored here: a node is completed only
+    // by passing its quiz (see QuizService.submitAttempt). Editing content must
+    // not be able to flip completion and bypass the gate.
     const updated = await this.nodeRepository.update(input.id, {
       title: input.title,
       description: input.description,
       tags: input.tags,
       resources: input.resources,
-      isCompleted: input.isCompleted,
     });
 
     return this.mapRow(updated);
@@ -132,6 +136,83 @@ export class NodeService {
       success: true,
       message: `Node ${id} has been deleted successfully`,
     };
+  }
+
+  // --- DAG edges -------------------------------------------------------
+
+  private mapEdge(row: NodeEdgeRow) {
+    return {
+      id: row.id,
+      roadmapId: row.roadmapId,
+      sourceNodeId: row.sourceNodeId,
+      targetNodeId: row.targetNodeId,
+    };
+  }
+
+  async findEdgesByRoadmapId(roadmapId: number) {
+    const rows = await this.nodeRepository.findEdgesByRoadmapId(roadmapId);
+    return rows.map((r) => this.mapEdge(r));
+  }
+
+  async createEdge(
+    roadmapId: number,
+    sourceNodeId: number,
+    targetNodeId: number,
+  ) {
+    if (sourceNodeId === targetNodeId) {
+      throw new BadRequestException('A node cannot depend on itself');
+    }
+    const [source, target] = await Promise.all([
+      this.findNodeOrFail(sourceNodeId),
+      this.findNodeOrFail(targetNodeId),
+    ]);
+    if (source.roadmapId !== roadmapId || target.roadmapId !== roadmapId) {
+      throw new BadRequestException(
+        'Both nodes must belong to the same roadmap as the edge',
+      );
+    }
+    const row = await this.nodeRepository.createEdge({
+      roadmapId,
+      sourceNodeId,
+      targetNodeId,
+    });
+    return this.mapEdge(row);
+  }
+
+  async deleteEdge(id: number, userId: number): Promise<DeleteNodeResult> {
+    const edge = await this.nodeRepository.findEdgeById(id);
+    if (!edge) {
+      throw new NotFoundException(`Edge with id ${id} not found`);
+    }
+    await this.assertRoadmapOwner(edge.roadmapId, userId);
+    await this.nodeRepository.deleteEdge(id);
+    return { success: true, message: `Edge ${id} has been deleted` };
+  }
+
+  // --- Authorization helpers ------------------------------------------
+
+  async assertRoadmapOwner(roadmapId: number, userId: number): Promise<void> {
+    const roadmap = await this.roadmapRepository.findById(roadmapId);
+    if (!roadmap) {
+      throw new NotFoundException(`Roadmap with id ${roadmapId} not found`);
+    }
+    if (roadmap.userId !== userId) {
+      throw new ForbiddenException(
+        `You do not have access to roadmap ${roadmapId}`,
+      );
+    }
+  }
+
+  async assertRoadmapReadable(roadmapId: number, userId: number): Promise<void> {
+    const roadmap = await this.roadmapRepository.findById(roadmapId);
+    if (!roadmap) {
+      throw new NotFoundException(`Roadmap with id ${roadmapId} not found`);
+    }
+    if (!roadmap.isPublished && roadmap.userId !== userId) {
+      throw new ForbiddenException(
+        `You do not have access to roadmap ${roadmapId}`,
+      );
+    }
   }
 
   async findChats(nodeId: number, userId: number) {

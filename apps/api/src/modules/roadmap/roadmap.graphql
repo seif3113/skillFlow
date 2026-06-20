@@ -8,6 +8,7 @@ type Roadmap {
   createdAt: DateTime!
   updatedAt: DateTime!
   nodes: [Node!]
+  edges: [NodeEdge!]
   learningProfile: RoadmapLearningProfile
   editLogs: [RoadmapEditLog!]
 }
@@ -15,6 +16,7 @@ type Roadmap {
 type PublicRoadmap {
   id: Int!
   userName: String!
+  userImage: String
   title: String!
   description: String
   isPublished: Boolean!
@@ -50,7 +52,8 @@ type DeleteRoadmapResult {
 }
 
 input CreateRoadmapInput {
-  userId: Int!
+  # Deprecated/ignored: the owner is derived from the authenticated session.
+  userId: Int
   title: String!
   description: String
   learningProfileId: Int
@@ -74,6 +77,7 @@ type RoadmapCustomizationQuestion {
 type RoadmapStreamEvent {
   event: String!
   node: Node
+  edges: [NodeEdge!]
   message: String
 }
 

@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { gql } from 'graphql-request';
-import { graphQLClient } from '@/lib/react-query';
+import { graphQLClient } from '@/lib/graphql-request-client';
 import { createClient } from 'graphql-ws';
 
 export interface StreamedNode {
@@ -130,7 +130,7 @@ export function useRoadmapStream() {
             roadmapId,
             topic,
             customizationAnswers: customizationAnswers || [],
-          }).catch(err => {
+          }).catch((err: any) => {
             console.error('Error in useRoadmapStream mutation:', err);
             setError(err.message || 'An unknown error occurred');
             setStatus('error');

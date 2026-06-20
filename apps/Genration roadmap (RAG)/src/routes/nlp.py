@@ -9,6 +9,8 @@ from models.schemes import (
     ChatRequest,
     RoadmapRequest,
     RoadmapEditRequest,
+    QuizRequest,
+    RemedialRequest,
 )
 import asyncio
 import time
@@ -299,13 +301,16 @@ async def generate_roadmap_rag(request: Request, roadmap_request: RoadmapRequest
         depth = 0
         in_string = False
         escape = False
+        node_index = 0
+        dependency_plan = []
 
         yield _json_stream_event("start", {"signal": "success"})
 
         try:
-            stream = nlp_controller.generate_customized_roadmap_rag_stream(
+            stream, dependency_plan = nlp_controller.generate_customized_roadmap_rag_stream(
                 topic=topic, customization_answers=roadmap_request.customization_answers
             )
+            dependency_plan = dependency_plan or []
 
             if not stream:
                 yield _json_stream_event(
@@ -366,6 +371,15 @@ async def generate_roadmap_rag(request: Request, roadmap_request: RoadmapRequest
                             node = json.loads(node_text)
                         except json.JSONDecodeError:
                             continue
+
+                        # Inject the prerequisite plan (ref + dependsOn) by
+                        # position so the backend can wire DAG edges. Emitted in
+                        # topological order, matching Pass 1's sub-topic order.
+                        if node_index < len(dependency_plan):
+                            plan = dependency_plan[node_index]
+                            node["ref"] = plan["ref"]
+                            node["dependsOn"] = plan["dependsOn"]
+                        node_index += 1
 
                         nodes.append(node)
                         yield _json_stream_event("node", {"node": node})
@@ -505,4 +519,72 @@ async def chat_explain_node(request: Request, chat_request: ChatRequest):
 
     return JSONResponse(
         status_code=status.HTTP_200_OK, content={"signal": "success", "answer": answer}
+    )
+
+
+@nlp_router.post("/generate-quiz")
+async def generate_quiz(request: Request, quiz_request: QuizRequest):
+    node_name = (quiz_request.node_name or "").strip()
+    if not node_name:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"signal": "error", "message": "node_name is required."},
+        )
+
+    nlp_controller = NLPController(
+        vectordb_client=request.app.vectordb_client,
+        generation_client=request.app.generation_client,
+        embedding_client=request.app.embedding_client,
+        template_parser=request.app.template_parser,
+        embedding_helper=request.app.embedding_helper,
+    )
+
+    questions = nlp_controller.generate_node_quiz(
+        node_name=node_name,
+        node_description=quiz_request.node_description or "",
+        num_questions=quiz_request.num_questions or 5,
+    )
+
+    if not questions:
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "signal": "error",
+                "message": "Quiz generation failed to produce questions.",
+            },
+        )
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"signal": "success", "questions": questions},
+    )
+
+
+@nlp_router.post("/generate-remedial")
+async def generate_remedial(request: Request, remedial_request: RemedialRequest):
+    node_name = (remedial_request.node_name or "").strip()
+    if not node_name:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"signal": "error", "message": "node_name is required."},
+        )
+
+    nlp_controller = NLPController(
+        vectordb_client=request.app.vectordb_client,
+        generation_client=request.app.generation_client,
+        embedding_client=request.app.embedding_client,
+        template_parser=request.app.template_parser,
+        embedding_helper=request.app.embedding_helper,
+    )
+
+    remedials = nlp_controller.generate_remedial_subtopics(
+        node_name=node_name,
+        node_description=remedial_request.node_description or "",
+        missed_questions=list(remedial_request.missed_questions or []),
+        num_remedials=remedial_request.num_remedials or 3,
+    )
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"signal": "success", "remedials": remedials},
     )

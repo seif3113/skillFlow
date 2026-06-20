@@ -1,0 +1,59 @@
+# Quiz operations. Questions never include the correct answer; grading is
+# server-side via submitQuizAttempt, which returns per-question results.
+
+fragment QuizFields on Quiz {
+  id
+  nodeId
+  title
+  questions {
+    id
+    question
+    choices
+  }
+}
+
+query NodeQuiz($nodeId: Int!) {
+  nodeQuiz(nodeId: $nodeId) {
+    ...QuizFields
+  }
+}
+
+mutation AdaptNode($nodeId: Int!) {
+  adaptNode(nodeId: $nodeId) {
+    ...RoadmapNodeFields
+  }
+}
+
+query MyQuizAttempts {
+  myQuizAttempts {
+    id
+    score
+    passed
+    createdAt
+    nodeId
+    nodeTitle
+    roadmapId
+    roadmapTitle
+  }
+}
+
+mutation GenerateNodeQuiz($nodeId: Int!) {
+  generateNodeQuiz(nodeId: $nodeId) {
+    ...QuizFields
+  }
+}
+
+mutation SubmitQuizAttempt($nodeId: Int!, $answers: [Int!]!) {
+  submitQuizAttempt(nodeId: $nodeId, answers: $answers) {
+    score
+    passed
+    passThreshold
+    nodeCompleted
+    results {
+      questionId
+      correct
+      correctAnswer
+      explanation
+    }
+  }
+}

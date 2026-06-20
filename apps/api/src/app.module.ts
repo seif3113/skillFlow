@@ -6,6 +6,7 @@ import { UserModule } from './modules/user/user.module';
 import { DatabaseModule } from './database/database.module';
 import { RoadmapModule } from './modules/roadmap/roadmap.module';
 import { NodeModule } from './modules/node/node.module';
+import { QuizModule } from './modules/quiz/quiz.module';
 import { AuthModule } from '@thallesp/nestjs-better-auth';
 import { auth } from './lib/auth';
 import { ScalarsResolver } from './graphql/scalars.resolver';
@@ -28,6 +29,7 @@ import { ScalarsResolver } from './graphql/scalars.resolver';
     DatabaseModule,
     RoadmapModule,
     NodeModule,
+    QuizModule,
     UserModule,
     AuthModule.forRoot({ auth }),
   ],

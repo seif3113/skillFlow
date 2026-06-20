@@ -28,7 +28,7 @@ export interface UpdateNodeInput {
 }
 
 export interface CreateRoadmapInput {
-    userId: number;
+    userId?: Nullable<number>;
     title: string;
     description?: Nullable<string>;
     learningProfileId?: Nullable<number>;
@@ -62,7 +62,6 @@ export interface Node {
     createdAt: DateTime;
     updatedAt: DateTime;
     chats?: Nullable<NodeExplanationChat[]>;
-    quiz?: Nullable<Quiz>;
 }
 
 export interface NodeExplanationChat {
@@ -79,14 +78,20 @@ export interface DeleteNodeResult {
     message: string;
 }
 
+export interface NodeEdge {
+    id: number;
+    roadmapId: number;
+    sourceNodeId: number;
+    targetNodeId: number;
+}
+
 export interface IQuery {
     node(id: number): Nullable<Node> | Promise<Nullable<Node>>;
     nodesByRoadmap(roadmapId: number): Node[] | Promise<Node[]>;
     nodeChats(nodeId: number, userId: number): NodeExplanationChat[] | Promise<NodeExplanationChat[]>;
     searchNodeResources(topic: string, limit?: Nullable<number>, type?: Nullable<string>): Nullable<JSON>[] | Promise<Nullable<JSON>[]>;
-    quizzes(): Quiz[] | Promise<Quiz[]>;
-    quiz(id: number): Nullable<Quiz> | Promise<Nullable<Quiz>>;
-    questionsByQuiz(quizId: number): Question[] | Promise<Question[]>;
+    nodeQuiz(nodeId: number): Nullable<Quiz> | Promise<Nullable<Quiz>>;
+    myQuizAttempts(): QuizAttempt[] | Promise<QuizAttempt[]>;
     roadmaps(): Roadmap[] | Promise<Roadmap[]>;
     roadmap(id: number): Nullable<Roadmap> | Promise<Nullable<Roadmap>>;
     roadmapsByUser(userId: number): Roadmap[] | Promise<Roadmap[]>;
@@ -103,8 +108,11 @@ export interface IMutation {
     updateNode(input: UpdateNodeInput): Node | Promise<Node>;
     deleteNode(id: number): DeleteNodeResult | Promise<DeleteNodeResult>;
     sendNodeChatMessage(nodeId: number, userId: number, sender: string, message: JSON): NodeExplanationChat | Promise<NodeExplanationChat>;
-    createQuiz(title: string, nodeId: number): Quiz | Promise<Quiz>;
-    addQuestionToQuiz(quizId: number, question: string, choices: JSON, answer: number, explanation?: Nullable<string>): Question | Promise<Question>;
+    createNodeEdge(roadmapId: number, sourceNodeId: number, targetNodeId: number): NodeEdge | Promise<NodeEdge>;
+    deleteNodeEdge(id: number): DeleteNodeResult | Promise<DeleteNodeResult>;
+    generateNodeQuiz(nodeId: number): Quiz | Promise<Quiz>;
+    submitQuizAttempt(nodeId: number, answers: number[]): QuizResult | Promise<QuizResult>;
+    adaptNode(nodeId: number): Node[] | Promise<Node[]>;
     createRoadmap(input: CreateRoadmapInput): Roadmap | Promise<Roadmap>;
     updateRoadmap(input: UpdateRoadmapInput): Roadmap | Promise<Roadmap>;
     updateRoadmapAi(id: number, message: string): Node[] | Promise<Node[]>;
@@ -119,18 +127,41 @@ export interface IMutation {
 
 export interface Quiz {
     id: number;
-    title: string;
     nodeId: number;
-    questions?: Nullable<Question[]>;
+    title: string;
+    questions: QuizQuestion[];
 }
 
-export interface Question {
+export interface QuizQuestion {
     id: number;
-    quizId: number;
     question: string;
     choices: JSON;
-    answer: number;
+}
+
+export interface QuizAttempt {
+    id: number;
+    score: number;
+    passed: boolean;
+    createdAt: DateTime;
+    nodeId: number;
+    nodeTitle: string;
+    roadmapId: number;
+    roadmapTitle: string;
+}
+
+export interface QuizQuestionResult {
+    questionId: number;
+    correct: boolean;
+    correctAnswer: number;
     explanation?: Nullable<string>;
+}
+
+export interface QuizResult {
+    score: number;
+    passed: boolean;
+    passThreshold: number;
+    results: QuizQuestionResult[];
+    nodeCompleted: boolean;
 }
 
 export interface Roadmap {
@@ -143,6 +174,7 @@ export interface Roadmap {
     createdAt: DateTime;
     updatedAt: DateTime;
     nodes?: Nullable<Node[]>;
+    edges?: Nullable<NodeEdge[]>;
     learningProfile?: Nullable<RoadmapLearningProfile>;
     editLogs?: Nullable<RoadmapEditLog[]>;
 }
@@ -150,6 +182,7 @@ export interface Roadmap {
 export interface PublicRoadmap {
     id: number;
     userName: string;
+    userImage?: Nullable<string>;
     title: string;
     description?: Nullable<string>;
     isPublished: boolean;
@@ -192,6 +225,7 @@ export interface RoadmapCustomizationQuestion {
 export interface RoadmapStreamEvent {
     event: string;
     node?: Nullable<Node>;
+    edges?: Nullable<NodeEdge[]>;
     message?: Nullable<string>;
 }
 

@@ -1,0 +1,167 @@
+# Roadmap generation + viewer operations. Codegen emits typed `*Document`
+# nodes (e.g. GetRoadmapDocument) consumed via Apollo's hooks.
+
+fragment RoadmapNodeFields on Node {
+  id
+  roadmapId
+  title
+  description
+  tags
+  resources
+  isCompleted
+}
+
+fragment RoadmapEdgeFields on NodeEdge {
+  id
+  roadmapId
+  sourceNodeId
+  targetNodeId
+}
+
+query MyRoadmaps {
+  roadmaps {
+    id
+    title
+    description
+    isPublished
+    createdAt
+    updatedAt
+    nodes {
+      id
+      isCompleted
+    }
+  }
+}
+
+mutation DeleteRoadmap($id: Int!) {
+  deleteRoadmap(id: $id) {
+    success
+    message
+  }
+}
+
+query GetRoadmap($id: Int!) {
+  roadmap(id: $id) {
+    id
+    title
+    description
+    isPublished
+    nodes {
+      ...RoadmapNodeFields
+    }
+    edges {
+      ...RoadmapEdgeFields
+    }
+  }
+}
+
+query RoadmapCustomizationQuestions($message: String!) {
+  roadmapCustomizationQuestions(message: $message) {
+    question
+    choices
+  }
+}
+
+mutation CreateRoadmap($input: CreateRoadmapInput!) {
+  createRoadmap(input: $input) {
+    id
+    title
+    description
+  }
+}
+
+mutation GenerateRoadmapStream(
+  $roadmapId: Int!
+  $topic: String!
+  $customizationAnswers: [String!]
+) {
+  generateRoadmapStream(
+    roadmapId: $roadmapId
+    topic: $topic
+    customizationAnswers: $customizationAnswers
+  )
+}
+
+subscription RoadmapGenerationStream($roadmapId: Int!) {
+  roadmapGenerationStream(roadmapId: $roadmapId) {
+    event
+    message
+    node {
+      ...RoadmapNodeFields
+    }
+    edges {
+      ...RoadmapEdgeFields
+    }
+  }
+}
+
+mutation CreateNode($input: CreateNodeInput!) {
+  createNode(input: $input) {
+    ...RoadmapNodeFields
+  }
+}
+
+mutation UpdateNode($input: UpdateNodeInput!) {
+  updateNode(input: $input) {
+    ...RoadmapNodeFields
+  }
+}
+
+mutation DeleteNode($id: Int!) {
+  deleteNode(id: $id) {
+    success
+    message
+  }
+}
+
+query SearchNodeResources($topic: String!, $limit: Int, $type: String) {
+  searchNodeResources(topic: $topic, limit: $limit, type: $type)
+}
+
+mutation CreateNodeEdge(
+  $roadmapId: Int!
+  $sourceNodeId: Int!
+  $targetNodeId: Int!
+) {
+  createNodeEdge(
+    roadmapId: $roadmapId
+    sourceNodeId: $sourceNodeId
+    targetNodeId: $targetNodeId
+  ) {
+    ...RoadmapEdgeFields
+  }
+}
+
+mutation DeleteNodeEdge($id: Int!) {
+  deleteNodeEdge(id: $id) {
+    success
+    message
+  }
+}
+
+query PublicRoadmaps {
+  publicRoadmaps {
+    id
+    userName
+    userImage
+    title
+    description
+    isPublished
+    nodes {
+      id
+    }
+  }
+}
+
+mutation PublishRoadmap($id: Int!) {
+  publishRoadmap(id: $id) {
+    id
+    isPublished
+  }
+}
+
+mutation ForkRoadmap($id: Int!, $userId: Int!) {
+  forkRoadmap(id: $id, userId: $userId) {
+    id
+  }
+}

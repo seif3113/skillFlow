@@ -1,0 +1,27 @@
+# GraphQL codegen — generates fully-typed operations + TypedDocumentNodes
+# from the NestJS/Mercurius SDL. Consumed via Apollo's useQuery/useMutation.
+#
+# Two independent (self-contained) outputs:
+#   types.ts    — all schema types (typescript plugin) for general use
+#   graphql.ts  — operations + TypedDocumentNodes (self-contained; what hooks import)
+overwrite: true
+schema: "../api/src/**/*.graphql"
+documents: "src/**/*.graphql"
+generates:
+  src/lib/gql/types.ts:
+    plugins:
+      - typescript
+    config:
+      useTypeImports: true
+      scalars:
+        JSON: "any"
+        DateTime: "string"
+  src/lib/gql/graphql.ts:
+    plugins:
+      - typescript-operations
+      - typed-document-node
+    config:
+      useTypeImports: true
+      scalars:
+        JSON: "any"
+        DateTime: "string"

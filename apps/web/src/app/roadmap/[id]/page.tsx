@@ -152,29 +152,23 @@ export default function RoadmapPage() {
   }, []);
 
   // Mutations
-  const { mutateAsync: createRoadmap, isPending: isCreatingRoadmap } =
-    useCreateRoadmap();
-  const { mutateAsync: updateRoadmap, isPending: isUpdatingRoadmap } =
-    useUpdateRoadmap();
-  const { mutateAsync: deleteRoadmap, isPending: isDeletingRoadmap } =
-    useDeleteRoadmap();
-  const { mutateAsync: publishRoadmap, isPending: isPublishing } =
-    usePublishRoadmap();
+  const [, { loading: isCreatingRoadmap }] = useCreateRoadmap();
+  const [updateRoadmap, { loading: isUpdatingRoadmap }] = useUpdateRoadmap();
+  const [deleteRoadmap, { loading: isDeletingRoadmap }] = useDeleteRoadmap();
+  const [publishRoadmap, { loading: isPublishing }] = usePublishRoadmap();
 
-  const { mutateAsync: createNode, isPending: isCreatingNode } =
-    useCreateNode();
-  const { mutateAsync: updateNode, isPending: isUpdatingNode } =
-    useUpdateNode();
-  const { mutateAsync: deleteNode } = useDeleteNode();
-  const { mutateAsync: updateRoadmapAi } = useUpdateRoadmapAi();
+  const [createNode, { loading: isCreatingNode }] = useCreateNode();
+  const [updateNode, { loading: isUpdatingNode }] = useUpdateNode();
+  const [deleteNode] = useDeleteNode();
+  const [updateRoadmapAi] = useUpdateRoadmapAi();
   const [isApplyingEdits, setIsApplyingEdits] = useState(false);
   const isSavingNode = isCreatingNode || isUpdatingNode || isApplyingEdits;
 
   const handlePublish = async () => {
     if (!roadmapId) return;
     try {
-      const response = await publishRoadmap(roadmapId);
-      const nextState = response.publishRoadmap.isPublished;
+      const response = await publishRoadmap({ variables: { id: roadmapId } });
+      const nextState = response.data?.publishRoadmap.isPublished ?? false;
       setIsPublished(nextState);
       toast.success(
         nextState
@@ -320,9 +314,13 @@ export default function RoadmapPage() {
     setDescription(data.description);
     try {
       await updateRoadmap({
-        id: roadmapId,
-        title: data.title,
-        description: data.description,
+        variables: {
+          input: {
+            id: roadmapId,
+            title: data.title,
+            description: data.description,
+          },
+        },
       });
       toast.success("Roadmap updated successfully!");
     } catch (e) {
@@ -338,10 +336,10 @@ export default function RoadmapPage() {
       setOriginalEdges(edges);
 
       // Call the NestJS graphql updateRoadmapAi mutation
-      const resultNodes = await updateRoadmapAi({
-        id: roadmapId,
-        message: prompt,
+      const aiResult = await updateRoadmapAi({
+        variables: { id: roadmapId, message: prompt },
       });
+      const resultNodes = aiResult.data?.updateRoadmapAi ?? [];
 
       // 1. Heuristic ID assignment for nodes missing IDs
       const explicitlyReturnedIds = new Set(
@@ -471,7 +469,7 @@ export default function RoadmapPage() {
       );
       for (const node of deletedNodes) {
         if (node.id && !node.id.startsWith("temp-")) {
-          promises.push(deleteNode(parseInt(node.id, 10)));
+          await deleteNode({ variables: { id: parseInt(node.id, 10) } });
         }
       }
 
@@ -480,16 +478,18 @@ export default function RoadmapPage() {
       );
       for (const node of modifiedNodes) {
         if (node.id) {
-          promises.push(
-            updateNode({
-              id: parseInt(node.id, 10),
-              title: node.title,
-              description: node.description,
-              tags: node.tags,
-              resources: node.resources,
-              isCompleted: node.isCompleted,
-            })
-          );
+          await updateNode({
+            variables: {
+              input: {
+                id: parseInt(node.id, 10),
+                title: node.title,
+                description: node.description,
+                tags: node.tags,
+                resources: node.resources,
+                isCompleted: node.isCompleted,
+              },
+            },
+          });
         }
       }
 
@@ -497,16 +497,18 @@ export default function RoadmapPage() {
         (n) => (n as any).diffState === "added",
       );
       for (const node of addedNodes) {
-        promises.push(
-          createNode({
-            roadmapId,
-            title: node.title,
-            description: node.description,
-            tags: node.tags,
-            resources: node.resources,
-            isCompleted: node.isCompleted,
-          })
-        );
+        await createNode({
+          variables: {
+            input: {
+              roadmapId,
+              title: node.title,
+              description: node.description,
+              tags: node.tags,
+              resources: node.resources,
+              isCompleted: node.isCompleted,
+            },
+          },
+        });
       }
 
       await Promise.all(promises);
@@ -549,12 +551,16 @@ export default function RoadmapPage() {
     try {
       if (selectedNodeId) {
         await updateNode({
-          id: parseInt(selectedNodeId, 10),
-          title: nodeDraft.title,
-          description: nodeDraft.description,
-          tags: nodeDraft.tags,
-          resources: nodeDraft.resources,
-          isCompleted: nodeDraft.isCompleted,
+          variables: {
+            input: {
+              id: parseInt(selectedNodeId, 10),
+              title: nodeDraft.title,
+              description: nodeDraft.description,
+              tags: nodeDraft.tags,
+              resources: nodeDraft.resources,
+              isCompleted: nodeDraft.isCompleted,
+            },
+          },
         });
         setNodes((prev) =>
           prev.map((n) =>
@@ -564,14 +570,19 @@ export default function RoadmapPage() {
         toast.success("Node updated successfully!");
       } else {
         const response = await createNode({
-          roadmapId,
-          title: nodeDraft.title,
-          description: nodeDraft.description,
-          tags: nodeDraft.tags,
-          resources: nodeDraft.resources,
-          isCompleted: nodeDraft.isCompleted,
+          variables: {
+            input: {
+              roadmapId,
+              title: nodeDraft.title,
+              description: nodeDraft.description,
+              tags: nodeDraft.tags,
+              resources: nodeDraft.resources,
+              isCompleted: nodeDraft.isCompleted,
+            },
+          },
         });
-        const createdNode = response.createNode;
+        const createdNode = response.data?.createNode;
+        if (!createdNode) throw new Error("createNode returned no data");
         const newNodeId = String(createdNode.id);
         const newNode = { ...nodeDraft, id: newNodeId };
         setNodes((prev) => [...prev, newNode]);
@@ -601,7 +612,7 @@ export default function RoadmapPage() {
     if (!selectedNodeId) return;
 
     try {
-      await deleteNode(parseInt(selectedNodeId, 10));
+      await deleteNode({ variables: { id: parseInt(selectedNodeId, 10) } });
       setNodes((prev) => prev.filter((n) => n.id !== selectedNodeId));
 
       setEdges((prev) => {
@@ -630,7 +641,7 @@ export default function RoadmapPage() {
     if (!roadmapId) return;
 
     try {
-      await deleteRoadmap(roadmapId);
+      await deleteRoadmap({ variables: { id: roadmapId } });
       toast.success("Roadmap deleted successfully!");
       router.push("/dashboard");
     } catch (err) {

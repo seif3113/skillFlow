@@ -1,289 +1,64 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { gql } from "graphql-request";
-import { graphQLClient } from "@/lib/react-query";
+"use client";
+
+import { useQuery, useMutation } from "@apollo/client/react";
+import {
+  GetRoadmapDocument,
+  RoadmapsByUserDocument,
+  SearchNodeResourcesDocument,
+  PublicRoadmapsDocument,
+  CreateRoadmapDocument,
+  UpdateRoadmapDocument,
+  DeleteRoadmapDocument,
+  CreateNodeDocument,
+  UpdateNodeDocument,
+  DeleteNodeDocument,
+  PublishRoadmapDocument,
+  GetPublicRoadmapDocument,
+  RoadmapCustomizationQuestionsDocument,
+  NodeChatsDocument,
+  ForkRoadmapDocument,
+  UpdateRoadmapAiDocument,
+  SendNodeChatMessageDocument,
+} from "@/lib/gql/graphql";
 
 // ----------------------------------------------------------------------
-// GRAPHQL QUERIES & MUTATIONS
+// Typed wrappers over Apollo's generated documents. Query hooks unwrap the
+// Apollo result to the payload components actually need; mutation hooks just
+// return Apollo's native `useMutation` tuple (with refetch config baked in),
+// so callers use `const [fn, { loading }] = useX()` and `fn({ variables })`.
+// Everything sits on the normalized Apollo cache + fully-typed documents.
 // ----------------------------------------------------------------------
 
-const GET_ROADMAP = gql`
-  query GetRoadmap($id: Int!) {
-    roadmap(id: $id) {
-      id
-      title
-      description
-      isPublished
-      nodes {
-        id
-        title
-        description
-        tags
-        resources
-        isCompleted
-      }
-    }
-  }
-`;
-
-const GET_PUBLIC_ROADMAP = gql`
-  query GetPublicRoadmap($id: Int!) {
-    publicRoadmap(id: $id) {
-      id
-      title
-      description
-      isPublished
-      createdAt
-      updatedAt
-      nodes {
-        id
-        title
-        description
-        tags
-        resources
-        isCompleted
-      }
-    }
-  }
-`;
-
-const ROADMAPS_BY_USER = gql`
-  query RoadmapsByUser($userId: Int!) {
-    roadmapsByUser(userId: $userId) {
-      id
-      title
-      description
-      isPublished
-      createdAt
-      updatedAt
-      nodes {
-        id
-        isCompleted
-      }
-    }
-  }
-`;
-
-const SEARCH_NODE_RESOURCES = gql`
-  query SearchNodeResources($topic: String!, $limit: Int, $type: String) {
-    searchNodeResources(topic: $topic, limit: $limit, type: $type)
-  }
-`;
-
-const CREATE_ROADMAP = gql`
-  mutation CreateRoadmap($input: CreateRoadmapInput!) {
-    createRoadmap(input: $input) {
-      id
-      title
-      description
-    }
-  }
-`;
-
-const UPDATE_ROADMAP = gql`
-  mutation UpdateRoadmap($input: UpdateRoadmapInput!) {
-    updateRoadmap(input: $input) {
-      id
-      title
-      description
-    }
-  }
-`;
-
-const DELETE_ROADMAP = gql`
-  mutation DeleteRoadmap($id: Int!) {
-    deleteRoadmap(id: $id) {
-      success
-      message
-    }
-  }
-`;
-
-const CREATE_NODE = gql`
-  mutation CreateNode($input: CreateNodeInput!) {
-    createNode(input: $input) {
-      id
-      title
-      description
-      tags
-      resources
-      isCompleted
-    }
-  }
-`;
-
-const UPDATE_NODE = gql`
-  mutation UpdateNode($input: UpdateNodeInput!) {
-    updateNode(input: $input) {
-      id
-      title
-      description
-      tags
-      resources
-      isCompleted
-    }
-  }
-`;
-
-const DELETE_NODE = gql`
-  mutation DeleteNode($id: Int!) {
-    deleteNode(id: $id) {
-      success
-      message
-    }
-  }
-`;
-
-const PUBLISH_ROADMAP = gql`
-  mutation PublishRoadmap($id: Int!) {
-    publishRoadmap(id: $id) {
-      id
-      title
-      description
-      isPublished
-    }
-  }
-`;
-
-const ROADMAP_CUSTOMIZATION_QUESTIONS = gql`
-  query RoadmapCustomizationQuestions($message: String!) {
-    roadmapCustomizationQuestions(message: $message) {
-      question
-      choices
-    }
-  }
-`;
-
-const FORK_ROADMAP = gql`
-  mutation ForkRoadmap($id: Int!, $userId: Int!) {
-    forkRoadmap(id: $id, userId: $userId) {
-      id
-      title
-      description
-    }
-  }
-`;
-
-const GET_NODE_CHATS = gql`
-  query NodeChats($nodeId: Int!, $userId: Int!) {
-    nodeChats(nodeId: $nodeId, userId: $userId) {
-      id
-      nodeId
-      userId
-      sender
-      message
-      sentAt
-    }
-  }
-`;
-
-const SEND_NODE_CHAT_MESSAGE = gql`
-  mutation SendNodeChatMessage($nodeId: Int!, $userId: Int!, $sender: String!, $message: JSON!) {
-    sendNodeChatMessage(nodeId: $nodeId, userId: $userId, sender: $sender, message: $message) {
-      id
-      nodeId
-      userId
-      sender
-      message
-      sentAt
-    }
-  }
-`;
-
-const PUBLIC_ROADMAPS = gql`
-  query PublicRoadmaps {
-    publicRoadmaps {
-      id
-      userName
-      title
-      description
-      isPublished
-      createdAt
-      updatedAt
-    }
-  }
-`;
-
-const UPDATE_ROADMAP_AI = gql`
-  mutation UpdateRoadmapAi($id: Int!, $message: String!) {
-    updateRoadmapAi(id: $id, message: $message) {
-      id
-      title
-      description
-      resources
-      tags
-      intent
-    }
-  }
-`;
-
 // ----------------------------------------------------------------------
-// TYPES
-// ----------------------------------------------------------------------
-
-interface CreateRoadmapInput {
-  userId: number;
-  title: string;
-  description?: string;
-  learningProfileId?: number;
-  isPublished?: boolean;
-}
-
-interface UpdateRoadmapInput {
-  id: number;
-  userId?: number;
-  title?: string;
-  description?: string;
-  learningProfileId?: number;
-  isPublished?: boolean;
-}
-
-interface CreateNodeInput {
-  roadmapId: number;
-  title: string;
-  description?: string;
-  tags?: any;
-  resources?: any;
-  isCompleted?: boolean;
-}
-
-interface UpdateNodeInput {
-  id: number;
-  roadmapId?: number;
-  title?: string;
-  description?: string;
-  tags?: any;
-  resources?: any;
-  isCompleted?: boolean;
-}
-
-// ----------------------------------------------------------------------
-// HOOKS
+// QUERIES
 // ----------------------------------------------------------------------
 
 export function useGetRoadmap(id?: number) {
-  return useQuery({
-    queryKey: ["roadmap", id],
-    queryFn: async () => {
-      if (!id) return null;
-      const data: any = await graphQLClient.request(GET_ROADMAP, { id });
-      return data.roadmap;
-    },
-    enabled: !!id,
+  const { data, loading, error, refetch } = useQuery(GetRoadmapDocument, {
+    variables: { id: id ?? 0 },
+    skip: !id,
   });
+  return {
+    data: data?.roadmap ?? null,
+    isLoading: loading,
+    isFetching: loading,
+    error,
+    refetch,
+  };
 }
 
 export function useRoadmapsByUser(userId?: number) {
-  return useQuery({
-    queryKey: ["roadmaps", userId],
-    queryFn: async () => {
-      if (!userId) return [];
-      const data: any = await graphQLClient.request(ROADMAPS_BY_USER, {
-        userId,
-      });
-      return data.roadmapsByUser || [];
-    },
-    enabled: !!userId,
+  const { data, loading, error, refetch } = useQuery(RoadmapsByUserDocument, {
+    variables: { userId: userId ?? 0 },
+    skip: !userId,
   });
+  return {
+    data: data?.roadmapsByUser ?? [],
+    isLoading: loading,
+    isFetching: loading,
+    error,
+    refetch,
+  };
 }
 
 export function useSearchNodeResources(
@@ -291,207 +66,146 @@ export function useSearchNodeResources(
   limit: number = 5,
   type?: string,
 ) {
-  return useQuery({
-    queryKey: ["searchNodeResources", topic, limit, type],
-    queryFn: async () => {
-      if (!topic) return [];
-      const data: any = await graphQLClient.request(SEARCH_NODE_RESOURCES, {
-        topic,
-        limit,
-        type: type || undefined,
-      });
-      return data.searchNodeResources || [];
-    },
-    enabled: !!topic && topic.length > 2, // Only run if we have a real topic
+  const { data, loading, error } = useQuery(SearchNodeResourcesDocument, {
+    variables: { topic, limit, type: type || undefined },
+    // Only run once we have a meaningful topic.
+    skip: !topic || topic.length <= 2,
+    notifyOnNetworkStatusChange: true,
   });
+  return {
+    data: data?.searchNodeResources ?? [],
+    isLoading: loading,
+    isFetching: loading,
+    error,
+  };
 }
+
+export function useGetPublicRoadmaps() {
+  const { data, loading, error, refetch } = useQuery(PublicRoadmapsDocument);
+  return {
+    data: data?.publicRoadmaps ?? [],
+    isLoading: loading,
+    isFetching: loading,
+    error,
+    refetch,
+  };
+}
+
+// ----------------------------------------------------------------------
+// MUTATIONS
+// ----------------------------------------------------------------------
 
 export function useCreateRoadmap() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: CreateRoadmapInput) => {
-      return await graphQLClient.request(CREATE_ROADMAP, { input });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["roadmaps"] });
-    },
+  return useMutation(CreateRoadmapDocument, {
+    refetchQueries: ["RoadmapsByUser"],
   });
 }
 
+// Normalized cache auto-updates the roadmap entity by id; no refetch needed.
 export function useUpdateRoadmap() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: UpdateRoadmapInput) => {
-      return await graphQLClient.request(UPDATE_ROADMAP, { input });
-    },
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ["roadmaps"] });
-      if (data?.updateRoadmap?.id) {
-        queryClient.invalidateQueries({
-          queryKey: ["roadmap", data.updateRoadmap.id],
-        });
-      }
-    },
-  });
+  return useMutation(UpdateRoadmapDocument);
 }
 
 export function useDeleteRoadmap() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: number) => {
-      return await graphQLClient.request(DELETE_ROADMAP, { id });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["roadmaps"] });
-    },
+  return useMutation(DeleteRoadmapDocument, {
+    refetchQueries: ["RoadmapsByUser", "PublicRoadmaps"],
   });
 }
 
 export function useCreateNode() {
-  return useMutation({
-    mutationFn: async (input: CreateNodeInput) => {
-      return await graphQLClient.request(CREATE_NODE, { input });
-    },
-  });
+  return useMutation(CreateNodeDocument);
 }
 
 export function useUpdateNode() {
-  return useMutation({
-    mutationFn: async (input: UpdateNodeInput) => {
-      return await graphQLClient.request(UPDATE_NODE, { input });
-    },
-  });
+  return useMutation(UpdateNodeDocument);
 }
 
 export function useDeleteNode() {
-  return useMutation({
-    mutationFn: async (id: number) => {
-      return await graphQLClient.request(DELETE_NODE, { id });
-    },
-  });
+  return useMutation(DeleteNodeDocument);
 }
 
 export function usePublishRoadmap() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: number) => {
-      return await graphQLClient.request(PUBLISH_ROADMAP, { id });
-    },
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({
-        queryKey: ["roadmap", data.publishRoadmap.id],
-      });
-    },
+  return useMutation(PublishRoadmapDocument, {
+    refetchQueries: ["PublicRoadmaps"],
   });
 }
+
+// ----------------------------------------------------------------------
+// QUERIES / MUTATIONS re-added on Apollo after the main merge.
+// These back the AI-chat, AI-edit, fork, and customization-question
+// features that live on `main`. Shapes mirror the previous react-query
+// hooks so the consuming components compile unchanged.
+// ----------------------------------------------------------------------
 
 export function useGetPublicRoadmap(id?: number) {
-  return useQuery({
-    queryKey: ["publicRoadmap", id],
-    queryFn: async () => {
-      if (!id) return null;
-      const data: any = await graphQLClient.request(GET_PUBLIC_ROADMAP, { id });
-      return data.publicRoadmap;
-    },
-    enabled: !!id,
+  const { data, loading, error, refetch } = useQuery(GetPublicRoadmapDocument, {
+    variables: { id: id ?? 0 },
+    skip: !id,
   });
-}
-
-export function useForkRoadmap() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, userId }: { id: number; userId: number }) => {
-      return await graphQLClient.request(FORK_ROADMAP, { id, userId });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["roadmaps"] });
-    },
-  });
-}
-
-export function useGetPublicRoadmaps() {
-  return useQuery({
-    queryKey: ["publicRoadmaps"],
-    queryFn: async () => {
-      const data: any = await graphQLClient.request(PUBLIC_ROADMAPS);
-      return data.publicRoadmaps || [];
-    },
-  });
+  return {
+    data: data?.publicRoadmap ?? null,
+    isLoading: loading,
+    isFetching: loading,
+    error,
+    refetch,
+  };
 }
 
 export function useRoadmapCustomizationQuestions(
   message: string,
   enabled: boolean = false,
 ) {
-  return useQuery({
-    queryKey: ["roadmapCustomizationQuestions", message],
-    queryFn: async () => {
-      if (!message) return [];
-      const data: any = await graphQLClient.request(
-        ROADMAP_CUSTOMIZATION_QUESTIONS,
-        { message },
-      );
-      return data.roadmapCustomizationQuestions || [];
+  const { data, loading, error, refetch } = useQuery(
+    RoadmapCustomizationQuestionsDocument,
+    {
+      variables: { message },
+      skip: !enabled || !message,
     },
-    enabled: enabled && !!message,
+  );
+  // Callers `await fetchQuestions()` then read `res.data.length`, so unwrap the
+  // Apollo result down to the questions array to match the old hook's contract.
+  const unwrappedRefetch = async () => {
+    const res = await refetch();
+    return { ...res, data: res.data?.roadmapCustomizationQuestions ?? [] };
+  };
+  return {
+    data: data?.roadmapCustomizationQuestions ?? [],
+    isLoading: loading,
+    isFetching: loading,
+    error,
+    refetch: unwrappedRefetch,
+  };
+}
+
+export function useNodeChats(nodeId?: number, userId?: number) {
+  const { data, loading, error, refetch } = useQuery(NodeChatsDocument, {
+    variables: { nodeId: nodeId ?? 0, userId: userId ?? 0 },
+    skip: !nodeId || !userId,
+  });
+  return {
+    data: data?.nodeChats ?? [],
+    isLoading: loading,
+    isFetching: loading,
+    error,
+    refetch,
+  };
+}
+
+export function useForkRoadmap() {
+  return useMutation(ForkRoadmapDocument, {
+    refetchQueries: ["RoadmapsByUser", "PublicRoadmaps"],
   });
 }
 
 export function useUpdateRoadmapAi() {
-  return useMutation({
-    mutationFn: async ({ id, message }: { id: number; message: string }) => {
-      const response: any = await graphQLClient.request(UPDATE_ROADMAP_AI, {
-        id,
-        message,
-      });
-      return response.updateRoadmapAi;
-    },
-  });
+  return useMutation(UpdateRoadmapAiDocument);
 }
 
-export function useNodeChats(nodeId?: number, userId?: number) {
-  return useQuery({
-    queryKey: ["nodeChats", nodeId, userId],
-    queryFn: async () => {
-      if (!nodeId || !userId) return [];
-      const data: any = await graphQLClient.request(GET_NODE_CHATS, {
-        nodeId,
-        userId,
-      });
-      return data.nodeChats || [];
-    },
-    enabled: !!nodeId && !!userId,
-  });
-}
-
+// The backend persists both the user message and the AI reply, so refetch the
+// chat thread (and wait for it) to surface the assistant's response.
 export function useSendNodeChatMessage() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({
-      nodeId,
-      userId,
-      sender,
-      message,
-    }: {
-      nodeId: number;
-      userId: number;
-      sender: string;
-      message: any;
-    }) => {
-      const response: any = await graphQLClient.request(SEND_NODE_CHAT_MESSAGE, {
-        nodeId,
-        userId,
-        sender,
-        message,
-      });
-      return response.sendNodeChatMessage;
-    },
-    onSuccess: (data: any) => {
-      if (data?.nodeId && data?.userId) {
-        queryClient.invalidateQueries({
-          queryKey: ["nodeChats", data.nodeId, data.userId],
-        });
-      }
-    },
+  return useMutation(SendNodeChatMessageDocument, {
+    refetchQueries: ["NodeChats"],
+    awaitRefetchQueries: true,
   });
 }

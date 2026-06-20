@@ -15,7 +15,7 @@ export default function PublicRoadmapsPage() {
   const router = useRouter();
   const { data: roadmaps, isLoading } = useGetPublicRoadmaps();
   const { data: session } = authClient.useSession();
-  const { mutate: forkRoadmap } = useForkRoadmap();
+  const [forkRoadmap] = useForkRoadmap();
   const [forkingId, setForkingId] = useState<number | null>(null);
 
   const handleFork = (roadmapId: number) => {
@@ -25,20 +25,18 @@ export default function PublicRoadmapsPage() {
       return;
     }
     setForkingId(roadmapId);
-    forkRoadmap(
-      { id: roadmapId, userId: parseInt(session.user.id, 10) },
-      {
-        onSuccess: (res: any) => {
-          toast.success("Roadmap forked successfully!");
-          router.push(`/roadmap/${res.forkRoadmap.id}`);
-        },
-        onError: (err) => {
-          console.error(err);
-          toast.error("Failed to fork roadmap.");
-          setForkingId(null);
-        },
+    forkRoadmap({
+      variables: { id: roadmapId, userId: parseInt(session.user.id, 10) },
+      onCompleted: (data) => {
+        toast.success("Roadmap forked successfully!");
+        router.push(`/roadmap/${data.forkRoadmap.id}`);
       },
-    );
+      onError: (err) => {
+        console.error(err);
+        toast.error("Failed to fork roadmap.");
+        setForkingId(null);
+      },
+    });
   };
 
   return (

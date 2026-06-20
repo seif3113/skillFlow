@@ -1,26 +1,61 @@
+# A quiz for a node. Questions are returned WITHOUT the correct answer — the
+# answer never leaves the server until an attempt is graded.
 type Quiz {
   id: Int!
-  title: String!
   nodeId: Int!
-  questions: [Question!]
+  title: String!
+  questions: [QuizQuestion!]!
 }
 
-type Question {
+type QuizQuestion {
   id: Int!
-  quizId: Int!
   question: String!
   choices: JSON!
-  answer: Int!
+}
+
+# A graded quiz attempt with node + roadmap context, for the progress page.
+type QuizAttempt {
+  id: Int!
+  score: Int!
+  passed: Boolean!
+  createdAt: DateTime!
+  nodeId: Int!
+  nodeTitle: String!
+  roadmapId: Int!
+  roadmapTitle: String!
+}
+
+# Per-question outcome, revealed only in the graded result.
+type QuizQuestionResult {
+  questionId: Int!
+  correct: Boolean!
+  correctAnswer: Int!
   explanation: String
 }
 
+type QuizResult {
+  score: Int!
+  passed: Boolean!
+  passThreshold: Int!
+  results: [QuizQuestionResult!]!
+  # Whether passing this attempt completed the node (hard gate).
+  nodeCompleted: Boolean!
+}
+
 extend type Query {
-  quizzes: [Quiz!]!
-  quiz(id: Int!): Quiz
-  questionsByQuiz(quizId: Int!): [Question!]!
+  # The node's quiz, or null if one hasn't been generated yet.
+  nodeQuiz(nodeId: Int!): Quiz
+  # The current user's quiz attempts (newest first) for progress analytics.
+  myQuizAttempts: [QuizAttempt!]!
 }
 
 extend type Mutation {
-  createQuiz(title: String!, nodeId: Int!): Quiz!
-  addQuestionToQuiz(quizId: Int!, question: String!, choices: JSON!, answer: Int!, explanation: String): Question!
+  # AI-generate the quiz for a node (idempotent: returns the existing one).
+  generateNodeQuiz(nodeId: Int!): Quiz!
+  # Grade an attempt server-side; a passing attempt completes the node.
+  submitQuizAttempt(nodeId: Int!, answers: [Int!]!): QuizResult!
+  # Adaptive learning: after a failed attempt, generate remedial prerequisite
+  # nodes from the missed questions and link them under the node. Returns the
+  # newly created remedial nodes.
+  adaptNode(nodeId: Int!): [Node!]!
 }

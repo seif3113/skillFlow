@@ -628,7 +628,7 @@ class NLPController(BaseController):
         topic = (topic or "").strip()
 
         if not topic:
-            return None, None
+            return None, None, None
 
         customization_str = "None provided"
         if customization_answers:
@@ -670,7 +670,24 @@ class NLPController(BaseController):
             topic_objects = topic_objects[:8]
         except Exception as e:
             logger.error(f"Failed to parse sub-topics: {e}")
-            return None, None
+            return None, None, None
+
+        # Build the prerequisite plan from Pass 1, aligned to sub-topic order.
+        # The streaming endpoint injects each node's `ref`/`dependsOn` by
+        # position, so the dependency graph stays deterministic regardless of
+        # how the Pass 2 (resource compilation) model formats its output.
+        dependency_plan = []
+        for i, obj in enumerate(topic_objects):
+            ref = str(obj.get("id") or (i + 1))
+            raw_deps = obj.get("dependsOn")
+            if raw_deps is None:
+                raw_deps = obj.get("depends_on") or []
+            deps = (
+                [str(d) for d in raw_deps if d is not None]
+                if isinstance(raw_deps, list)
+                else []
+            )
+            dependency_plan.append({"ref": ref, "dependsOn": deps})
 
         # Step 2: Batch vector search with concise, sub-topic specific queries.
         search_queries = [
@@ -730,7 +747,7 @@ class NLPController(BaseController):
             )
             comp_user_prompt = f"Compact roadmap context: {compact_context}"
 
-        return comp_system_prompt, comp_user_prompt
+        return comp_system_prompt, comp_user_prompt, dependency_plan
 
     def generate_customized_roadmap_rag(
         self, topic: str, customization_answers: list = None
@@ -738,7 +755,7 @@ class NLPController(BaseController):
         """
         Generates a customized roadmap with compact RAG context and pre-selected resources.
         """
-        comp_system_prompt, comp_user_prompt = self._build_customized_roadmap_compilation_prompt(
+        comp_system_prompt, comp_user_prompt, _ = self._build_customized_roadmap_compilation_prompt(
             topic=topic, customization_answers=customization_answers
         )
 
@@ -769,13 +786,18 @@ class NLPController(BaseController):
         Streams the final roadmap JSON text after the RAG context has been prepared.
         This is intentionally separate from generate_customized_roadmap_rag so only
         the streaming endpoint opts into provider streaming.
+
+        Returns a tuple of (token_stream, dependency_plan) where dependency_plan
+        is the ordered list of {ref, dependsOn} the endpoint injects per node.
         """
-        comp_system_prompt, comp_user_prompt = self._build_customized_roadmap_compilation_prompt(
-            topic=topic, customization_answers=customization_answers
+        comp_system_prompt, comp_user_prompt, dependency_plan = (
+            self._build_customized_roadmap_compilation_prompt(
+                topic=topic, customization_answers=customization_answers
+            )
         )
 
         if not comp_system_prompt or not comp_user_prompt:
-            return None
+            return None, None
 
         chat_history = [
             self.generation_client.construct_prompt(
@@ -785,12 +807,13 @@ class NLPController(BaseController):
         ]
 
         try:
-            return self.generation_client.generate_text_stream(
+            stream = self.generation_client.generate_text_stream(
                 prompt=comp_user_prompt, chat_history=chat_history
             )
+            return stream, dependency_plan
         except NotImplementedError:
             logger.error("Configured generation provider does not support streaming.")
-            return None
+            return None, None
 
     def edit_roadmap_rag(self, prompt: str, roadmap: list):
         """
@@ -986,3 +1009,165 @@ class NLPController(BaseController):
         )
 
         return answer
+
+    def generate_remedial_subtopics(
+        self,
+        node_name: str,
+        node_description: str = "",
+        missed_questions: list = None,
+        num_remedials: int = 3,
+    ):
+        """
+        Given the quiz questions a learner missed on a node, infer the missing
+        prerequisite concepts and design focused remedial sub-topics that would
+        let them pass. Returns a list of dicts: {title, description}.
+        """
+        node_name = (node_name or "").strip()
+        missed_questions = missed_questions or []
+        if not node_name or not missed_questions:
+            return []
+
+        missed_summary = "\n\n".join(
+            [
+                "\n".join(
+                    [
+                        f"Question: {q.get('question', '')}",
+                        f"Correct answer: {q.get('correct_choice', '')}",
+                        f"Learner chose: {q.get('user_choice', '')}",
+                        f"Why: {q.get('explanation', '') or 'N/A'}",
+                    ]
+                )
+                for q in missed_questions
+            ]
+        )
+
+        system_prompt = "\n".join(
+            [
+                "You are an expert curriculum designer.",
+                "A learner failed a quiz on a topic. From the questions they missed,",
+                "infer the underlying prerequisite concepts they lack and design",
+                "focused remedial sub-topics that, once learned, would let them pass.",
+                "",
+                "### RULES:",
+                f"1. Return at most {num_remedials} sub-topics — the fewest needed to close the gaps.",
+                "2. Each is a concrete prerequisite concept, more foundational than the main topic.",
+                "3. Do not restate the main topic; target the specific gaps shown.",
+                "4. 'title' is short (<= 80 chars). 'description' is 1-2 sentences.",
+                "",
+                "### OUTPUT:",
+                "Return ONLY a valid JSON array, no prose, of objects shaped:",
+                '{"title": "...", "description": "..."}',
+            ]
+        )
+
+        user_prompt = "\n".join(
+            [
+                f"Main topic: {node_name}",
+                f"Main topic description: {node_description or 'N/A'}",
+                "",
+                f"Questions the learner missed:\n{missed_summary}",
+                "",
+                "Return the remedial sub-topics JSON array.",
+            ]
+        )
+
+        chat_history = [
+            self.generation_client.construct_prompt(
+                prompt=system_prompt,
+                role=self.generation_client.enums.SYSTEM.value,
+            )
+        ]
+
+        raw = self.generation_client.generate_text(
+            prompt=user_prompt, chat_history=chat_history
+        )
+
+        try:
+            parsed = self._extract_json_from_llm_response(raw)
+        except Exception as e:
+            logger.error(f"Failed to parse remedial JSON: {e}")
+            return []
+
+        if not isinstance(parsed, list):
+            return []
+        return parsed
+
+    def generate_node_quiz(
+        self, node_name: str, node_description: str = "", num_questions: int = 5
+    ):
+        """
+        Generates a multiple-choice quiz for a roadmap node, grounded in the
+        node's vector-DB context when available. Returns a list of dicts:
+        {question, choices, answer (0-based index), explanation}.
+        """
+        node_name = (node_name or "").strip()
+        if not node_name:
+            return []
+
+        # Ground the quiz in retrieved context for this topic, when available.
+        retrieved_documents = self.search_vector_db_collection(
+            text=node_name, limit=3
+        )
+        context_text = ""
+        if retrieved_documents:
+            context_text = "\n".join(
+                [
+                    (
+                        doc.payload.get("text", "")
+                        if hasattr(doc, "payload")
+                        else getattr(doc, "text", str(doc))
+                    )
+                    for doc in retrieved_documents
+                ]
+            )
+
+        system_prompt = "\n".join(
+            [
+                "You are an expert assessment designer.",
+                "Create a multiple-choice quiz that tests genuine understanding of the given topic.",
+                "",
+                "### RULES:",
+                "1. Each question has exactly 4 choices.",
+                "2. Exactly one choice is correct.",
+                "3. 'answer' is the 0-based index (0-3) of the correct choice.",
+                "4. 'explanation' briefly says why the correct choice is right.",
+                "5. Vary difficulty; avoid trivially obvious or trick questions.",
+                "",
+                "### OUTPUT:",
+                "Return ONLY a valid JSON array, no prose, of objects shaped:",
+                '{"question": "...", "choices": ["a","b","c","d"], "answer": 0, "explanation": "..."}',
+            ]
+        )
+
+        user_prompt = "\n".join(
+            [
+                f"Topic: {node_name}",
+                f"Topic description: {node_description or 'N/A'}",
+                f"Number of questions: {num_questions}",
+                "",
+                f"Context (optional grounding):\n{context_text}",
+                "",
+                "Return the quiz JSON array.",
+            ]
+        )
+
+        chat_history = [
+            self.generation_client.construct_prompt(
+                prompt=system_prompt,
+                role=self.generation_client.enums.SYSTEM.value,
+            )
+        ]
+
+        raw = self.generation_client.generate_text(
+            prompt=user_prompt, chat_history=chat_history
+        )
+
+        try:
+            parsed = self._extract_json_from_llm_response(raw)
+        except Exception as e:
+            logger.error(f"Failed to parse quiz JSON: {e}")
+            return []
+
+        if not isinstance(parsed, list):
+            return []
+        return parsed

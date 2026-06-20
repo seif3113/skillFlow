@@ -48,9 +48,9 @@ function Dashboard() {
   const { data: roadmaps, isLoading: isLoadingRoadmaps } = useRoadmapsByUser(
     session?.user?.id ? parseInt(session.user.id, 10) : undefined,
   );
-  const { mutate: deleteRoadmap } = useDeleteRoadmap();
-  const { mutateAsync: updateRoadmap } = useUpdateRoadmap();
-  const { mutateAsync: createRoadmap } = useCreateRoadmap();
+  const [deleteRoadmap] = useDeleteRoadmap();
+  const [updateRoadmap] = useUpdateRoadmap();
+  const [createRoadmap] = useCreateRoadmap();
 
   const { refetch: fetchQuestions, isFetching: isQuestionsLoading } =
     useRoadmapCustomizationQuestions(aiPrompt, runQuery);
@@ -61,8 +61,9 @@ function Dashboard() {
 
   const confirmDelete = () => {
     if (roadmapToDelete) {
-      deleteRoadmap(roadmapToDelete, {
-        onSuccess: () => {
+      deleteRoadmap({
+        variables: { id: roadmapToDelete },
+        onCompleted: () => {
           toast.success("Roadmap deleted successfully!");
         },
         onError: (err) => {
@@ -78,12 +79,18 @@ function Dashboard() {
     if (!session?.user?.id) return;
     try {
       const response = await createRoadmap({
-        title: "Untitled",
-        description: "",
-        userId: parseInt(session.user.id, 10),
+        variables: {
+          input: {
+            title: "Untitled",
+            description: "",
+            userId: parseInt(session.user.id, 10),
+          },
+        },
       });
+      const id = response.data?.createRoadmap.id;
+      if (!id) throw new Error("createRoadmap returned no data");
       toast.success("Manual roadmap created successfully!");
-      router.push(`/roadmap/${response.createRoadmap.id}`);
+      router.push(`/roadmap/${id}`);
     } catch (error) {
       console.error("Failed to create roadmap", error);
       toast.error("Failed to create roadmap.");
@@ -111,13 +118,17 @@ function Dashboard() {
       setIsCreatingAiRoadmap(true);
       try {
         const response = await createRoadmap({
-          title: aiPrompt.trim(),
-          userId: parseInt(session.user.id, 10),
+          variables: {
+            input: {
+              title: aiPrompt.trim(),
+              userId: parseInt(session.user.id, 10),
+            },
+          },
         });
+        const id = response.data?.createRoadmap.id;
+        if (!id) throw new Error("createRoadmap returned no data");
         router.push(
-          `/roadmap/${response.createRoadmap.id}?topic=${encodeURIComponent(
-            aiPrompt.trim()
-          )}`
+          `/roadmap/${id}?topic=${encodeURIComponent(aiPrompt.trim())}`
         );
       } catch (error) {
         console.error("Failed to create roadmap", error);
@@ -133,13 +144,19 @@ function Dashboard() {
     setIsCreatingAiRoadmap(true);
     try {
       const response = await createRoadmap({
-        title: aiPrompt.trim() || "Tailored Roadmap",
-        userId: parseInt(session.user.id, 10),
+        variables: {
+          input: {
+            title: aiPrompt.trim() || "Tailored Roadmap",
+            userId: parseInt(session.user.id, 10),
+          },
+        },
       });
+      const id = response.data?.createRoadmap.id;
+      if (!id) throw new Error("createRoadmap returned no data");
       setIsCustomizationOpen(false);
       const formattedAnswers = customizationQuestions.map((q, idx) => answers[idx]);
       router.push(
-        `/roadmap/${response.createRoadmap.id}?topic=${encodeURIComponent(
+        `/roadmap/${id}?topic=${encodeURIComponent(
           aiPrompt.trim()
         )}&answers=${encodeURIComponent(JSON.stringify(formattedAnswers))}`
       );
@@ -158,9 +175,13 @@ function Dashboard() {
     if (!roadmapToEdit) return;
     try {
       await updateRoadmap({
-        id: roadmapToEdit.id,
-        title: data.title,
-        description: data.description,
+        variables: {
+          input: {
+            id: roadmapToEdit.id,
+            title: data.title,
+            description: data.description,
+          },
+        },
       });
       setRoadmapToEdit(null);
       toast.success("Roadmap updated successfully!");

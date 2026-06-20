@@ -13,7 +13,11 @@ import { type CreateRoadmapInput } from './dto/create-roadmap.input';
 import { type UpdateRoadmapInput } from './dto/update-roadmap.input';
 import { NodeService } from '../node/node.service';
 import { type PublicRoadmap } from '../../graphql';
-import { AllowAnonymous } from '@thallesp/nestjs-better-auth';
+import {
+  AllowAnonymous,
+  Session,
+  type UserSession,
+} from '@thallesp/nestjs-better-auth';
 import { type RoadmapType } from './types/roadmap.types';
 
 const pubSub = new PubSub();
@@ -30,19 +34,26 @@ export class RoadmapResolver {
     return this.nodeService.findByRoadmapId(roadmap.id);
   }
 
+  @ResolveField('edges')
+  resolveEdges(@Parent() roadmap: RoadmapType) {
+    return this.nodeService.findEdgesByRoadmapId(roadmap.id);
+  }
+
   @Query('roadmaps')
-  getRoadmaps() {
-    return this.roadmapService.findAll();
+  getRoadmaps(@Session() session: UserSession) {
+    // Scope to the caller; never expose other users' roadmaps.
+    return this.roadmapService.findByUserId(Number(session.user.id));
   }
 
   @Query('roadmap')
-  getRoadmap(@Args('id') id: number) {
-    return this.roadmapService.findById(id);
+  getRoadmap(@Args('id') id: number, @Session() session: UserSession) {
+    return this.roadmapService.findByIdForUser(id, Number(session.user.id));
   }
 
   @Query('roadmapsByUser')
-  getRoadmapsByUser(@Args('userId') userId: number) {
-    return this.roadmapService.findByUserId(userId);
+  getRoadmapsByUser(@Session() session: UserSession) {
+    // Always the authenticated user; the client-supplied id arg is ignored.
+    return this.roadmapService.findByUserId(Number(session.user.id));
   }
 
   @Query('roadmapsByLearningProfile')
@@ -58,39 +69,58 @@ export class RoadmapResolver {
   }
 
   @Mutation('createRoadmap')
-  createRoadmap(@Args('input') input: CreateRoadmapInput) {
-    return this.roadmapService.create(input);
+  createRoadmap(
+    @Args('input') input: CreateRoadmapInput,
+    @Session() session: UserSession,
+  ) {
+    return this.roadmapService.create(input, Number(session.user.id));
   }
 
   @Mutation('updateRoadmap')
-  updateRoadmap(@Args('input') input: UpdateRoadmapInput) {
-    return this.roadmapService.update(input);
+  updateRoadmap(
+    @Args('input') input: UpdateRoadmapInput,
+    @Session() session: UserSession,
+  ) {
+    return this.roadmapService.update(input, Number(session.user.id));
   }
 
   @Mutation('updateRoadmapAi')
-  updateRoadmapAi(@Args('id') id: number, @Args('message') message: string) {
-    return this.roadmapService.updateRoadmapAi(id, message);
+  updateRoadmapAi(
+    @Args('id') id: number,
+    @Args('message') message: string,
+    @Session() session: UserSession,
+  ) {
+    return this.roadmapService.updateRoadmapAi(
+      id,
+      message,
+      Number(session.user.id),
+    );
   }
 
   @Mutation('deleteRoadmap')
-  deleteRoadmap(@Args('id') id: number) {
-    return this.roadmapService.delete(id);
+  deleteRoadmap(@Args('id') id: number, @Session() session: UserSession) {
+    return this.roadmapService.delete(id, Number(session.user.id));
   }
 
   @Mutation('publishRoadmap')
-  publishRoadmap(@Args('id') id: number) {
-    return this.roadmapService.togglePublish(id);
+  publishRoadmap(@Args('id') id: number, @Session() session: UserSession) {
+    return this.roadmapService.togglePublish(id, Number(session.user.id));
   }
 
   @Mutation('forkRoadmap')
-  async forkRoadmap(@Args('id') id: number, @Args('userId') userId: number) {
-    const original = await this.roadmapService.findById(id);
-    const forked = await this.roadmapService.create({
+  async forkRoadmap(@Args('id') id: number, @Session() session: UserSession) {
+    const userId = Number(session.user.id);
+    // Can only fork roadmaps you can read (your own or a published one).
+    const original = await this.roadmapService.findByIdForUser(id, userId);
+    const forked = await this.roadmapService.create(
+      {
+        userId,
+        title: `${original.title} (Forked)`,
+        description: original.description ?? undefined,
+        isPublished: false,
+      },
       userId,
-      title: `${original.title} (Forked)`,
-      description: original.description ?? undefined,
-      isPublished: false,
-    });
+    );
 
     const originalNodes = await this.nodeService.findByRoadmapId(id);
     for (const node of originalNodes) {
@@ -121,8 +151,11 @@ export class RoadmapResolver {
   async generateRoadmapStream(
     @Args('roadmapId') roadmapId: number,
     @Args('topic') topic: string,
+    @Session() session: UserSession,
     @Args('customizationAnswers') customizationAnswers?: string[],
   ) {
+    // Only the roadmap's owner may generate into it.
+    await this.roadmapService.assertOwner(roadmapId, Number(session.user.id));
     const ragUri = (process.env.RAG_URI || 'http://localhost:8000').replace(/\/$/, '');
     let targetUrl = '';
     if (ragUri.endsWith('/api/v1')) {
@@ -132,7 +165,69 @@ export class RoadmapResolver {
     }
 
     // Start streaming asynchronously
-    (async () => {
+    void (async () => {
+      // Maps RAG-local refs -> saved DB node ids so we can wire dependency
+      // edges. RAG emits nodes in topological order, so a node's prerequisites
+      // are already saved by the time we process it.
+      const refToId = new Map<string, number>();
+
+      const processNode = async (rawNode: any) => {
+        const savedNode = await this.nodeService.create({
+          roadmapId,
+          title: rawNode.title,
+          description: rawNode.description || null,
+          tags: rawNode.tags || [],
+          resources: rawNode.resources || [],
+          isCompleted: false,
+        });
+
+        if (rawNode.ref != null) {
+          refToId.set(String(rawNode.ref), savedNode.id);
+        }
+
+        // Wire prerequisite edges from `dependsOn` refs (unknown refs ignored).
+        const edges: Array<{
+          id: number;
+          roadmapId: number;
+          sourceNodeId: number;
+          targetNodeId: number;
+        }> = [];
+        const dependsOn: unknown[] = Array.isArray(rawNode.dependsOn)
+          ? rawNode.dependsOn
+          : [];
+        for (const depRef of dependsOn) {
+          const sourceId = refToId.get(String(depRef));
+          if (sourceId) {
+            edges.push(
+              await this.nodeService.createEdge(
+                roadmapId,
+                sourceId,
+                savedNode.id,
+              ),
+            );
+          }
+        }
+
+        pubSub.publish(`roadmapGenerationStream_${roadmapId}`, {
+          roadmapGenerationStream: {
+            roadmapId,
+            eventData: { event: 'node', node: savedNode, edges },
+          },
+        });
+      };
+
+      const handleLine = async (line: string) => {
+        if (!line) return;
+        try {
+          const data = JSON.parse(line);
+          if (data.event === 'node' && data.node) {
+            await processNode(data.node);
+          }
+        } catch (e) {
+          console.error('Error parsing/saving node from stream:', e);
+        }
+      };
+
       try {
         const response = await fetch(targetUrl, {
           method: 'POST',
@@ -144,7 +239,9 @@ export class RoadmapResolver {
         });
 
         if (!response.ok || !response.body) {
-          throw new Error(`Failed to fetch from RAG service. Status: ${response.status}`);
+          throw new Error(
+            `Failed to fetch from RAG service. Status: ${response.status}`,
+          );
         }
 
         const reader = response.body.getReader();
@@ -157,65 +254,16 @@ export class RoadmapResolver {
 
           buffer += decoder.decode(value || new Uint8Array(), { stream: true });
           let boundary = buffer.indexOf('\n');
-
           while (boundary !== -1) {
             const line = buffer.substring(0, boundary).trim();
             buffer = buffer.substring(boundary + 1);
             boundary = buffer.indexOf('\n');
-
-            if (line) {
-              try {
-                const data = JSON.parse(line);
-                if (data.event === 'node' && data.node) {
-                  const rawNode = data.node;
-                  const savedNode = await this.nodeService.create({
-                    roadmapId,
-                    title: rawNode.title,
-                    description: rawNode.description || null,
-                    tags: rawNode.tags || [],
-                    resources: rawNode.resources || [],
-                    isCompleted: false,
-                  });
-
-                  pubSub.publish(`roadmapGenerationStream_${roadmapId}`, {
-                    roadmapGenerationStream: {
-                      roadmapId,
-                      eventData: { event: 'node', node: savedNode },
-                    },
-                  });
-                } else if (data.event === 'done') {
-                  // Done event handled below
-                }
-              } catch (e) {
-                console.error('Error parsing/saving node from stream:', e);
-              }
-            }
+            await handleLine(line);
           }
         }
 
         if (buffer.trim()) {
-          try {
-            const data = JSON.parse(buffer.trim());
-            if (data.event === 'node' && data.node) {
-              const rawNode = data.node;
-              const savedNode = await this.nodeService.create({
-                roadmapId,
-                title: rawNode.title,
-                description: rawNode.description || null,
-                tags: rawNode.tags || [],
-                resources: rawNode.resources || [],
-                isCompleted: false,
-              });
-              pubSub.publish(`roadmapGenerationStream_${roadmapId}`, {
-                roadmapGenerationStream: {
-                  roadmapId,
-                  eventData: { event: 'node', node: savedNode },
-                },
-              });
-            }
-          } catch (e) {
-            console.error('Error parsing remaining buffer:', e);
-          }
+          await handleLine(buffer.trim());
         }
 
         pubSub.publish(`roadmapGenerationStream_${roadmapId}`, {
@@ -259,6 +307,6 @@ export class PublicRoadmapResolver {
 
   @Query('publicRoadmap')
   getPublicRoadmap(@Args('id') id: number) {
-    return this.roadmapService.findById(id);
+    return this.roadmapService.findPublicById(id);
   }
 }

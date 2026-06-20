@@ -43,3 +43,16 @@ class ChatRequest(BaseModel):
     message: str
     node_name: Optional[str] = None
 
+class QuizRequest(BaseModel):
+    node_name: str
+    node_description: Optional[str] = ""
+    num_questions: Optional[int] = 5
+
+
+class RemedialRequest(BaseModel):
+    node_name: str
+    node_description: Optional[str] = ""
+    # Each item: {question, correct_choice, user_choice, explanation}
+    missed_questions: List[Dict[str, Any]] = []
+    num_remedials: Optional[int] = 3
+
