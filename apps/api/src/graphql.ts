@@ -111,6 +111,7 @@ export interface IMutation {
     deleteNodeEdge(id: number): DeleteNodeResult | Promise<DeleteNodeResult>;
     generateNodeQuiz(nodeId: number): Quiz | Promise<Quiz>;
     submitQuizAttempt(nodeId: number, answers: number[]): QuizResult | Promise<QuizResult>;
+    adaptNode(nodeId: number): Node[] | Promise<Node[]>;
     createRoadmap(input: CreateRoadmapInput): Roadmap | Promise<Roadmap>;
     updateRoadmap(input: UpdateRoadmapInput): Roadmap | Promise<Roadmap>;
     updateRoadmapAi(id: number, message: string): Node[] | Promise<Node[]>;

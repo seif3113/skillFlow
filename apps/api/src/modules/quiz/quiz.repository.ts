@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { eq, asc, desc } from 'drizzle-orm';
+import { and, eq, asc, desc } from 'drizzle-orm';
 
 import * as databaseProvider from '../../database/database.provider';
 import {
@@ -95,5 +95,23 @@ export class QuizRepository {
       .innerJoin(roadmaps, eq(nodes.roadmapId, roadmaps.id))
       .where(eq(quizAttempts.userId, userId))
       .orderBy(desc(quizAttempts.createdAt));
+  }
+
+  // The user's most recent attempt for a node (or null), with the answers they
+  // gave — used to adapt the roadmap when they fail.
+  async findLatestAttempt(nodeId: number, userId: number) {
+    const [row] = await this.db
+      .select({
+        id: quizAttempts.id,
+        answers: quizAttempts.answers,
+        passed: quizAttempts.passed,
+        score: quizAttempts.score,
+      })
+      .from(quizAttempts)
+      .innerJoin(quizzes, eq(quizAttempts.quizId, quizzes.id))
+      .where(and(eq(quizzes.nodeId, nodeId), eq(quizAttempts.userId, userId)))
+      .orderBy(desc(quizAttempts.createdAt))
+      .limit(1);
+    return row ?? null;
   }
 }

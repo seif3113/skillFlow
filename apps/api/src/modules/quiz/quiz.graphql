@@ -54,4 +54,8 @@ extend type Mutation {
   generateNodeQuiz(nodeId: Int!): Quiz!
   # Grade an attempt server-side; a passing attempt completes the node.
   submitQuizAttempt(nodeId: Int!, answers: [Int!]!): QuizResult!
+  # Adaptive learning: after a failed attempt, generate remedial prerequisite
+  # nodes from the missed questions and link them under the node. Returns the
+  # newly created remedial nodes.
+  adaptNode(nodeId: Int!): [Node!]!
 }

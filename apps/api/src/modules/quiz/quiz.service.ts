@@ -14,6 +14,7 @@ import { QuizRow, QuestionRow } from './quiz.schema';
 
 const PASS_THRESHOLD = 70; // percent
 const NUM_QUESTIONS = 5;
+const NUM_REMEDIALS = 3;
 
 type SafeQuiz = {
   id: number;
@@ -43,6 +44,11 @@ type RagQuizResponse = {
     answer?: number;
     explanation?: string;
   }[];
+};
+
+type RagRemedialResponse = {
+  signal?: string;
+  remedials?: { title?: string; description?: string }[];
 };
 
 @Injectable()
@@ -83,6 +89,114 @@ export class QuizService {
   // All of the user's quiz attempts (newest first) for the progress page.
   findMyAttempts(userId: number) {
     return this.quizRepository.findAttemptsByUser(userId);
+  }
+
+  // Adaptive learning: from the questions the user missed on their latest
+  // (failed) attempt, generate remedial sub-topics and insert them as
+  // prerequisites of the failed node so the path self-heals around weak spots.
+  async adaptNode(nodeId: number, userId: number) {
+    const node = await this.assertNodeOwner(nodeId, userId);
+
+    const quiz = await this.quizRepository.findByNodeId(nodeId);
+    const attempt = await this.quizRepository.findLatestAttempt(nodeId, userId);
+    if (!quiz || !attempt) {
+      throw new BadRequestException('Take the quiz before adapting this topic');
+    }
+    if (attempt.passed) {
+      throw new BadRequestException(
+        'Your latest attempt passed — nothing to strengthen',
+      );
+    }
+
+    const questions = await this.quizRepository.findQuestions(quiz.id);
+    const missed = questions.flatMap((q, i) => {
+      const choice = attempt.answers[i];
+      if (choice === q.answer) return [];
+      const choices = Array.isArray(q.choices) ? q.choices : [];
+      return [
+        {
+          question: q.question,
+          correct_choice: choices[q.answer] ?? '',
+          user_choice: typeof choice === 'number' ? (choices[choice] ?? '') : '',
+          explanation: q.explanation ?? '',
+        },
+      ];
+    });
+    if (missed.length === 0) return [];
+
+    const remedials = await this.generateRemedialViaRag(
+      node.title,
+      node.description,
+      missed,
+    );
+
+    const created = [];
+    for (const r of remedials) {
+      const row = await this.nodeRepository.create({
+        roadmapId: node.roadmapId,
+        title: r.title,
+        description: r.description,
+        tags: [],
+        resources: [],
+        isCompleted: false,
+      });
+      // The remedial node is a prerequisite of the failed node.
+      await this.nodeRepository.createEdge({
+        roadmapId: node.roadmapId,
+        sourceNodeId: row.id,
+        targetNodeId: nodeId,
+      });
+      created.push({
+        id: row.id,
+        roadmapId: row.roadmapId,
+        title: row.title,
+        description: row.description,
+        tags: row.tags,
+        resources: row.resources,
+        isCompleted: row.isCompleted,
+      });
+    }
+    return created;
+  }
+
+  private async generateRemedialViaRag(
+    nodeTitle: string,
+    nodeDescription: string | null,
+    missed: {
+      question: string;
+      correct_choice: string;
+      user_choice: string;
+      explanation: string;
+    }[],
+  ): Promise<{ title: string; description: string | null }[]> {
+    const baseUrl = process.env.RAG_URI;
+    if (!baseUrl) {
+      throw new InternalServerErrorException('RAG_URI is not configured');
+    }
+    const url = `${baseUrl.replace(/\/$/, '')}/nlp/generate-remedial`;
+    const payload = await genericFetch<RagRemedialResponse>(url, {
+      method: 'POST',
+      body: JSON.stringify({
+        node_name: nodeTitle,
+        node_description: nodeDescription ?? '',
+        missed_questions: missed,
+        num_remedials: NUM_REMEDIALS,
+      }),
+      timeout: 30000,
+    });
+    const raw = Array.isArray(payload?.remedials) ? payload.remedials : [];
+    return raw.flatMap((r) => {
+      if (typeof r.title !== 'string' || !r.title.trim()) return [];
+      return [
+        {
+          title: r.title.trim().slice(0, 255),
+          description:
+            typeof r.description === 'string'
+              ? r.description.slice(0, 2000)
+              : null,
+        },
+      ];
+    });
   }
 
   async getNodeQuiz(nodeId: number, userId: number): Promise<SafeQuiz | null> {
