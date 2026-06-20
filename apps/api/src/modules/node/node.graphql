@@ -1,11 +1,12 @@
 type Node {
-  id: Int!
+  id: Int
   roadmapId: Int!
   title: String!
   description: String
   tags: JSON
   resources: JSON
   isCompleted: Boolean!
+  intent: String
   createdAt: DateTime!
   updatedAt: DateTime!
   chats: [NodeExplanationChat!]

@@ -839,9 +839,9 @@ class NLPController(BaseController):
         except Exception:
             decision_system_prompt = (
                 "You are a strict roadmap edit planner. Return JSON only with "
-                "intent, roadmap, and search_queries. intent must be one of: "
-                "add_node, remove_node, update_node, general_edit. The roadmap must "
-                "not exceed 8 nodes."
+                "roadmap, and search_queries. Each node in the roadmap must have an intent "
+                "('new', 'modified', 'deleted', 'idle'). The roadmap must "
+                "not exceed 8 nodes (excluding deleted ones)."
             )
             decision_user_prompt = (
                 f"USER_CHANGE_REQUEST:\n{prompt}\n\n"
@@ -856,23 +856,6 @@ class NLPController(BaseController):
             logger.error(f"Failed to parse roadmap edit decision: {e}")
             return None
 
-        intent = edit_plan.get("intent")
-        allowed_intents = {"add_node", "remove_node", "update_node", "general_edit"}
-        if intent not in allowed_intents:
-            logger.error(f"Roadmap edit decision returned invalid intent: {intent}")
-            return None
-
-        if intent in {"remove_node", "general_edit"}:
-            updated_roadmap = edit_plan.get("roadmap")
-            if not isinstance(updated_roadmap, list):
-                logger.error("Roadmap edit decision omitted updated roadmap.")
-                return None
-
-            return {
-                "intent": intent,
-                "roadmap": updated_roadmap[:8],
-            }
-
         search_queries = [
             query
             for query in edit_plan.get("search_queries", [])
@@ -880,7 +863,14 @@ class NLPController(BaseController):
         ]
 
         if not search_queries:
-            search_queries = [{"node_title": "Roadmap update", "query": prompt}]
+            updated_roadmap = edit_plan.get("roadmap")
+            if not isinstance(updated_roadmap, list):
+                logger.error("Roadmap edit decision omitted updated roadmap.")
+                return None
+
+            return {
+                "roadmap": updated_roadmap,
+            }
 
         try:
             retrieved_resources = self._retrieve_roadmap_resources(search_queries)
@@ -898,7 +888,6 @@ class NLPController(BaseController):
                 {
                     "prompt": prompt,
                     "roadmap": roadmap_json,
-                    "intent": intent,
                     "resources": json.dumps(
                         retrieved_resources, ensure_ascii=False
                     ),
@@ -907,13 +896,12 @@ class NLPController(BaseController):
         except Exception:
             compilation_system_prompt = (
                 "You are a curriculum editor. Return only the complete updated "
-                "roadmap JSON array. Use only provided retrieved resources."
+                "roadmap JSON array with per-node intents. Use only provided retrieved resources."
             )
             compilation_user_prompt = "\n\n".join(
                 [
                     f"USER_CHANGE_REQUEST:\n{prompt}",
                     f"EXISTING_ROADMAP_JSON:\n{roadmap_json}",
-                    f"INTENT:\n{intent}",
                     "RETRIEVED_RESOURCE_CANDIDATES_JSON:\n"
                     f"{json.dumps(retrieved_resources, ensure_ascii=False)}",
                 ]
@@ -930,8 +918,7 @@ class NLPController(BaseController):
             return None
 
         return {
-            "intent": intent,
-            "roadmap": final_roadmap[:8],
+            "roadmap": final_roadmap,
         }
 
     def change_roadmap(self, user_prompt: str):

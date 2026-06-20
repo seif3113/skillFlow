@@ -17,10 +17,11 @@ export interface DeleteRoadmapResult {
 
 export interface UpdatedRoadmapResult {
   roadmap?: {
-    id: number;
+    id: number | null;
     title: string;
     description?: string | null;
     tags?: string[] | null;
+    intent?: string | null;
     resources?:
       | {
           title: string;
