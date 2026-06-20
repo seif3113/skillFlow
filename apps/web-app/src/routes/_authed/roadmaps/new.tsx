@@ -128,7 +128,7 @@ function NewRoadmapPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-xl">
+    <div className="w-full">
       {step === "topic" ? (
         <Card>
           <CardHeader>
