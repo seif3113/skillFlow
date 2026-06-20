@@ -19,6 +19,7 @@ import {
 } from "@/gql/graphql"
 import {
   layoutRoadmap,
+  nodeStatusMap,
   upsertById,
   type RoadmapNode,
   type RoadmapEdge,
@@ -108,10 +109,18 @@ export function RoadmapViewProvider({
         instanceRef.current?.fitView({ duration: 200, padding: 0.2 })
       )
     } else {
+      // Structure unchanged (e.g. a completion flipped) — refresh node data +
+      // recompute statuses so locked/available/completed styling stays current.
+      const statuses = nodeStatusMap(rmNodes, rmEdges)
       setFlowNodes((prev) =>
         prev.map((fn) => {
           const dn = rmNodes.find((n) => String(n.id) === fn.id)
-          return dn ? { ...fn, data: { node: dn } } : fn
+          return dn
+            ? {
+                ...fn,
+                data: { node: dn, status: statuses.get(dn.id) ?? "available" },
+              }
+            : fn
         })
       )
     }

@@ -124,17 +124,8 @@ function RoadmapViewCanvas() {
 
   const onNodeClick: NodeMouseHandler<RoadmapFlowNode> = (_, n) => {
     actions.focusNode(Number(n.id))
-    // A node is locked until all of its prerequisites are completed — mirrors
-    // the server-side gate so the quiz button reflects it.
-    const prereqs = state.flowEdges
-      .filter((e) => e.target === n.id)
-      .map((e) => e.source)
-    const completed = new Set(
-      state.flowNodes
-        .filter((fn) => fn.data.node.isCompleted)
-        .map((fn) => fn.id)
-    )
-    const locked = prereqs.some((p) => !completed.has(p))
+    // `status` is precomputed on the flow node (mirrors the server-side gate).
+    const locked = n.data.status === "locked"
     // Open the far-away sheet via the external store, carrying the node
     // snapshot + callbacks that sync the canvas on quiz-pass and on edit.
     sheet.open(n.data.node, {

@@ -1,6 +1,10 @@
 import { Handle, Position, type NodeProps } from "@xyflow/react"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { CheckmarkCircle02Icon, BookOpen01Icon } from "@hugeicons/core-free-icons"
+import {
+  CheckmarkCircle02Icon,
+  BookOpen01Icon,
+  CircleLock01Icon,
+} from "@hugeicons/core-free-icons"
 
 import { cn } from "@/lib/utils"
 import { asResources, type RoadmapFlowNode } from "@/lib/roadmap-graph"
@@ -11,7 +15,7 @@ export function RoadmapFlowNodeCard({
   data,
   selected,
 }: NodeProps<RoadmapFlowNode>) {
-  const { node } = data
+  const { node, status } = data
   const resourceCount = asResources(node.resources).length
 
   return (
@@ -19,7 +23,8 @@ export function RoadmapFlowNodeCard({
       className={cn(
         "w-[260px] rounded-2xl border bg-card px-4 py-3 text-card-foreground shadow-sm ring-1 ring-foreground/5 transition-colors",
         selected && "border-primary ring-primary/30",
-        node.isCompleted && "border-primary/40 bg-primary/5",
+        status === "completed" && "border-primary/40 bg-primary/5",
+        status === "locked" && "opacity-60"
       )}
     >
       <Handle
@@ -28,23 +33,28 @@ export function RoadmapFlowNodeCard({
         className="!size-2 !border-0 !bg-muted-foreground/40"
       />
       <div className="flex items-start gap-2">
-        {node.isCompleted ? (
+        {status === "completed" ? (
           <HugeiconsIcon
             icon={CheckmarkCircle02Icon}
             className="mt-0.5 size-4 shrink-0 text-primary"
           />
+        ) : status === "locked" ? (
+          <HugeiconsIcon
+            icon={CircleLock01Icon}
+            className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+          />
         ) : null}
         <div className="min-w-0 flex-1">
-          <p className="truncate font-medium text-sm">{node.title}</p>
+          <p className="truncate text-sm font-medium">{node.title}</p>
           {node.description ? (
-            <p className="mt-0.5 line-clamp-2 text-muted-foreground text-xs">
+            <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
               {node.description}
             </p>
           ) : null}
         </div>
       </div>
       {resourceCount > 0 ? (
-        <div className="mt-2 flex items-center gap-1 text-muted-foreground text-xs">
+        <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
           <HugeiconsIcon icon={BookOpen01Icon} className="size-3.5" />
           {resourceCount} resource{resourceCount === 1 ? "" : "s"}
         </div>

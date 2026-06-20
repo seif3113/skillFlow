@@ -28,8 +28,39 @@ export function asResources(value: unknown): RoadmapResource[] {
   return value.filter((r): r is RoadmapResource => !!r && typeof r === "object")
 }
 
-export type RoadmapFlowNode = Node<{ node: RoadmapNode }, "roadmap">
+// A node is "completed" (quiz passed), "locked" (some prerequisite isn't
+// completed yet), or "available" (reachable now).
+export type NodeStatus = "completed" | "available" | "locked"
+
+export type RoadmapFlowNode = Node<
+  { node: RoadmapNode; status: NodeStatus },
+  "roadmap"
+>
 export type RoadmapFlowEdge = Edge
+
+// Derive each node's status from completion + prerequisite edges.
+export function nodeStatusMap(
+  nodes: RoadmapNode[],
+  edges: RoadmapEdge[]
+): Map<number, NodeStatus> {
+  const completed = new Set(nodes.filter((n) => n.isCompleted).map((n) => n.id))
+  const prereqs = new Map<number, number[]>()
+  for (const e of edges) {
+    const list = prereqs.get(e.targetNodeId) ?? []
+    list.push(e.sourceNodeId)
+    prereqs.set(e.targetNodeId, list)
+  }
+  const map = new Map<number, NodeStatus>()
+  for (const n of nodes) {
+    if (n.isCompleted) {
+      map.set(n.id, "completed")
+    } else {
+      const locked = (prereqs.get(n.id) ?? []).some((id) => !completed.has(id))
+      map.set(n.id, locked ? "locked" : "available")
+    }
+  }
+  return map
+}
 
 const NODE_WIDTH = 260
 const NODE_HEIGHT = 96
@@ -58,6 +89,7 @@ export function layoutRoadmap(
 
   dagre.layout(g)
 
+  const statuses = nodeStatusMap(nodes, edges)
   const flowNodes: RoadmapFlowNode[] = nodes.map((node) => {
     const pos = g.node(String(node.id))
     return {
@@ -68,7 +100,7 @@ export function layoutRoadmap(
         x: (pos?.x ?? 0) - NODE_WIDTH / 2,
         y: (pos?.y ?? 0) - NODE_HEIGHT / 2,
       },
-      data: { node },
+      data: { node, status: statuses.get(node.id) ?? "available" },
     }
   })
 
