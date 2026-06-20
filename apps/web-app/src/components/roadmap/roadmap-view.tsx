@@ -111,6 +111,17 @@ function RoadmapViewCanvas() {
 
   const onNodeClick: NodeMouseHandler<RoadmapFlowNode> = (_, n) => {
     actions.focusNode(Number(n.id))
+    // A node is locked until all of its prerequisites are completed — mirrors
+    // the server-side gate so the quiz button reflects it.
+    const prereqs = state.flowEdges
+      .filter((e) => e.target === n.id)
+      .map((e) => e.source)
+    const completed = new Set(
+      state.flowNodes
+        .filter((fn) => fn.data.node.isCompleted)
+        .map((fn) => fn.id)
+    )
+    const locked = prereqs.some((p) => !completed.has(p))
     // Open the far-away sheet via the external store, carrying the node
     // snapshot + callbacks that sync the canvas on quiz-pass and on edit.
     sheet.open(n.data.node, {
@@ -118,6 +129,7 @@ function RoadmapViewCanvas() {
       onUpdated: (updated) => actions.updateNode(updated),
       // Adapting inserts new remedial prerequisite nodes — refetch the graph.
       onAdapted: () => actions.refetchRoadmap(),
+      locked,
     })
   }
 
@@ -174,12 +186,14 @@ function NodeDetailContent({
   onPassed,
   onUpdated,
   onAdapted,
+  locked,
   onClose,
 }: {
   node: RoadmapNode
   onPassed: () => void
   onUpdated: (node: RoadmapNode) => void
   onAdapted: () => void
+  locked: boolean
   onClose: () => void
 }) {
   // Local copy so edits + completion reflect immediately in this sheet without
@@ -329,7 +343,7 @@ function NodeDetailContent({
             </Button>
             <Button
               variant={node.isCompleted ? "outline" : "default"}
-              disabled={quiz.generating}
+              disabled={quiz.generating || locked}
               onClick={quiz.start}
             >
               {quiz.generating ? (
@@ -337,7 +351,11 @@ function NodeDetailContent({
               ) : (
                 <HugeiconsIcon icon={Quiz01Icon} data-icon="inline-start" />
               )}
-              {node.isCompleted ? "Retake quiz" : "Take quiz to complete"}
+              {locked
+                ? "Complete prerequisites first"
+                : node.isCompleted
+                  ? "Retake quiz"
+                  : "Take quiz to complete"}
             </Button>
           </>
         ) : quiz.mode === "taking" ? (
@@ -385,7 +403,8 @@ function NodeDetailContent({
 // driven by the external node-sheet store, so it re-renders ONLY on open/close
 // — never during the canvas's churn — letting base-ui's transition run.
 function RoadmapNodeSheet() {
-  const { node, onPassed, onUpdated, onAdapted, close } = useNodeSheetState()
+  const { node, onPassed, onUpdated, onAdapted, locked, close } =
+    useNodeSheetState()
 
   // Keep rendering the last node through the close animation so the content
   // doesn't blank out mid-transition.
@@ -406,6 +425,7 @@ function RoadmapNodeSheet() {
             onPassed={() => onPassed?.()}
             onUpdated={(updated) => onUpdated?.(updated)}
             onAdapted={() => onAdapted?.()}
+            locked={locked}
             onClose={close}
           />
         ) : null}

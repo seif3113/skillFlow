@@ -16,6 +16,8 @@ type NodeSheetCallbacks = {
   onPassed?: () => void
   onUpdated?: (node: RoadmapNode) => void
   onAdapted?: () => void
+  // Whether the node's prerequisites aren't all complete (quiz is gated).
+  locked?: boolean
 }
 
 type NodeSheetSnapshot = {
@@ -23,6 +25,7 @@ type NodeSheetSnapshot = {
   onPassed: (() => void) | null
   onUpdated: ((node: RoadmapNode) => void) | null
   onAdapted: (() => void) | null
+  locked: boolean
 }
 
 type NodeSheetStore = {
@@ -38,6 +41,7 @@ function createNodeSheetStore(): NodeSheetStore {
     onPassed: null,
     onUpdated: null,
     onAdapted: null,
+    locked: false,
   }
   const listeners = new Set<() => void>()
   const emit = () => {
@@ -57,6 +61,7 @@ function createNodeSheetStore(): NodeSheetStore {
         onPassed: callbacks?.onPassed ?? null,
         onUpdated: callbacks?.onUpdated ?? null,
         onAdapted: callbacks?.onAdapted ?? null,
+        locked: callbacks?.locked ?? false,
       }
       emit()
     },
@@ -105,6 +110,7 @@ export function useNodeSheetState() {
     onPassed: snapshot.onPassed,
     onUpdated: snapshot.onUpdated,
     onAdapted: snapshot.onAdapted,
+    locked: snapshot.locked,
     close: store.close,
   }
 }
