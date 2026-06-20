@@ -16,6 +16,7 @@ import {
   PencilEdit02Icon,
   Globe02Icon,
   AiMagicIcon,
+  Route01Icon,
 } from "@hugeicons/core-free-icons"
 
 import { AdaptNodeDocument } from "@/gql/graphql"
@@ -38,8 +39,17 @@ import {
   SheetTitle,
   SheetFooter,
 } from "@/components/ui/sheet"
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty"
 import { RoadmapFlowNodeCard } from "./roadmap-flow-node"
 import { RoadmapAssistant } from "./roadmap-assistant"
+import { AddTopicDialog } from "./add-topic-dialog"
 import { useNodeQuiz, QuizQuestions, QuizResults } from "./node-quiz"
 import { useNodeEditor, NodeEditFields, resetEditorToNode } from "./node-editor"
 import { RoadmapViewProvider } from "./roadmap-view-provider"
@@ -68,14 +78,17 @@ function RoadmapViewHeader() {
       {state.isStreaming ? (
         <Spinner />
       ) : (
-        <Button
-          variant={state.isPublished ? "outline" : "default"}
-          size="sm"
-          onClick={actions.togglePublish}
-        >
-          <HugeiconsIcon icon={Globe02Icon} data-icon="inline-start" />
-          {state.isPublished ? "Published" : "Publish"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <AddTopicDialog />
+          <Button
+            variant={state.isPublished ? "outline" : "default"}
+            size="sm"
+            onClick={actions.togglePublish}
+          >
+            <HugeiconsIcon icon={Globe02Icon} data-icon="inline-start" />
+            {state.isPublished ? "Published" : "Publish"}
+          </Button>
+        </div>
       )}
     </div>
   )
@@ -141,6 +154,29 @@ function RoadmapViewCanvas() {
         <RoadmapCanvasSkeleton
           label={state.isStreaming ? "Generating your roadmap…" : "Loading…"}
         />
+      </div>
+    )
+  }
+
+  // Empty roadmap (e.g. created blank): prompt to add a topic or use the AI.
+  if (state.flowNodes.length === 0) {
+    return (
+      <div className="flex h-[72vh] items-center justify-center overflow-hidden rounded-2xl border bg-muted/20">
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <HugeiconsIcon icon={Route01Icon} />
+            </EmptyMedia>
+            <EmptyTitle>No topics yet</EmptyTitle>
+            <EmptyDescription>
+              Add your first topic, or open the assistant and ask it to build
+              the roadmap for you.
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <AddTopicDialog variant="default" />
+          </EmptyContent>
+        </Empty>
       </div>
     )
   }

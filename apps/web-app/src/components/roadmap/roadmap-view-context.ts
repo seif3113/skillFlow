@@ -49,6 +49,8 @@ export interface RoadmapViewActions {
   markCompleted: (nodeId: number) => void
   // Reflect an edited node (title/description/tags/resources) on the canvas.
   updateNode: (node: RoadmapNode) => void
+  // Manually create a topic on the roadmap; resolves with the new node.
+  addNode: (title: string, description?: string) => Promise<RoadmapNode | null>
   // Toggle whether the roadmap is published to the public Explore directory.
   togglePublish: () => void
   // Re-pull the roadmap from the server (e.g. after the AI assistant edits it).

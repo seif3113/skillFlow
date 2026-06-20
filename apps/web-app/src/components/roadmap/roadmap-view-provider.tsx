@@ -11,6 +11,7 @@ import { toast } from "sonner"
 
 import {
   GetRoadmapDocument,
+  CreateNodeDocument,
   CreateNodeEdgeDocument,
   DeleteNodeEdgeDocument,
   DeleteNodeDocument,
@@ -134,6 +135,7 @@ export function RoadmapViewProvider({
   })
 
   // --- editing mutations ---
+  const [createNode] = useMutation(CreateNodeDocument)
   const [createNodeEdge] = useMutation(CreateNodeEdgeDocument)
   const [deleteNodeEdge] = useMutation(DeleteNodeEdgeDocument)
   const [deleteNode] = useMutation(DeleteNodeDocument)
@@ -162,6 +164,25 @@ export function RoadmapViewProvider({
       prev.map((n) => (n.id === updated.id ? { ...n, ...updated } : n))
     )
   }, [])
+
+  // Manual mode: create a topic and drop it onto the canvas (a structural
+  // change, so the dagre effect re-lays the graph).
+  const addNode = useCallback(
+    async (title: string, description?: string) => {
+      try {
+        const res = await createNode({
+          variables: { input: { roadmapId, title, description } },
+        })
+        const node = res.data?.createNode
+        if (node) setRmNodes((prev) => upsertById(prev, node))
+        return node ?? null
+      } catch {
+        toast.error("Couldn't add the topic.")
+        return null
+      }
+    },
+    [createNode, roadmapId]
+  )
 
   const connect = useCallback(
     (conn: Connection) => {
@@ -281,6 +302,7 @@ export function RoadmapViewProvider({
         focusNode,
         markCompleted,
         updateNode,
+        addNode,
         togglePublish,
         refetchRoadmap,
       },
@@ -302,6 +324,7 @@ export function RoadmapViewProvider({
       focusNode,
       markCompleted,
       updateNode,
+      addNode,
       togglePublish,
       refetchRoadmap,
       roadmapId,

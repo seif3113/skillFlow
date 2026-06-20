@@ -41,10 +41,11 @@ function NewRoadmapPage() {
   const [submitting, setSubmitting] = useState(false)
 
   const [fetchQuestions, { loading: loadingQuestions }] = useLazyQuery(
-    RoadmapCustomizationQuestionsDocument,
+    RoadmapCustomizationQuestionsDocument
   )
-  const [createRoadmap, { loading: creating }] =
-    useMutation(CreateRoadmapDocument)
+  const [createRoadmap, { loading: creating }] = useMutation(
+    CreateRoadmapDocument
+  )
   const [generateRoadmapStream] = useMutation(GenerateRoadmapStreamDocument)
 
   const handleTopicSubmit = async () => {
@@ -68,7 +69,10 @@ function NewRoadmapPage() {
     }
   }
 
-  const startGeneration = async (finalTopic: string, finalAnswers: string[]) => {
+  const startGeneration = async (
+    finalTopic: string,
+    finalAnswers: string[]
+  ) => {
     setSubmitting(true)
     try {
       const res = await createRoadmap({
@@ -99,6 +103,23 @@ function NewRoadmapPage() {
     }
   }
 
+  // Manual mode: create an empty roadmap (no generation) and open the editor.
+  const createBlank = async () => {
+    setSubmitting(true)
+    try {
+      const res = await createRoadmap({
+        variables: { input: { title: topic.trim() || "Untitled roadmap" } },
+      })
+      const id = res.data?.createRoadmap.id
+      if (!id) throw new Error("createRoadmap returned no id")
+      navigate({ to: "/roadmaps/$id", params: { id: String(id) }, search: {} })
+    } catch (e) {
+      console.error(e)
+      toast.error("Couldn't create the roadmap. Please try again.")
+      setSubmitting(false)
+    }
+  }
+
   const allAnswered = questions.every((_, i) => answers[i])
 
   const handleGenerate = () => {
@@ -108,100 +129,107 @@ function NewRoadmapPage() {
 
   return (
     <div className="mx-auto w-full max-w-xl py-8">
-        {step === "topic" ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Create a roadmap</CardTitle>
-              <CardDescription>
-                Tell us what you want to learn and we'll generate a personalized
-                path.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                autoFocus
-                placeholder="e.g. Become a backend engineer with Node.js and Postgres"
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                rows={3}
-              />
-            </CardContent>
-            <CardFooter className="justify-end">
-              <Button
-                onClick={handleTopicSubmit}
-                disabled={!topic.trim() || loadingQuestions || submitting}
-              >
-                {loadingQuestions || submitting ? (
-                  <Spinner data-icon="inline-start" />
-                ) : (
-                  <HugeiconsIcon
-                    icon={ArrowRight01Icon}
-                    data-icon="inline-start"
-                  />
-                )}
-                Continue
-              </Button>
-            </CardFooter>
-          </Card>
-        ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle>Personalize your roadmap</CardTitle>
-              <CardDescription>
-                A few questions so we tailor the path to you.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-6">
-              {questions.map((q, i) => (
-                <div key={i} className="flex flex-col gap-2">
-                  <p className="font-medium text-sm">{q.question}</p>
-                  <ToggleGroup
-                    variant="outline"
-                    spacing={2}
-                    className="flex-wrap justify-start"
-                    value={answers[i] ? [answers[i]] : []}
-                    onValueChange={(v: string[]) =>
-                      setAnswers((prev) => ({ ...prev, [i]: v[0] ?? "" }))
-                    }
-                  >
-                    {q.choices.map((choice) => (
-                      <ToggleGroupItem
-                        key={choice}
-                        value={choice}
-                        className="cursor-pointer aria-pressed:border-primary aria-pressed:bg-primary/10 aria-pressed:text-foreground"
-                      >
-                        {choice}
-                      </ToggleGroupItem>
-                    ))}
-                  </ToggleGroup>
-                </div>
-              ))}
-            </CardContent>
-            <CardFooter className="justify-between">
-              <Button
-                variant="ghost"
-                onClick={() => setStep("topic")}
-                disabled={submitting}
-              >
-                Back
-              </Button>
-              <Button
-                onClick={handleGenerate}
-                disabled={!allAnswered || creating || submitting}
-              >
-                {creating || submitting ? (
-                  <Spinner data-icon="inline-start" />
-                ) : (
-                  <HugeiconsIcon
-                    icon={MagicWand01Icon}
-                    data-icon="inline-start"
-                  />
-                )}
-                Generate roadmap
-              </Button>
-            </CardFooter>
-          </Card>
-        )}
+      {step === "topic" ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Create a roadmap</CardTitle>
+            <CardDescription>
+              Tell us what you want to learn and we'll generate a personalized
+              path — or start blank and build it yourself.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Textarea
+              autoFocus
+              placeholder="e.g. Become a backend engineer with Node.js and Postgres"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              rows={3}
+            />
+          </CardContent>
+          <CardFooter className="justify-between">
+            <Button
+              variant="ghost"
+              onClick={createBlank}
+              disabled={loadingQuestions || submitting}
+            >
+              Start blank
+            </Button>
+            <Button
+              onClick={handleTopicSubmit}
+              disabled={!topic.trim() || loadingQuestions || submitting}
+            >
+              {loadingQuestions || submitting ? (
+                <Spinner data-icon="inline-start" />
+              ) : (
+                <HugeiconsIcon
+                  icon={ArrowRight01Icon}
+                  data-icon="inline-start"
+                />
+              )}
+              Continue
+            </Button>
+          </CardFooter>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Personalize your roadmap</CardTitle>
+            <CardDescription>
+              A few questions so we tailor the path to you.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-6">
+            {questions.map((q, i) => (
+              <div key={i} className="flex flex-col gap-2">
+                <p className="text-sm font-medium">{q.question}</p>
+                <ToggleGroup
+                  variant="outline"
+                  spacing={2}
+                  className="flex-wrap justify-start"
+                  value={answers[i] ? [answers[i]] : []}
+                  onValueChange={(v: string[]) =>
+                    setAnswers((prev) => ({ ...prev, [i]: v[0] ?? "" }))
+                  }
+                >
+                  {q.choices.map((choice) => (
+                    <ToggleGroupItem
+                      key={choice}
+                      value={choice}
+                      className="cursor-pointer aria-pressed:border-primary aria-pressed:bg-primary/10 aria-pressed:text-foreground"
+                    >
+                      {choice}
+                    </ToggleGroupItem>
+                  ))}
+                </ToggleGroup>
+              </div>
+            ))}
+          </CardContent>
+          <CardFooter className="justify-between">
+            <Button
+              variant="ghost"
+              onClick={() => setStep("topic")}
+              disabled={submitting}
+            >
+              Back
+            </Button>
+            <Button
+              onClick={handleGenerate}
+              disabled={!allAnswered || creating || submitting}
+            >
+              {creating || submitting ? (
+                <Spinner data-icon="inline-start" />
+              ) : (
+                <HugeiconsIcon
+                  icon={MagicWand01Icon}
+                  data-icon="inline-start"
+                />
+              )}
+              Generate roadmap
+            </Button>
+          </CardFooter>
+        </Card>
+      )}
     </div>
   )
 }
