@@ -8,6 +8,7 @@ import {
 
 import { genericFetch } from '@/utils/fetch';
 import { NodeRepository } from '../node/node.repository';
+import { NodeService } from '../node/node.service';
 import { RoadmapRepository } from '../roadmap/roadmap.repository';
 import { QuizRepository, NewQuestionData } from './quiz.repository';
 import { QuizRow, QuestionRow } from './quiz.schema';
@@ -56,8 +57,28 @@ export class QuizService {
   constructor(
     private readonly quizRepository: QuizRepository,
     private readonly nodeRepository: NodeRepository,
+    private readonly nodeService: NodeService,
     private readonly roadmapRepository: RoadmapRepository,
   ) {}
+
+  // A node is locked until all of its prerequisites (incoming edges) are
+  // completed — so a learner can't quiz a topic they haven't reached yet.
+  private async assertNodeUnlocked(node: { id: number; roadmapId: number }) {
+    const edges = await this.nodeRepository.findEdgesByRoadmapId(node.roadmapId);
+    const prereqIds = edges
+      .filter((e) => e.targetNodeId === node.id)
+      .map((e) => e.sourceNodeId);
+    if (prereqIds.length === 0) return;
+    const nodes = await this.nodeRepository.findByRoadmapId(node.roadmapId);
+    const completed = new Set(
+      nodes.filter((n) => n.isCompleted).map((n) => n.id),
+    );
+    if (prereqIds.some((id) => !completed.has(id))) {
+      throw new ForbiddenException(
+        'Complete the prerequisite topics before taking this quiz',
+      );
+    }
+  }
 
   // Quizzes live on a user's own roadmap nodes — every quiz op requires that
   // the caller owns the node's roadmap.
@@ -132,12 +153,22 @@ export class QuizService {
 
     const created = [];
     for (const r of remedials) {
+      // Best-effort: attach learning resources for each remedial topic.
+      let resources: Record<string, string>[] = [];
+      try {
+        const found = await this.nodeService.findResources(r.title, 3);
+        resources = found.map(
+          (x) => x.resource as unknown as Record<string, string>,
+        );
+      } catch {
+        // Resources are optional — don't fail adaptation if search is down.
+      }
       const row = await this.nodeRepository.create({
         roadmapId: node.roadmapId,
         title: r.title,
         description: r.description,
         tags: [],
-        resources: [],
+        resources,
         isCompleted: false,
       });
       // The remedial node is a prerequisite of the failed node.
@@ -209,6 +240,7 @@ export class QuizService {
 
   async generateNodeQuiz(nodeId: number, userId: number): Promise<SafeQuiz> {
     const node = await this.assertNodeOwner(nodeId, userId);
+    await this.assertNodeUnlocked(node);
 
     // Idempotent: don't regenerate if one already exists.
     const existing = await this.quizRepository.findByNodeId(nodeId);
@@ -241,7 +273,8 @@ export class QuizService {
     userId: number,
     answers: number[],
   ): Promise<QuizResult> {
-    await this.assertNodeOwner(nodeId, userId);
+    const node = await this.assertNodeOwner(nodeId, userId);
+    await this.assertNodeUnlocked(node);
 
     const quiz = await this.quizRepository.findByNodeId(nodeId);
     if (!quiz) {
