@@ -10,6 +10,7 @@ from models.schemes import (
     RoadmapRequest,
     RoadmapEditRequest,
     QuizRequest,
+    RemedialRequest,
 )
 import asyncio
 import time
@@ -548,4 +549,34 @@ async def generate_quiz(request: Request, quiz_request: QuizRequest):
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={"signal": "success", "questions": questions},
+    )
+
+
+@nlp_router.post("/generate-remedial")
+async def generate_remedial(request: Request, remedial_request: RemedialRequest):
+    node_name = (remedial_request.node_name or "").strip()
+    if not node_name:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"signal": "error", "message": "node_name is required."},
+        )
+
+    nlp_controller = NLPController(
+        vectordb_client=request.app.vectordb_client,
+        generation_client=request.app.generation_client,
+        embedding_client=request.app.embedding_client,
+        template_parser=request.app.template_parser,
+        embedding_helper=request.app.embedding_helper,
+    )
+
+    remedials = nlp_controller.generate_remedial_subtopics(
+        node_name=node_name,
+        node_description=remedial_request.node_description or "",
+        missed_questions=list(remedial_request.missed_questions or []),
+        num_remedials=remedial_request.num_remedials or 3,
+    )
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"signal": "success", "remedials": remedials},
     )

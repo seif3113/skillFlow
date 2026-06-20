@@ -1023,6 +1023,88 @@ class NLPController(BaseController):
 
         return answer
 
+    def generate_remedial_subtopics(
+        self,
+        node_name: str,
+        node_description: str = "",
+        missed_questions: list = None,
+        num_remedials: int = 3,
+    ):
+        """
+        Given the quiz questions a learner missed on a node, infer the missing
+        prerequisite concepts and design focused remedial sub-topics that would
+        let them pass. Returns a list of dicts: {title, description}.
+        """
+        node_name = (node_name or "").strip()
+        missed_questions = missed_questions or []
+        if not node_name or not missed_questions:
+            return []
+
+        missed_summary = "\n\n".join(
+            [
+                "\n".join(
+                    [
+                        f"Question: {q.get('question', '')}",
+                        f"Correct answer: {q.get('correct_choice', '')}",
+                        f"Learner chose: {q.get('user_choice', '')}",
+                        f"Why: {q.get('explanation', '') or 'N/A'}",
+                    ]
+                )
+                for q in missed_questions
+            ]
+        )
+
+        system_prompt = "\n".join(
+            [
+                "You are an expert curriculum designer.",
+                "A learner failed a quiz on a topic. From the questions they missed,",
+                "infer the underlying prerequisite concepts they lack and design",
+                "focused remedial sub-topics that, once learned, would let them pass.",
+                "",
+                "### RULES:",
+                f"1. Return at most {num_remedials} sub-topics — the fewest needed to close the gaps.",
+                "2. Each is a concrete prerequisite concept, more foundational than the main topic.",
+                "3. Do not restate the main topic; target the specific gaps shown.",
+                "4. 'title' is short (<= 80 chars). 'description' is 1-2 sentences.",
+                "",
+                "### OUTPUT:",
+                "Return ONLY a valid JSON array, no prose, of objects shaped:",
+                '{"title": "...", "description": "..."}',
+            ]
+        )
+
+        user_prompt = "\n".join(
+            [
+                f"Main topic: {node_name}",
+                f"Main topic description: {node_description or 'N/A'}",
+                "",
+                f"Questions the learner missed:\n{missed_summary}",
+                "",
+                "Return the remedial sub-topics JSON array.",
+            ]
+        )
+
+        chat_history = [
+            self.generation_client.construct_prompt(
+                prompt=system_prompt,
+                role=self.generation_client.enums.SYSTEM.value,
+            )
+        ]
+
+        raw = self.generation_client.generate_text(
+            prompt=user_prompt, chat_history=chat_history
+        )
+
+        try:
+            parsed = self._extract_json_from_llm_response(raw)
+        except Exception as e:
+            logger.error(f"Failed to parse remedial JSON: {e}")
+            return []
+
+        if not isinstance(parsed, list):
+            return []
+        return parsed
+
     def generate_node_quiz(
         self, node_name: str, node_description: str = "", num_questions: int = 5
     ):
