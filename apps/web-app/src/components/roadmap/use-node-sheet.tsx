@@ -15,12 +15,14 @@ import type { RoadmapNode } from "@/lib/roadmap-graph"
 type NodeSheetCallbacks = {
   onPassed?: () => void
   onUpdated?: (node: RoadmapNode) => void
+  onAdapted?: () => void
 }
 
 type NodeSheetSnapshot = {
   node: RoadmapNode | null
   onPassed: (() => void) | null
   onUpdated: ((node: RoadmapNode) => void) | null
+  onAdapted: (() => void) | null
 }
 
 type NodeSheetStore = {
@@ -35,6 +37,7 @@ function createNodeSheetStore(): NodeSheetStore {
     node: null,
     onPassed: null,
     onUpdated: null,
+    onAdapted: null,
   }
   const listeners = new Set<() => void>()
   const emit = () => {
@@ -53,6 +56,7 @@ function createNodeSheetStore(): NodeSheetStore {
         node,
         onPassed: callbacks?.onPassed ?? null,
         onUpdated: callbacks?.onUpdated ?? null,
+        onAdapted: callbacks?.onAdapted ?? null,
       }
       emit()
     },
@@ -100,6 +104,7 @@ export function useNodeSheetState() {
     node: snapshot.node,
     onPassed: snapshot.onPassed,
     onUpdated: snapshot.onUpdated,
+    onAdapted: snapshot.onAdapted,
     close: store.close,
   }
 }

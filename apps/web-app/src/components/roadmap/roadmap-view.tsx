@@ -6,6 +6,8 @@ import {
   type NodeMouseHandler,
 } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
+import { useMutation } from "@apollo/client/react"
+import { toast } from "sonner"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   LinkSquare02Icon,
@@ -13,7 +15,10 @@ import {
   CheckmarkCircle02Icon,
   PencilEdit02Icon,
   Globe02Icon,
+  AiMagicIcon,
 } from "@hugeicons/core-free-icons"
+
+import { AdaptNodeDocument } from "@/gql/graphql"
 
 import {
   asTags,
@@ -111,6 +116,8 @@ function RoadmapViewCanvas() {
     sheet.open(n.data.node, {
       onPassed: () => actions.markCompleted(Number(n.id)),
       onUpdated: (updated) => actions.updateNode(updated),
+      // Adapting inserts new remedial prerequisite nodes — refetch the graph.
+      onAdapted: () => actions.refetchRoadmap(),
     })
   }
 
@@ -166,17 +173,39 @@ function NodeDetailContent({
   node: initialNode,
   onPassed,
   onUpdated,
+  onAdapted,
   onClose,
 }: {
   node: RoadmapNode
   onPassed: () => void
   onUpdated: (node: RoadmapNode) => void
+  onAdapted: () => void
   onClose: () => void
 }) {
   // Local copy so edits + completion reflect immediately in this sheet without
   // a refetch; the canvas is kept in sync via onPassed / onUpdated.
   const [node, setNode] = useState(initialNode)
   const [editing, setEditing] = useState(false)
+  const [adaptNode, { loading: adapting }] = useMutation(AdaptNodeDocument)
+
+  // Adaptive learning: turn the questions the learner missed into remedial
+  // prerequisite nodes, then refetch the canvas and close so they see them.
+  const onAdapt = () => {
+    adaptNode({ variables: { nodeId: node.id } })
+      .then((res) => {
+        const added = res.data?.adaptNode?.length ?? 0
+        if (added > 0) {
+          toast.success(
+            `Added ${added} prerequisite topic${added === 1 ? "" : "s"} to strengthen this.`
+          )
+          onAdapted()
+          onClose()
+        } else {
+          toast.message("Nothing to add — you didn't miss anything to review.")
+        }
+      })
+      .catch(() => toast.error("Couldn't adapt the roadmap. Please try again."))
+  }
 
   const quiz = useNodeQuiz(node.id, () => {
     setNode((n) => ({ ...n, isCompleted: true }))
@@ -333,9 +362,19 @@ function NodeDetailContent({
             Done
           </Button>
         ) : (
-          <Button className="w-full" onClick={quiz.retry}>
-            Try again
-          </Button>
+          <>
+            <Button variant="outline" onClick={quiz.retry} disabled={adapting}>
+              Try again
+            </Button>
+            <Button onClick={onAdapt} disabled={adapting}>
+              {adapting ? (
+                <Spinner data-icon="inline-start" />
+              ) : (
+                <HugeiconsIcon icon={AiMagicIcon} data-icon="inline-start" />
+              )}
+              Strengthen weak spots
+            </Button>
+          </>
         )}
       </SheetFooter>
     </>
@@ -346,7 +385,7 @@ function NodeDetailContent({
 // driven by the external node-sheet store, so it re-renders ONLY on open/close
 // — never during the canvas's churn — letting base-ui's transition run.
 function RoadmapNodeSheet() {
-  const { node, onPassed, onUpdated, close } = useNodeSheetState()
+  const { node, onPassed, onUpdated, onAdapted, close } = useNodeSheetState()
 
   // Keep rendering the last node through the close animation so the content
   // doesn't blank out mid-transition.
@@ -366,6 +405,7 @@ function RoadmapNodeSheet() {
             node={shown}
             onPassed={() => onPassed?.()}
             onUpdated={(updated) => onUpdated?.(updated)}
+            onAdapted={() => onAdapted?.()}
             onClose={close}
           />
         ) : null}

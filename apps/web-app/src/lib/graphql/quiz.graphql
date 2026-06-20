@@ -18,6 +18,12 @@ query NodeQuiz($nodeId: Int!) {
   }
 }
 
+mutation AdaptNode($nodeId: Int!) {
+  adaptNode(nodeId: $nodeId) {
+    ...RoadmapNodeFields
+  }
+}
+
 query MyQuizAttempts {
   myQuizAttempts {
     id
