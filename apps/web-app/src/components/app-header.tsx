@@ -6,6 +6,7 @@ import { AppBreadcrumbs } from "@/components/app-breadcrumbs";
 import { navLinks, useActiveNavPath } from "@/components/app-shared";
 import { CustomSidebarTrigger } from "@/components/custom-sidebar-trigger";
 import { NavUser } from "@/components/nav-user";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { MagicWand01Icon } from "@hugeicons/core-free-icons";
 
@@ -33,6 +34,7 @@ export function AppHeader() {
 					<HugeiconsIcon icon={MagicWand01Icon} data-icon="inline-start" />
 					New Roadmap
 				</Button>
+				<ThemeToggle />
 				<Separator
 					className="h-4 data-[orientation=vertical]:self-center"
 					orientation="vertical"

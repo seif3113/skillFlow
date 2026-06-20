@@ -14,6 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Spinner } from "@/components/ui/spinner"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 export const Route = createFileRoute("/_authed/settings")({
   component: SettingsPage,
@@ -63,6 +64,17 @@ function SettingsPage() {
               </p>
             ) : null}
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Appearance</CardTitle>
+          <CardDescription>Choose how SkillFlow looks.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex items-center justify-between gap-4">
+          <span className="text-sm text-muted-foreground">Theme</span>
+          <ThemeToggle />
         </CardContent>
       </Card>
 
