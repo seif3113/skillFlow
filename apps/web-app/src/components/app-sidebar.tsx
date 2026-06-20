@@ -32,7 +32,11 @@ export function AppSidebar() {
 			variant="sidebar"
 		>
 			<SidebarHeader className="h-14 justify-center border-b px-2">
-				<SidebarMenuButton render={<Link to="/" />}>
+				<SidebarMenuButton
+					size="lg"
+					className="group-data-[collapsible=icon]:justify-center"
+					render={<Link to="/" />}
+				>
 					<LogoIcon />
 					<span className="font-medium text-foreground!">SkillFlow</span>
 				</SidebarMenuButton>
