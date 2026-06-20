@@ -128,7 +128,7 @@ function NewRoadmapPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-xl py-8">
+    <div className="mx-auto w-full max-w-xl">
       {step === "topic" ? (
         <Card>
           <CardHeader>

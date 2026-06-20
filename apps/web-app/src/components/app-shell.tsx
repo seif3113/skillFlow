@@ -4,9 +4,10 @@ import { AppHeader } from "@/components/app-header";
 import { AppSidebar } from "@/components/app-sidebar";
 import { PageContainer } from "@/components/page-container";
 
-// The roadmap viewers (/roadmaps/:id and /explore/:id) use the full width for
-// the canvas; every other page gets its content centered in a PageContainer.
-const FULL_WIDTH = /^\/(roadmaps|explore)\/[^/]+$/;
+// The roadmap viewers (/roadmaps/:id and /explore/:id, numeric ids) use the
+// full width for the canvas; every other page — including /roadmaps/new — gets
+// its content centered in a PageContainer.
+const FULL_WIDTH = /^\/(roadmaps|explore)\/\d+$/;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
