@@ -26,12 +26,12 @@ export function Login() {
   const continueWithGoogle = async () => {
     setLoading(true)
     try {
-      console.log(process.env.APP_URL)
+      console.log(import.meta.env.APP_URL)
 
       await authClient.signIn.social({
         provider: "google",
-        callbackURL: process.env.APP_URL,
-        errorCallbackURL: process.env.APP_URL,
+        callbackURL: import.meta.env.APP_URL,
+        errorCallbackURL: import.meta.env.APP_URL,
       })
       // Success redirects the browser to Google, so keep the spinner until then.
     } catch {
