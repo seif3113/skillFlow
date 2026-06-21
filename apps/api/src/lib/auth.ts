@@ -29,6 +29,9 @@ export const auth = betterAuth({
       generateId: 'serial',
     },
     useSecureCookies: process.env.NODE_ENV === 'production',
+    defaultCookieAttributes: {
+      sameSite: 'None',
+    },
   },
   user: {
     additionalFields: {
