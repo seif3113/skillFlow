@@ -15,10 +15,25 @@ import { getRequestHeader } from "@tanstack/react-start/server"
 import { attachApiError } from "@/lib/api-error"
 import { routeTree } from "./routeTree.gen"
 
-const GRAPHQL_URL =
-  import.meta.env.VITE_GRAPHQL_URL ?? "http://localhost:3001/graphql"
+// BROWSER: always use the same-origin /api/graphql proxy so the browser's session
+// cookie is included (same-origin request). Vercel's cross-origin rewrites strip
+// Cookie headers, which is why the old /graphql rewrite in vercel.json didn't work.
+//
+// SSR (Node): the browser isn't involved, so we skip the proxy and talk directly
+// to the API. The authLink on the server side already forwards the incoming
+// request's cookie header manually, so no proxy is needed.
+const BROWSER_GRAPHQL_URL = "/api/graphql"
+const SERVER_GRAPHQL_URL = (
+  process.env.VITE_SERVER_URL ??
+  import.meta.env.VITE_SERVER_URL ??
+  "http://localhost:3001"
+).replace(/\/$/, "") + "/graphql"
+
 const GRAPHQL_WS_URL =
-  import.meta.env.VITE_GRAPHQL_WS_URL ?? GRAPHQL_URL.replace(/^http/, "ws")
+  import.meta.env.VITE_GRAPHQL_WS_URL ??
+  (
+    import.meta.env.VITE_SERVER_URL ?? "http://localhost:3001"
+  ).replace(/\/$/, "").replace(/^http/, "ws") + "/graphql"
 
 /**
  * Apollo link that intercepts the server's custom error body:
@@ -81,7 +96,13 @@ const authLink = createIsomorphicFn()
 
 // `getRouter` runs on both server and client, so keep it environment-agnostic.
 export function getRouter() {
-  const httpLink = new HttpLink({ uri: GRAPHQL_URL, credentials: "include" })
+  // On the server (SSR), Node fetch needs an absolute URL and cookies are
+  // forwarded manually by authLink — go straight to the API.
+  // In the browser, use the same-origin proxy so the cookie jar is engaged.
+  const graphqlUri =
+    typeof window === "undefined" ? SERVER_GRAPHQL_URL : BROWSER_GRAPHQL_URL
+
+  const httpLink = new HttpLink({ uri: graphqlUri, credentials: "include" })
 
   // Subscriptions (live roadmap generation) need a WebSocket, which only
   // exists in the browser. During SSR we use the HTTP link alone — loaders

@@ -47,7 +47,10 @@ export const auth = betterAuth({
       maxAge: 5 * 60,
     },
   },
-  baseURL: process.env.WEB_URL + '/api/auth',
+  // baseURL must be the FRONTEND origin — the browser always talks to the frontend
+  // (Vercel rewrites /api/auth/* → API transparently), so better-auth must set
+  // cookies scoped to the frontend domain so the browser sends them back.
+  baseURL: process.env.WEB_URL,
   secret: process.env.BETTER_AUTH_SECRET,
   trustedOrigins: [process.env.WEB_URL],
 });

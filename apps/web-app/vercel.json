@@ -6,10 +6,7 @@
     {
       "source": "/api/auth/:path*",
       "destination": "https://skill-flow-api.vercel.app/api/auth/:path*"
-    },
-    {
-      "source": "/graphql",
-      "destination": "https://skill-flow-api.vercel.app/graphql"
     }
   ]
 }
+
