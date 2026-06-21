@@ -24,15 +24,29 @@ let cachedServer: any;
 
 async function bootstrap(): Promise<NestFastifyApplication> {
   const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule, 
+    AppModule,
     new FastifyAdapter(),
     {
       bodyParser: false,
     },
   );
 
+  const allowedOrigins = (process.env.WEB_URL ?? '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+
   app.enableCors({
-    origin: 'http://localhost:3000',
+    origin: (origin, callback) => {
+      // Allow non-browser requests (curl, server-to-server, health checks) which send no Origin header
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      callback(new Error(`Not allowed by CORS: ${origin}`), false);
+    },
     credentials: true,
   });
 
