@@ -7,9 +7,22 @@ import { nitro } from "nitro/vite"
 
 const SERVER_URL = process.env.VITE_SERVER_URL ?? "http://localhost:3001"
 
+// Use the Vercel Nitro preset in CI/production so the build outputs to
+// .vercel/output/ (Vercel Build Output API). Locally keep the default.
+const isVercel = !!process.env.VERCEL
+
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
-  plugins: [devtools(), tailwindcss(), tanstackStart(), viteReact(), nitro()],
+  plugins: [
+    devtools(),
+    tailwindcss(),
+    tanstackStart({
+      // When running on Vercel, emit serverless functions to .vercel/output/
+      server: { preset: isVercel ? "vercel" : undefined },
+    }),
+    viteReact(),
+    nitro(),
+  ],
   server: {
     proxy: {
       // Forward better-auth callbacks/API — fixes state_mismatch by keeping
