@@ -31,7 +31,7 @@ export function RoadmapFlowNodeCard({
       <Handle
         type="target"
         position={Position.Top}
-        className="!size-2 !border-0 !bg-muted-foreground/40"
+        className="size-2! border-0! bg-muted-foreground/40!"
       />
       <div className="flex items-start gap-2">
         {status === "completed" ? (
@@ -63,7 +63,7 @@ export function RoadmapFlowNodeCard({
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!size-2 !border-0 !bg-muted-foreground/40"
+        className="size-2! border-0! bg-muted-foreground/40!"
       />
     </div>
   )

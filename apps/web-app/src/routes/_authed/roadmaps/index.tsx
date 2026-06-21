@@ -6,6 +6,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { PlusSignIcon, Route01Icon } from "@hugeicons/core-free-icons"
 
 import { MyRoadmapsDocument, DeleteRoadmapDocument } from "@/gql/graphql"
+import { getApiError } from "@/lib/api-error"
 import {
   RoadmapCard,
   type RoadmapListItem,
@@ -51,7 +52,7 @@ function RoadmapsPage() {
       toast.success("Roadmap deleted.")
     } catch (e) {
       console.error(e)
-      toast.error("Couldn't delete the roadmap.")
+      toast.error(getApiError(e).message)
     }
     setDeleteTarget(null)
   }

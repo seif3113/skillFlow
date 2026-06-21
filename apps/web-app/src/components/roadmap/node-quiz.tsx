@@ -14,6 +14,7 @@ import {
   type SubmitQuizAttemptMutation,
 } from "@/gql/graphql"
 import { cn } from "@/lib/utils"
+import { getApiError } from "@/lib/api-error"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 
 export type Quiz = QuizFieldsFragment
@@ -48,7 +49,7 @@ export function useNodeQuiz(nodeId: number, onPassed: () => void) {
       if (res.data?.generateNodeQuiz) setQuiz(res.data.generateNodeQuiz)
     } catch (e) {
       console.error(e)
-      toast.error("Couldn't load the quiz. Please try again.")
+      toast.error(getApiError(e).message)
     }
   }
 
@@ -66,7 +67,7 @@ export function useNodeQuiz(nodeId: number, onPassed: () => void) {
       if (r.passed) onPassed()
     } catch (e) {
       console.error(e)
-      toast.error("Couldn't submit the quiz. Please try again.")
+      toast.error(getApiError(e).message)
     }
   }
 

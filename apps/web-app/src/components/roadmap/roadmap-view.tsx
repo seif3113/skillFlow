@@ -9,6 +9,7 @@ import {
 import "@xyflow/react/dist/style.css"
 import { useMutation } from "@apollo/client/react"
 import { toast } from "sonner"
+import { getApiError } from "@/lib/api-error"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   LinkSquare02Icon,
@@ -273,7 +274,7 @@ function NodeDetailContent({
           toast.message("Nothing to add — you didn't miss anything to review.")
         }
       })
-      .catch(() => toast.error("Couldn't adapt the roadmap. Please try again."))
+      .catch((e) => toast.error(getApiError(e).message))
   }
 
   const quiz = useNodeQuiz(node.id, () => {

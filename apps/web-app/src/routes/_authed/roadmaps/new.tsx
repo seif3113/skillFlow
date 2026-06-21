@@ -10,6 +10,7 @@ import {
   GenerateRoadmapStreamDocument,
   RoadmapCustomizationQuestionsDocument,
 } from "@/gql/graphql"
+import { getApiError } from "@/lib/api-error"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -65,7 +66,7 @@ function NewRoadmapPage() {
       setStep("questions")
     } catch (e) {
       console.error(e)
-      toast.error("Couldn't load customization questions. Please try again.")
+      toast.error(getApiError(e).message)
     }
   }
 
@@ -98,7 +99,7 @@ function NewRoadmapPage() {
       // Leave `submitting` true — we're navigating away.
     } catch (e) {
       console.error(e)
-      toast.error("Couldn't start roadmap generation. Please try again.")
+      toast.error(getApiError(e).message)
       setSubmitting(false)
     }
   }
@@ -115,7 +116,7 @@ function NewRoadmapPage() {
       navigate({ to: "/roadmaps/$id", params: { id: String(id) }, search: {} })
     } catch (e) {
       console.error(e)
-      toast.error("Couldn't create the roadmap. Please try again.")
+      toast.error(getApiError(e).message)
       setSubmitting(false)
     }
   }

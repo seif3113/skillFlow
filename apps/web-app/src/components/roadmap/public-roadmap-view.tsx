@@ -24,6 +24,7 @@ import {
   type RoadmapFlowEdge,
 } from "@/lib/roadmap-graph"
 import { authClient } from "@/lib/auth/client"
+import { getApiError } from "@/lib/api-error"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -68,7 +69,7 @@ export function ForkButton({
         toast.success("Forked to your roadmaps.")
         void navigate({ to: "/roadmaps/$id", params: { id: String(newId) } })
       })
-      .catch(() => toast.error("Couldn't fork this roadmap."))
+      .catch((e) => toast.error(getApiError(e).message))
   }
 
   return (
