@@ -29,14 +29,14 @@ export function Login() {
       const baseURL =
         import.meta.env.VITE_BETTER_AUTH_URL ?? "http://localhost:3001/api/auth"
       const appURL =
-        import.meta.env.APP_URL ?? "failed"
+        import.meta.env.VITE_APP_URL ?? "failed"
       console.log(appURL)
       console.log(baseURL)
 
       await authClient.signIn.social({
         provider: "google",
-        callbackURL: import.meta.env.APP_URL,
-        errorCallbackURL: import.meta.env.APP_URL,
+        callbackURL: import.meta.env.VITE_APP_URL,
+        errorCallbackURL: import.meta.env.VITE_APP_URL,
       })
       // Success redirects the browser to Google, so keep the spinner until then.
     } catch {
