@@ -18,6 +18,7 @@ import {
   type RoadmapResource,
 } from "@/lib/roadmap-graph"
 import { cn } from "@/lib/utils"
+import { getApiError } from "@/lib/api-error"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -72,7 +73,7 @@ export function useNodeEditor({
       } catch (e) {
         // Leave the editor open so edits aren't lost; surface the failure.
         console.error(e)
-        toast.error("Couldn't save changes. Please try again.")
+        toast.error(getApiError(e).message)
       }
     },
   })

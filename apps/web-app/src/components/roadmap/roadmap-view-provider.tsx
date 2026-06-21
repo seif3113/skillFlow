@@ -32,6 +32,7 @@ import {
   type FitViewInstance,
   type RoadmapViewContextValue,
 } from "./roadmap-view-context"
+import { getApiError } from "@/lib/api-error"
 
 // Owns ALL roadmap-view state: the query+poll, live generation stream, the
 // dagre-derived xyflow state, and the editing mutations. The compound UI parts
@@ -153,8 +154,8 @@ export function RoadmapViewProvider({
   // Toggle public visibility. The mutation returns { id, isPublished } so
   // Apollo updates the normalized roadmap and the header reflects it.
   const togglePublish = useCallback(() => {
-    publishRoadmap({ variables: { id: roadmapId } }).catch(() =>
-      toast.error("Couldn't update visibility.")
+    publishRoadmap({ variables: { id: roadmapId } }).catch((e) =>
+      toast.error(getApiError(e).message)
     )
   }, [publishRoadmap, roadmapId])
 
@@ -185,8 +186,8 @@ export function RoadmapViewProvider({
         const node = res.data?.createNode
         if (node) setRmNodes((prev) => upsertById(prev, node))
         return node ?? null
-      } catch {
-        toast.error("Couldn't add the topic.")
+      } catch (e) {
+        toast.error(getApiError(e).message)
         return null
       }
     },
@@ -207,7 +208,7 @@ export function RoadmapViewProvider({
           const edge = res.data?.createNodeEdge
           if (edge) setRmEdges((prev) => upsertById(prev, edge))
         })
-        .catch(() => toast.error("Couldn't connect these topics."))
+        .catch((e) => toast.error(getApiError(e).message))
     },
     [createNodeEdge, roadmapId]
   )
@@ -232,7 +233,7 @@ export function RoadmapViewProvider({
             return edge ? [...withoutOld, edge] : withoutOld
           })
         })
-        .catch(() => toast.error("Couldn't reconnect."))
+        .catch((e) => toast.error(getApiError(e).message))
     },
     [createNodeEdge, deleteNodeEdge, roadmapId]
   )
@@ -242,8 +243,8 @@ export function RoadmapViewProvider({
       const ids = new Set(deleted.map((e) => e.id))
       setRmEdges((prev) => prev.filter((e) => !ids.has(String(e.id))))
       for (const e of deleted) {
-        deleteNodeEdge({ variables: { id: Number(e.id) } }).catch(() =>
-          toast.error("Couldn't delete an edge.")
+        deleteNodeEdge({ variables: { id: Number(e.id) } }).catch((err) =>
+          toast.error(getApiError(err).message)
         )
       }
     },
@@ -261,8 +262,8 @@ export function RoadmapViewProvider({
         )
       )
       for (const n of deleted) {
-        deleteNode({ variables: { id: Number(n.id) } }).catch(() =>
-          toast.error("Couldn't delete a node.")
+        deleteNode({ variables: { id: Number(n.id) } }).catch((err) =>
+          toast.error(getApiError(err).message)
         )
       }
     },
