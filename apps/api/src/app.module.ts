@@ -17,8 +17,7 @@ import { GqlHttpExceptionFilter } from './graphql/gql-http-exception.filter';
   imports: [
     GraphQLModule.forRoot<MercuriusDriverConfig>({
       driver: MercuriusDriver,
-      autoSchemaFile: true,
-      typePaths: ['./**/*.graphql'],
+      typePaths: [join(__dirname, '**/*.graphql')],
       definitions:
         process.env.NODE_ENV !== 'production'
           ? {
