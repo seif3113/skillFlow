@@ -17,11 +17,15 @@ import { GqlHttpExceptionFilter } from './graphql/gql-http-exception.filter';
   imports: [
     GraphQLModule.forRoot<MercuriusDriverConfig>({
       driver: MercuriusDriver,
+      autoSchemaFile: true,
       typePaths: ['./**/*.graphql'],
-      definitions: {
-        path: join(process.cwd(), 'src/graphql.ts'),
-        outputAs: 'interface',
-      },
+      definitions:
+        process.env.NODE_ENV !== 'production'
+          ? {
+              path: join(process.cwd(), 'src/graphql.ts'),
+              outputAs: 'interface',
+            }
+          : undefined,
       graphiql: true,
       fieldResolverEnhancers: ['filters'],
       errorFormatter: (execution, context: any) => {
