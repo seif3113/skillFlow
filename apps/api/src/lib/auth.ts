@@ -15,7 +15,7 @@ const client = postgres(process.env.DATABASE_URL, {
 const db = drizzle(client, { schema });
 
 export const auth = betterAuth({
-  database: drizzleAdapter(db, {
+  database: drizzleAdapter(db, { 
     provider: 'pg',
   }),
   socialProviders: {
