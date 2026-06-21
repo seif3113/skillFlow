@@ -23,31 +23,20 @@ try {
 let cachedServer: any;
 
 async function bootstrap(): Promise<NestFastifyApplication> {
+  const adapter = new FastifyAdapter({ logger: false });
+
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter(),
-    {
-      bodyParser: false,
-    },
+    adapter,
+    { bodyParser: false },
   );
 
-  const allowedOrigins = (process.env.WEB_URL ?? '')
-    .split(',')
-    .map((o) => o.trim())
-    .filter(Boolean);
-
-  app.enableCors({
-    origin: (origin, callback) => {
-      // Allow non-browser requests (curl, server-to-server, health checks) which send no Origin header
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      callback(new Error(`Not allowed by CORS: ${origin}`), false);
-    },
+  adapter.enableCors({
+    origin: [process.env.FRONTEND_URL!],
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
     credentials: true,
+    maxAge: 86400,
   });
 
   return app;
@@ -61,13 +50,34 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-// Vercel Serverless Function Handler
 export default async (req: any, res: any) => {
-  if (!cachedServer) {
-    const app = await bootstrap();
-    await app.init();
-    cachedServer = app.getHttpAdapter().getInstance();
+  const allowedOrigin = process.env.FRONTEND_URL!;
+
+  // Apply CORS headers manually — Fastify's middleware pipeline is bypassed on Vercel
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader(
+    'Access-Control-Allow-Methods',
+    'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+  );
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization, Accept',
+  );
+
+  // Respond to preflight immediately
+  if (req.method === 'OPTIONS') {
+    res.statusCode = 204;
+    res.end();
+    return;
   }
-  await cachedServer.ready();
-  cachedServer.server.emit('request', req, res);
+
+  if (!cachedServer) {
+    cachedServer = await bootstrap();
+    await cachedServer.init();
+  }
+
+  const instance = cachedServer.getHttpAdapter().getInstance();
+  await instance.ready();
+  instance.server.emit('request', req, res);
 };
