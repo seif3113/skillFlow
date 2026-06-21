@@ -87,7 +87,7 @@ export class NodeRepository {
     return row ?? null;
   }
 
-  // Idempotent: a duplicate (source, target) returns the existing edge.
+  // Idempotent: a duplicate (roadmapId, source, target) returns the existing edge.
   async createEdge(
     data: Omit<NewNodeEdgeRow, 'id' | 'createdAt'>,
   ): Promise<NodeEdgeRow> {
@@ -98,16 +98,29 @@ export class NodeRepository {
       .returning();
     if (inserted) return inserted;
 
+    // onConflictDoNothing silently drops duplicates — fetch the pre-existing row.
+    // Match on all three constraint columns (roadmapId + source + target) so we
+    // never accidentally return an edge from a different roadmap.
     const [existing] = await this.db
       .select()
       .from(nodeEdges)
       .where(
         and(
+          eq(nodeEdges.roadmapId, data.roadmapId),
           eq(nodeEdges.sourceNodeId, data.sourceNodeId),
           eq(nodeEdges.targetNodeId, data.targetNodeId),
         ),
       )
       .limit(1);
+
+    if (!existing) {
+      // Should never happen: insert failed but no matching row exists.
+      throw new Error(
+        `createEdge: conflict but no existing edge found for ` +
+          `roadmap=${data.roadmapId} source=${data.sourceNodeId} target=${data.targetNodeId}`,
+      );
+    }
+
     return existing;
   }
 
