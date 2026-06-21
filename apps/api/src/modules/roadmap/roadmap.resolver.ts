@@ -181,8 +181,17 @@ export class RoadmapResolver {
           isCompleted: false,
         });
 
-        if (rawNode.ref != null) {
-          refToId.set(String(rawNode.ref), savedNode.id);
+        const rawRef = rawNode.ref;
+        const rawDependsOn = rawNode.dependsOn;
+
+        console.log(
+          `[stream] node saved id=${savedNode.id} title="${savedNode.title}" ` +
+            `ref=${JSON.stringify(rawRef)} dependsOn=${JSON.stringify(rawDependsOn)} ` +
+            `refToId=[${[...refToId.entries()].map(([k, v]) => `${k}→${v}`).join(', ')}]`,
+        );
+
+        if (rawRef != null) {
+          refToId.set(String(rawRef), savedNode.id);
         }
 
         // Wire prerequisite edges from `dependsOn` refs (unknown refs ignored).
@@ -192,21 +201,37 @@ export class RoadmapResolver {
           sourceNodeId: number;
           targetNodeId: number;
         }> = [];
-        const dependsOn: unknown[] = Array.isArray(rawNode.dependsOn)
-          ? rawNode.dependsOn
+        const dependsOn: unknown[] = Array.isArray(rawDependsOn)
+          ? rawDependsOn
           : [];
         for (const depRef of dependsOn) {
           const sourceId = refToId.get(String(depRef));
+          console.log(
+            `[stream]   dep ref=${depRef} → sourceId=${sourceId ?? 'MISSING (ref not in refToId)'}`,
+          );
           if (sourceId) {
-            edges.push(
-              await this.nodeService.createEdge(
+            try {
+              const edge = await this.nodeService.createEdge(
                 roadmapId,
                 sourceId,
                 savedNode.id,
-              ),
-            );
+              );
+              edges.push(edge);
+              console.log(
+                `[stream]   edge created id=${edge.id} ${sourceId}→${savedNode.id}`,
+              );
+            } catch (edgeErr) {
+              console.error(
+                `[stream]   FAILED to create edge ${sourceId}→${savedNode.id}:`,
+                edgeErr,
+              );
+            }
           }
         }
+
+        console.log(
+          `[stream] publishing node id=${savedNode.id} with ${edges.length} edge(s)`,
+        );
 
         pubSub.publish(`roadmapGenerationStream_${roadmapId}`, {
           roadmapGenerationStream: {

@@ -60,7 +60,12 @@ export const nodeEdges = pgTable(
       .defaultNow(),
   },
   (t) => [
-    unique('node_edges_source_target_unique').on(
+    // Unique per roadmap: the same (source → target) pair cannot exist twice
+    // within the same roadmap. roadmapId is included explicitly so the
+    // constraint name is unambiguous and the fallback select in createEdge
+    // can match on all three columns.
+    unique('node_edges_roadmap_source_target_unique').on(
+      t.roadmapId,
       t.sourceNodeId,
       t.targetNodeId,
     ),

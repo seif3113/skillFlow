@@ -645,7 +645,8 @@ class NLPController(BaseController):
         # Step 1: Get sub-topics (LLM Call 1)
         try:
             seg_system_prompt = self.template_parser.get(
-                "roadmap_generator", "topic_segmentation_system_prompt"
+                "roadmap_generator", "topic_segmentation_system_prompt",
+                {"topic": topic}
             )
             seg_user_prompt = self.template_parser.get(
                 "roadmap_generator",
@@ -683,6 +684,8 @@ class NLPController(BaseController):
             logger.error(f"Failed to parse sub-topics: {e}")
             return None, None, None
 
+        logger.info(f"[Pass 1 Output] topic_objects: {json.dumps(topic_objects, indent=2)}")
+
         # Build the prerequisite plan from Pass 1, aligned to sub-topic order.
         # We normalise all refs to 1-based positional strings ("1", "2", …) so
         # edge wiring stays deterministic regardless of what IDs the LLM chose.
@@ -700,15 +703,20 @@ class NLPController(BaseController):
             positional_ref = str(i + 1)
             raw_deps = obj.get("dependsOn")
             if raw_deps is None:
-                raw_deps = obj.get("depends_on") or []
-            deps = [
-                llm_id_to_ref.get(str(d), str(d))
-                for d in (raw_deps if isinstance(raw_deps, list) else [])
-                if d is not None
-            ]
-            # Remove self-references or any dep that points to itself
-            deps = [d for d in deps if d != positional_ref]
-            dependency_plan.append({"ref": positional_ref, "dependsOn": deps})
+                raw_deps = obj.get("depends_on")
+
+            if raw_deps is None:
+                raw_deps = []
+            elif isinstance(raw_deps, str) or isinstance(raw_deps, int):
+                # LLM sometimes returns a single string/int instead of an array
+                raw_deps = [raw_deps]
+                
+            deps = (
+                [str(d) for d in raw_deps if d is not None]
+                if isinstance(raw_deps, list)
+                else []
+            )
+            dependency_plan.append({"ref": ref, "dependsOn": deps})
 
         # Step 2: Batch vector search with concise, sub-topic specific queries.
         search_queries = [
