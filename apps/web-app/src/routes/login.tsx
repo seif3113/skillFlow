@@ -26,7 +26,10 @@ export function Login() {
   const continueWithGoogle = async () => {
     setLoading(true)
     try {
+      const baseURL =
+        import.meta.env.VITE_BETTER_AUTH_URL ?? "http://localhost:3001/api/auth"
       console.log(import.meta.env.APP_URL)
+      console.log(baseURL)
 
       await authClient.signIn.social({
         provider: "google",
