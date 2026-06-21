@@ -1,5 +1,11 @@
 {
   "buildCommand": "vite build",
   "installCommand": "bun install",
-  "framework": null
+  "framework": null,
+  "rewrites": [
+    {
+      "source": "/api/auth/:path*",
+      "destination": "https://skill-flow-api.vercel.app/api/auth/:path*"
+    }
+  ]
 }
