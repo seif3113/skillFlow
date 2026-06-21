@@ -122,9 +122,12 @@ export class RoadmapResolver {
       userId,
     );
 
+    // Copy nodes and build an oldId → newId map so we can re-wire edges.
     const originalNodes = await this.nodeService.findByRoadmapId(id);
+    const oldToNewId = new Map<number, number>();
+
     for (const node of originalNodes) {
-      await this.nodeService.create({
+      const cloned = await this.nodeService.create({
         roadmapId: forked.id,
         title: node.title,
         description: node.description ?? undefined,
@@ -132,6 +135,17 @@ export class RoadmapResolver {
         resources: node.resources ?? undefined,
         isCompleted: false,
       });
+      oldToNewId.set(node.id, cloned.id);
+    }
+
+    // Copy edges: translate every source/target to the new node IDs.
+    const originalEdges = await this.nodeService.findEdgesByRoadmapId(id);
+    for (const edge of originalEdges) {
+      const newSource = oldToNewId.get(edge.sourceNodeId);
+      const newTarget = oldToNewId.get(edge.targetNodeId);
+      if (newSource && newTarget) {
+        await this.nodeService.createEdge(forked.id, newSource, newTarget);
+      }
     }
 
     return forked;
