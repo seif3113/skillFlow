@@ -17,7 +17,11 @@ import { GqlHttpExceptionFilter } from './graphql/gql-http-exception.filter';
   imports: [
     GraphQLModule.forRoot<MercuriusDriverConfig>({
       driver: MercuriusDriver,
-      typePaths: [join(__dirname, '**/*.graphql')],
+      typePaths: [
+        process.env.NODE_ENV === 'production'
+          ? join(__dirname, '**/*.graphql')
+          : './**/*.graphql',
+      ],
       definitions:
         process.env.NODE_ENV !== 'production'
           ? {
@@ -54,7 +58,10 @@ import { GqlHttpExceptionFilter } from './graphql/gql-http-exception.filter';
         });
 
         if (context?.reply) {
-          context.reply.header('content-type', 'application/json; charset=utf-8');
+          context.reply.header(
+            'content-type',
+            'application/json; charset=utf-8',
+          );
           context.reply.send(body);
           return {
             statusCode: 200,
@@ -74,9 +81,16 @@ import { GqlHttpExceptionFilter } from './graphql/gql-http-exception.filter';
         };
       },
       subscription: {
-        context: (connection, request) => ({ req: request || { headers: {} }, connection }),
+        context: (connection, request) => ({
+          req: request || { headers: {} },
+          connection,
+        }),
       },
-      context: (request, reply) => ({ req: request || { headers: {} }, request, reply }),
+      context: (request, reply) => ({
+        req: request || { headers: {} },
+        request,
+        reply,
+      }),
     }),
     DatabaseModule,
     RoadmapModule,
@@ -85,9 +99,12 @@ import { GqlHttpExceptionFilter } from './graphql/gql-http-exception.filter';
     UserModule,
     AuthModule.forRoot({ auth }),
   ],
-  providers: [ScalarsResolver, {
-    provide: APP_FILTER,
-    useClass: GqlHttpExceptionFilter,  
-  }],
+  providers: [
+    ScalarsResolver,
+    {
+      provide: APP_FILTER,
+      useClass: GqlHttpExceptionFilter,
+    },
+  ],
 })
 export class AppModule {}
