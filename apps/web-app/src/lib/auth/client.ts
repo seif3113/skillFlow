@@ -1,11 +1,7 @@
 import { createAuthClient } from "better-auth/react"
 
-// Use a relative path so the auth client always hits the *same origin* as the
-// frontend. In dev the Vite proxy forwards /api/auth/* → the NestJS server,
-// and in production a Nitro route handler does the same. This is the
-// TanStack-Start equivalent of Next.js rewrites and is what prevents the
-// OAuth state_mismatch error.
-const baseURL = "/api/auth"
+// Talks to the NestJS better-auth instance mounted at /api/auth on the API.
+const baseURL = import.meta.env.VITE_BETTER_AUTH_URL ?? "http://localhost:3000"
 
 export const authClient = createAuthClient({ baseURL })
 
