@@ -12,6 +12,12 @@ import logging
 logger = logging.getLogger("uvicorn.error")
 
 
+class UnsupportedDomainError(Exception):
+    def __init__(self, reason: str):
+        self.reason = reason
+        super().__init__(reason)
+
+
 class NLPController(BaseController):
 
     def __init__(
@@ -662,12 +668,17 @@ class NLPController(BaseController):
 
         try:
             topic_objects = self._extract_json_from_llm_response(topics_json_raw)
+            if isinstance(topic_objects, dict) and not topic_objects.get("supported", True):
+                reason = topic_objects.get("message") or topic_objects.get("reason") or "Topic is outside our supported domains."
+                raise UnsupportedDomainError(reason)
             # Ensure it's a list of objects
             if not isinstance(topic_objects, list) or not all(
                 isinstance(obj, dict) for obj in topic_objects
             ):
                 raise ValueError("LLM did not return a list of objects.")
             topic_objects = topic_objects[:8]
+        except UnsupportedDomainError:
+            raise
         except Exception as e:
             logger.error(f"Failed to parse sub-topics: {e}")
             return None, None, None

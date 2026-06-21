@@ -1,6 +1,6 @@
 from fastapi import FastAPI, APIRouter, status, Request
 from fastapi.responses import JSONResponse, StreamingResponse
-from controllers.NLPController import NLPController
+from controllers.NLPController import NLPController, UnsupportedDomainError
 from controllers.document_loader import load_chunks
 from models.schemes import (
     SearchRequest,
@@ -52,6 +52,25 @@ COURSE_SOURCES = {
     # "skillshare", "futurelearn", "codecademy", "datacamp",
 }
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Supported domain groups — injected into the LLM system prompt so the model
+# decides whether a topic falls within our knowledge base.
+# Derived from the 25 categories in processed_chunks.json, grouped into 10.
+# Update this list whenever new domain data is indexed.
+# ─────────────────────────────────────────────────────────────────────────────
+SUPPORTED_DOMAIN_GROUPS = [
+    "Programming & Software Development (Python, JavaScript, Java, C++, TypeScript, software engineering, algorithms, data structures)",
+    "Web Technologies (HTML, CSS, React, Node.js, Next.js, REST APIs, GraphQL, web frameworks, frontend, backend, fullstack)",
+    "Data Science & Machine Learning (data analysis, ML, AI, deep learning, NLP, computer vision, big data, data engineering, statistics)",
+    "Databases & SQL (SQL, MySQL, PostgreSQL, MongoDB, Redis, SQLite, NoSQL, database design)",
+    "DevOps & Cloud Computing (Docker, Kubernetes, AWS, Azure, GCP, CI/CD, Linux, Git, Terraform, infrastructure)",
+    "IT & Cybersecurity (networking, cybersecurity, ethical hacking, penetration testing, operating systems, information technology, computing)",
+    "Mathematics (algebra, calculus, linear algebra, statistics, probability, geometry, discrete math, differential equations)",
+    "Science (physics, chemistry, biology, astronomy, ecology, genetics, earth science)",
+    "Business, Marketing & Finance (entrepreneurship, project management, digital marketing, SEO, economics, finance, accounting, investment, leadership, strategy)",
+    "Design & UX (UI/UX, graphic design, Figma, Adobe, web design, product design, motion design)",
+]
+
 nlp_router = APIRouter(
     prefix="/api/v1/nlp",
     tags=["api_v1", "nlp"],
@@ -77,11 +96,19 @@ def _get_resource_type(source: str, url: str = "") -> str:
     normalized_url = (url or "").strip().lower()
 
     # Check video platforms by source name or URL
-    if normalized_source in VIDEO_SOURCES or "youtube.com" in normalized_url or "youtu.be" in normalized_url:
+    if (
+        normalized_source in VIDEO_SOURCES
+        or "youtube.com" in normalized_url
+        or "youtu.be" in normalized_url
+    ):
         return "video"
 
     # Check article platforms by source name or URL
-    if normalized_source in ARTICLE_SOURCES or any(s in normalized_url for s in ARTICLE_SOURCES) or "w3schools.com" in normalized_url:
+    if (
+        normalized_source in ARTICLE_SOURCES
+        or any(s in normalized_url for s in ARTICLE_SOURCES)
+        or "w3schools.com" in normalized_url
+    ):
         return "article"
 
     # Explicit course platforms (coursera, udemy, khan_academy, etc.)
@@ -91,7 +118,16 @@ def _get_resource_type(source: str, url: str = "") -> str:
     # Fallback: guess from URL patterns
     if any(s in normalized_url for s in ("youtu.be", "youtube.com")):
         return "video"
-    if any(s in normalized_url for s in ("coursera.org", "udemy.com", "edx.org", "khanacademy.org", "linkedin.com/learning")):
+    if any(
+        s in normalized_url
+        for s in (
+            "coursera.org",
+            "udemy.com",
+            "edx.org",
+            "khanacademy.org",
+            "linkedin.com/learning",
+        )
+    ):
         return "course"
 
     return "course"
@@ -212,7 +248,7 @@ async def search_index(request: Request, search_request: SearchRequest):
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={
-                "signal": "ResponseSignal.VECTORDB_SEARCH_ERROR.value",
+                "signal": "error",
                 "message": "topic is required.",
             },
         )
@@ -221,7 +257,7 @@ async def search_index(request: Request, search_request: SearchRequest):
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={
-                "signal": "ResponseSignal.VECTORDB_SEARCH_ERROR.value",
+                "signal": "error",
                 "message": "type must be one of: all, video, article, course.",
             },
         )
@@ -240,7 +276,7 @@ async def search_index(request: Request, search_request: SearchRequest):
     if not results:
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
-            content={"signal": "ResponseSignal.VECTORDB_SEARCH_ERROR.value"},
+            content={"signal": "error"},
         )
 
     formatted_results = [_format_search_result(res) for res in results]
@@ -252,7 +288,7 @@ async def search_index(request: Request, search_request: SearchRequest):
 
     return JSONResponse(
         content={
-            "signal": "ResponseSignal.VECTORDB_SEARCH_SUCCESS.value",
+            "signal": "error",
             "results": formatted_results[:limit],
         }
     )
@@ -336,7 +372,38 @@ async def generate_roadmap_rag(request: Request, roadmap_request: RoadmapRequest
         embedding_helper=request.app.embedding_helper,
     )
 
-    def stream_roadmap():
+    try:
+        stream, dependency_plan = nlp_controller.generate_customized_roadmap_rag_stream(
+            topic=topic, customization_answers=roadmap_request.customization_answers
+        )
+        dependency_plan = dependency_plan or []
+        if not stream:
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={
+                    "signal": "error",
+                    "message": "Failed to start roadmap generation stream.",
+                },
+            )
+    except UnsupportedDomainError as e:
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content={
+                "signal": "unsupported_domain",
+                "message": "We don't support this domain at this time.",
+            },
+        )
+    except Exception as e:
+        logger.error(f"Roadmap pre-generation failed: {str(e)}")
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "signal": "error",
+                "message": "Roadmap pre-generation failed.",
+            },
+        )
+
+    def stream_roadmap(stream_obj, dep_plan):
         full_response = ""
         nodes = []
         scan_index = 0
@@ -346,27 +413,11 @@ async def generate_roadmap_rag(request: Request, roadmap_request: RoadmapRequest
         in_string = False
         escape = False
         node_index = 0
-        dependency_plan = []
 
         yield _json_stream_event("start", {"signal": "success"})
 
         try:
-            stream, dependency_plan = nlp_controller.generate_customized_roadmap_rag_stream(
-                topic=topic, customization_answers=roadmap_request.customization_answers
-            )
-            dependency_plan = dependency_plan or []
-
-            if not stream:
-                yield _json_stream_event(
-                    "error",
-                    {
-                        "signal": "error",
-                        "message": "Failed to start roadmap generation stream.",
-                    },
-                )
-                return
-
-            for chunk in stream:
+            for chunk in stream_obj:
                 if not chunk:
                     continue
 
@@ -419,8 +470,8 @@ async def generate_roadmap_rag(request: Request, roadmap_request: RoadmapRequest
                         # Inject the prerequisite plan (ref + dependsOn) by
                         # position so the backend can wire DAG edges. Emitted in
                         # topological order, matching Pass 1's sub-topic order.
-                        if node_index < len(dependency_plan):
-                            plan = dependency_plan[node_index]
+                        if node_index < len(dep_plan):
+                            plan = dep_plan[node_index]
                             node["ref"] = plan["ref"]
                             node["dependsOn"] = plan["dependsOn"]
                         node_index += 1
@@ -438,12 +489,11 @@ async def generate_roadmap_rag(request: Request, roadmap_request: RoadmapRequest
                 {
                     "signal": "error",
                     "message": "Roadmap generation failed.",
-                    "details": str(e),
                 },
             )
 
     return StreamingResponse(
-        stream_roadmap(),
+        stream_roadmap(stream, dependency_plan),
         media_type="application/x-ndjson",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
@@ -474,7 +524,9 @@ async def edit_roadmap_rag(request: Request, edit_request: RoadmapEditRequest):
         ordered_roadmap = []
         for index, node in enumerate(sorted_roadmap):
             node_dict = node.dict()
-            node_dict["order"] = index + 1  # Provide explicit 1-based ordering for the LLM
+            node_dict["order"] = (
+                index + 1
+            )  # Provide explicit 1-based ordering for the LLM
             ordered_roadmap.append(node_dict)
 
         edited_roadmap = nlp_controller.edit_roadmap_rag(
@@ -488,7 +540,6 @@ async def edit_roadmap_rag(request: Request, edit_request: RoadmapEditRequest):
             content={
                 "signal": "error",
                 "message": "Roadmap edit failed.",
-                "details": str(e),
             },
         )
 
@@ -510,6 +561,7 @@ async def edit_roadmap_rag(request: Request, edit_request: RoadmapEditRequest):
 
 @nlp_router.post("/roadmap-customization")
 async def roadmap_customization(request: Request, chat_request: ChatRequest):
+    topic = (chat_request.message or "").strip()
 
     nlp_controller = NLPController(
         vectordb_client=request.app.vectordb_client,
@@ -519,7 +571,7 @@ async def roadmap_customization(request: Request, chat_request: ChatRequest):
         embedding_helper=request.app.embedding_helper,
     )
 
-    questions_data = nlp_controller.get_roadmap_questions(topic=chat_request.message)
+    questions_data = nlp_controller.get_roadmap_questions(topic=topic)
 
     if not questions_data:
         return JSONResponse(
@@ -527,6 +579,15 @@ async def roadmap_customization(request: Request, chat_request: ChatRequest):
             content={
                 "signal": "error",
                 "message": "Failed to generate roadmap questions.",
+            },
+        )
+
+    if not questions_data.get("supported", True):
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content={
+                "signal": "unsupported_domain",
+                "message": "We don't support this domain at this time.",
             },
         )
 
