@@ -192,7 +192,10 @@ function RoadmapViewCanvas() {
         proOptions={{ hideAttribution: true }}
       >
         <Background />
-        <Controls showInteractive={false} />
+        <Controls
+          className="bg-background/90! text-muted-foreground!"
+          showInteractive={false}
+        />
         <Panel position="top-right">
           <CanvasLegend />
         </Panel>
