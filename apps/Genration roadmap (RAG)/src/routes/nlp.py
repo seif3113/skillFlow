@@ -21,7 +21,36 @@ import logging
 logger = logging.getLogger("uvicorn.error")
 
 ALLOWED_RESOURCE_TYPES = {"all", "video", "article", "course"}
-VIDEO_SOURCES = {"youtube"}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Source → Type mapping
+# Discovered sources in processed_chunks.json (7,431 total chunks):
+#   youtube      → video    (1,953 chunks)
+#   udemy        → course   (2,398 chunks)
+#   khan_academy → course   (1,620 chunks)
+#   coursera     → course   (1,360 chunks)
+#   w3schools    → article  (  100 chunks)
+# Add new sources here as more data is indexed.
+# ─────────────────────────────────────────────────────────────────────────────
+VIDEO_SOURCES = {
+    "youtube",
+}
+
+ARTICLE_SOURCES = {
+    "w3schools",
+    # future article sources:
+    # "medium", "dev.to", "hashnode", "substack", "towardsdatascience",
+    # "geeksforgeeks", "freecodecamp", "css-tricks",
+}
+
+COURSE_SOURCES = {
+    "udemy",
+    "khan_academy",
+    "coursera",
+    # future course sources (not yet indexed):
+    # "edx", "udacity", "linkedin_learning", "pluralsight",
+    # "skillshare", "futurelearn", "codecademy", "datacamp",
+}
 
 nlp_router = APIRouter(
     prefix="/api/v1/nlp",
@@ -42,22 +71,37 @@ def _parse_resource_text(text: str) -> dict:
     return resource
 
 
-def _get_resource_type(source: str, requested_type: str = "all") -> str:
-    if requested_type != "all":
-        return requested_type
-
+def _get_resource_type(source: str, url: str = "") -> str:
+    """Derive the actual resource type from source/URL metadata — never from the request filter."""
     normalized_source = (source or "").strip().lower()
+    normalized_url = (url or "").strip().lower()
 
-    if normalized_source in VIDEO_SOURCES:
+    # Check video platforms by source name or URL
+    if normalized_source in VIDEO_SOURCES or "youtube.com" in normalized_url or "youtu.be" in normalized_url:
         return "video"
+
+    # Check article platforms by source name or URL
+    if normalized_source in ARTICLE_SOURCES or any(s in normalized_url for s in ARTICLE_SOURCES) or "w3schools.com" in normalized_url:
+        return "article"
+
+    # Explicit course platforms (coursera, udemy, khan_academy, etc.)
+    if normalized_source in COURSE_SOURCES:
+        return "course"
+
+    # Fallback: guess from URL patterns
+    if any(s in normalized_url for s in ("youtu.be", "youtube.com")):
+        return "video"
+    if any(s in normalized_url for s in ("coursera.org", "udemy.com", "edx.org", "khanacademy.org", "linkedin.com/learning")):
+        return "course"
 
     return "course"
 
 
-def _format_search_result(result, requested_type: str = "all") -> dict:
+def _format_search_result(result) -> dict:
     payload = getattr(result, "payload", {}) or {}
     resource_data = _parse_resource_text(payload.get("text", ""))
     source = resource_data.get("source", "")
+    url = resource_data.get("canonical_url") or resource_data.get("url", "")
 
     return {
         "id": resource_data.get("course_sk") or getattr(result, "id", None),
@@ -65,8 +109,8 @@ def _format_search_result(result, requested_type: str = "all") -> dict:
             "title": resource_data.get("title", ""),
             "description": resource_data.get("description")
             or resource_data.get("headline", ""),
-            "url": resource_data.get("canonical_url") or resource_data.get("url", ""),
-            "type": _get_resource_type(source, requested_type),
+            "url": url,
+            "type": _get_resource_type(source, url),
         },
     }
 
@@ -199,7 +243,7 @@ async def search_index(request: Request, search_request: SearchRequest):
             content={"signal": "ResponseSignal.VECTORDB_SEARCH_ERROR.value"},
         )
 
-    formatted_results = [_format_search_result(res, resource_type) for res in results]
+    formatted_results = [_format_search_result(res) for res in results]
 
     if resource_type != "all":
         formatted_results = [
