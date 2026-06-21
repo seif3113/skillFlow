@@ -28,7 +28,7 @@ export function Login() {
     try {
       await authClient.signIn.social({
         provider: "google",
-        callbackURL: `${window.location.origin}/`,
+        callbackURL: process.env.APP_URL,
       })
       // Success redirects the browser to Google, so keep the spinner until then.
     } catch {
