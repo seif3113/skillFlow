@@ -3,7 +3,7 @@
     "NODE_OPTIONS": "--experimental-require-module"
   },
   "functions": {
-    "src/main.ts": {
+    "src/main.js": {
       "includeFiles": "src/**/*.graphql"
     }
   }
