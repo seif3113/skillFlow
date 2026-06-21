@@ -8,162 +8,162 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as AuthedRouteImport } from './routes/_authed'
-import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
-import { Route as ApiAssistantRouteImport } from './routes/api/assistant'
-import { Route as AuthedSettingsRouteImport } from './routes/_authed/settings'
-import { Route as AuthedProgressRouteImport } from './routes/_authed/progress'
-import { Route as AuthedHelpRouteImport } from './routes/_authed/help'
-import { Route as AuthedRoadmapsIndexRouteImport } from './routes/_authed/roadmaps/index'
-import { Route as AuthedExploreIndexRouteImport } from './routes/_authed/explore/index'
-import { Route as AuthedRoadmapsNewRouteImport } from './routes/_authed/roadmaps/new'
-import { Route as AuthedRoadmapsIdRouteImport } from './routes/_authed/roadmaps/$id'
-import { Route as AuthedExploreIdRouteImport } from './routes/_authed/explore/$id'
+import { Route as rootRouteImport } from "./routes/__root"
+import { Route as LoginRouteImport } from "./routes/login"
+import { Route as AuthedRouteImport } from "./routes/_authed"
+import { Route as AuthedIndexRouteImport } from "./routes/_authed/index"
+import { Route as ApiAssistantRouteImport } from "./routes/api/assistant"
+import { Route as AuthedSettingsRouteImport } from "./routes/_authed/settings"
+import { Route as AuthedProgressRouteImport } from "./routes/_authed/progress"
+import { Route as AuthedHelpRouteImport } from "./routes/_authed/help"
+import { Route as AuthedRoadmapsIndexRouteImport } from "./routes/_authed/roadmaps/index"
+import { Route as AuthedExploreIndexRouteImport } from "./routes/_authed/explore/index"
+import { Route as AuthedRoadmapsNewRouteImport } from "./routes/_authed/roadmaps/new"
+import { Route as AuthedRoadmapsIdRouteImport } from "./routes/_authed/roadmaps/$id"
+import { Route as AuthedExploreIdRouteImport } from "./routes/_authed/explore/$id"
 
 const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+  id: "/login",
+  path: "/login",
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedRoute = AuthedRouteImport.update({
-  id: '/_authed',
+  id: "/_authed",
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedIndexRoute = AuthedIndexRouteImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => AuthedRoute,
 } as any)
 const ApiAssistantRoute = ApiAssistantRouteImport.update({
-  id: '/api/assistant',
-  path: '/api/assistant',
+  id: "/api/assistant",
+  path: "/api/assistant",
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedSettingsRoute = AuthedSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
+  id: "/settings",
+  path: "/settings",
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedProgressRoute = AuthedProgressRouteImport.update({
-  id: '/progress',
-  path: '/progress',
+  id: "/progress",
+  path: "/progress",
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedHelpRoute = AuthedHelpRouteImport.update({
-  id: '/help',
-  path: '/help',
+  id: "/help",
+  path: "/help",
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedRoadmapsIndexRoute = AuthedRoadmapsIndexRouteImport.update({
-  id: '/roadmaps/',
-  path: '/roadmaps/',
+  id: "/roadmaps/",
+  path: "/roadmaps/",
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedExploreIndexRoute = AuthedExploreIndexRouteImport.update({
-  id: '/explore/',
-  path: '/explore/',
+  id: "/explore/",
+  path: "/explore/",
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedRoadmapsNewRoute = AuthedRoadmapsNewRouteImport.update({
-  id: '/roadmaps/new',
-  path: '/roadmaps/new',
+  id: "/roadmaps/new",
+  path: "/roadmaps/new",
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedRoadmapsIdRoute = AuthedRoadmapsIdRouteImport.update({
-  id: '/roadmaps/$id',
-  path: '/roadmaps/$id',
+  id: "/roadmaps/$id",
+  path: "/roadmaps/$id",
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedExploreIdRoute = AuthedExploreIdRouteImport.update({
-  id: '/explore/$id',
-  path: '/explore/$id',
+  id: "/explore/$id",
+  path: "/explore/$id",
   getParentRoute: () => AuthedRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof AuthedIndexRoute
-  '/login': typeof LoginRoute
-  '/help': typeof AuthedHelpRoute
-  '/progress': typeof AuthedProgressRoute
-  '/settings': typeof AuthedSettingsRoute
-  '/api/assistant': typeof ApiAssistantRoute
-  '/explore/$id': typeof AuthedExploreIdRoute
-  '/roadmaps/$id': typeof AuthedRoadmapsIdRoute
-  '/roadmaps/new': typeof AuthedRoadmapsNewRoute
-  '/explore/': typeof AuthedExploreIndexRoute
-  '/roadmaps/': typeof AuthedRoadmapsIndexRoute
+  "/": typeof AuthedIndexRoute
+  "/login": typeof LoginRoute
+  "/help": typeof AuthedHelpRoute
+  "/progress": typeof AuthedProgressRoute
+  "/settings": typeof AuthedSettingsRoute
+  "/api/assistant": typeof ApiAssistantRoute
+  "/explore/$id": typeof AuthedExploreIdRoute
+  "/roadmaps/$id": typeof AuthedRoadmapsIdRoute
+  "/roadmaps/new": typeof AuthedRoadmapsNewRoute
+  "/explore/": typeof AuthedExploreIndexRoute
+  "/roadmaps/": typeof AuthedRoadmapsIndexRoute
 }
 export interface FileRoutesByTo {
-  '/login': typeof LoginRoute
-  '/help': typeof AuthedHelpRoute
-  '/progress': typeof AuthedProgressRoute
-  '/settings': typeof AuthedSettingsRoute
-  '/api/assistant': typeof ApiAssistantRoute
-  '/': typeof AuthedIndexRoute
-  '/explore/$id': typeof AuthedExploreIdRoute
-  '/roadmaps/$id': typeof AuthedRoadmapsIdRoute
-  '/roadmaps/new': typeof AuthedRoadmapsNewRoute
-  '/explore': typeof AuthedExploreIndexRoute
-  '/roadmaps': typeof AuthedRoadmapsIndexRoute
+  "/login": typeof LoginRoute
+  "/help": typeof AuthedHelpRoute
+  "/progress": typeof AuthedProgressRoute
+  "/settings": typeof AuthedSettingsRoute
+  "/api/assistant": typeof ApiAssistantRoute
+  "/": typeof AuthedIndexRoute
+  "/explore/$id": typeof AuthedExploreIdRoute
+  "/roadmaps/$id": typeof AuthedRoadmapsIdRoute
+  "/roadmaps/new": typeof AuthedRoadmapsNewRoute
+  "/explore": typeof AuthedExploreIndexRoute
+  "/roadmaps": typeof AuthedRoadmapsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/_authed': typeof AuthedRouteWithChildren
-  '/login': typeof LoginRoute
-  '/_authed/help': typeof AuthedHelpRoute
-  '/_authed/progress': typeof AuthedProgressRoute
-  '/_authed/settings': typeof AuthedSettingsRoute
-  '/api/assistant': typeof ApiAssistantRoute
-  '/_authed/': typeof AuthedIndexRoute
-  '/_authed/explore/$id': typeof AuthedExploreIdRoute
-  '/_authed/roadmaps/$id': typeof AuthedRoadmapsIdRoute
-  '/_authed/roadmaps/new': typeof AuthedRoadmapsNewRoute
-  '/_authed/explore/': typeof AuthedExploreIndexRoute
-  '/_authed/roadmaps/': typeof AuthedRoadmapsIndexRoute
+  "/_authed": typeof AuthedRouteWithChildren
+  "/login": typeof LoginRoute
+  "/_authed/help": typeof AuthedHelpRoute
+  "/_authed/progress": typeof AuthedProgressRoute
+  "/_authed/settings": typeof AuthedSettingsRoute
+  "/api/assistant": typeof ApiAssistantRoute
+  "/_authed/": typeof AuthedIndexRoute
+  "/_authed/explore/$id": typeof AuthedExploreIdRoute
+  "/_authed/roadmaps/$id": typeof AuthedRoadmapsIdRoute
+  "/_authed/roadmaps/new": typeof AuthedRoadmapsNewRoute
+  "/_authed/explore/": typeof AuthedExploreIndexRoute
+  "/_authed/roadmaps/": typeof AuthedRoadmapsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
-    | '/login'
-    | '/help'
-    | '/progress'
-    | '/settings'
-    | '/api/assistant'
-    | '/explore/$id'
-    | '/roadmaps/$id'
-    | '/roadmaps/new'
-    | '/explore/'
-    | '/roadmaps/'
+    | "/"
+    | "/login"
+    | "/help"
+    | "/progress"
+    | "/settings"
+    | "/api/assistant"
+    | "/explore/$id"
+    | "/roadmaps/$id"
+    | "/roadmaps/new"
+    | "/explore/"
+    | "/roadmaps/"
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/login'
-    | '/help'
-    | '/progress'
-    | '/settings'
-    | '/api/assistant'
-    | '/'
-    | '/explore/$id'
-    | '/roadmaps/$id'
-    | '/roadmaps/new'
-    | '/explore'
-    | '/roadmaps'
+    | "/login"
+    | "/help"
+    | "/progress"
+    | "/settings"
+    | "/api/assistant"
+    | "/"
+    | "/explore/$id"
+    | "/roadmaps/$id"
+    | "/roadmaps/new"
+    | "/explore"
+    | "/roadmaps"
   id:
-    | '__root__'
-    | '/_authed'
-    | '/login'
-    | '/_authed/help'
-    | '/_authed/progress'
-    | '/_authed/settings'
-    | '/api/assistant'
-    | '/_authed/'
-    | '/_authed/explore/$id'
-    | '/_authed/roadmaps/$id'
-    | '/_authed/roadmaps/new'
-    | '/_authed/explore/'
-    | '/_authed/roadmaps/'
+    | "__root__"
+    | "/_authed"
+    | "/login"
+    | "/_authed/help"
+    | "/_authed/progress"
+    | "/_authed/settings"
+    | "/api/assistant"
+    | "/_authed/"
+    | "/_authed/explore/$id"
+    | "/_authed/roadmaps/$id"
+    | "/_authed/roadmaps/new"
+    | "/_authed/explore/"
+    | "/_authed/roadmaps/"
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -172,89 +172,89 @@ export interface RootRouteChildren {
   ApiAssistantRoute: typeof ApiAssistantRoute
 }
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
+    "/login": {
+      id: "/login"
+      path: "/login"
+      fullPath: "/login"
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authed': {
-      id: '/_authed'
-      path: ''
-      fullPath: '/'
+    "/_authed": {
+      id: "/_authed"
+      path: ""
+      fullPath: "/"
       preLoaderRoute: typeof AuthedRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authed/': {
-      id: '/_authed/'
-      path: '/'
-      fullPath: '/'
+    "/_authed/": {
+      id: "/_authed/"
+      path: "/"
+      fullPath: "/"
       preLoaderRoute: typeof AuthedIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/api/assistant': {
-      id: '/api/assistant'
-      path: '/api/assistant'
-      fullPath: '/api/assistant'
+    "/api/assistant": {
+      id: "/api/assistant"
+      path: "/api/assistant"
+      fullPath: "/api/assistant"
       preLoaderRoute: typeof ApiAssistantRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authed/settings': {
-      id: '/_authed/settings'
-      path: '/settings'
-      fullPath: '/settings'
+    "/_authed/settings": {
+      id: "/_authed/settings"
+      path: "/settings"
+      fullPath: "/settings"
       preLoaderRoute: typeof AuthedSettingsRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/progress': {
-      id: '/_authed/progress'
-      path: '/progress'
-      fullPath: '/progress'
+    "/_authed/progress": {
+      id: "/_authed/progress"
+      path: "/progress"
+      fullPath: "/progress"
       preLoaderRoute: typeof AuthedProgressRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/help': {
-      id: '/_authed/help'
-      path: '/help'
-      fullPath: '/help'
+    "/_authed/help": {
+      id: "/_authed/help"
+      path: "/help"
+      fullPath: "/help"
       preLoaderRoute: typeof AuthedHelpRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/roadmaps/': {
-      id: '/_authed/roadmaps/'
-      path: '/roadmaps'
-      fullPath: '/roadmaps/'
+    "/_authed/roadmaps/": {
+      id: "/_authed/roadmaps/"
+      path: "/roadmaps"
+      fullPath: "/roadmaps/"
       preLoaderRoute: typeof AuthedRoadmapsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/explore/': {
-      id: '/_authed/explore/'
-      path: '/explore'
-      fullPath: '/explore/'
+    "/_authed/explore/": {
+      id: "/_authed/explore/"
+      path: "/explore"
+      fullPath: "/explore/"
       preLoaderRoute: typeof AuthedExploreIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/roadmaps/new': {
-      id: '/_authed/roadmaps/new'
-      path: '/roadmaps/new'
-      fullPath: '/roadmaps/new'
+    "/_authed/roadmaps/new": {
+      id: "/_authed/roadmaps/new"
+      path: "/roadmaps/new"
+      fullPath: "/roadmaps/new"
       preLoaderRoute: typeof AuthedRoadmapsNewRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/roadmaps/$id': {
-      id: '/_authed/roadmaps/$id'
-      path: '/roadmaps/$id'
-      fullPath: '/roadmaps/$id'
+    "/_authed/roadmaps/$id": {
+      id: "/_authed/roadmaps/$id"
+      path: "/roadmaps/$id"
+      fullPath: "/roadmaps/$id"
       preLoaderRoute: typeof AuthedRoadmapsIdRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/explore/$id': {
-      id: '/_authed/explore/$id'
-      path: '/explore/$id'
-      fullPath: '/explore/$id'
+    "/_authed/explore/$id": {
+      id: "/_authed/explore/$id"
+      path: "/explore/$id"
+      fullPath: "/explore/$id"
       preLoaderRoute: typeof AuthedExploreIdRouteImport
       parentRoute: typeof AuthedRoute
     }
@@ -297,9 +297,9 @@ export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
 
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
+import type { getRouter } from "./router.tsx"
+import type { createStart } from "@tanstack/react-start"
+declare module "@tanstack/react-start" {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>

@@ -6,7 +6,7 @@ import type { TypedDocumentNode } from "@graphql-typed-document-node/core"
 const GRAPHQL_URL =
   process.env.VITE_GRAPHQL_URL ??
   process.env.GRAPHQL_URL ??
-  "http://localhost:3001/graphql"
+  "https://skill-flow-api.vercel.app/graphql"
 
 // Executes a generated typed operation against the API as the current user, by
 // forwarding their better-auth session cookie. Every assistant tool goes

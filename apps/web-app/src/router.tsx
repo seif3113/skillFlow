@@ -3,12 +3,15 @@ import {
   ApolloClient,
   InMemoryCache,
 } from "@apollo/client-integration-tanstack-start"
-import { HttpLink, ApolloLink, Observable } from "@apollo/client"
-import { split, concat } from "@apollo/client/link"
+import { ApolloLink, HttpLink, Observable } from "@apollo/client"
+import { split } from "@apollo/client/link"
+import { SetContextLink } from "@apollo/client/link/context"
 import { GraphQLWsLink } from "@apollo/client/link/subscriptions"
 import { getMainDefinition } from "@apollo/client/utilities"
 import { createClient } from "graphql-ws"
 import { createRouter as createTanStackRouter } from "@tanstack/react-router"
+import { createIsomorphicFn } from "@tanstack/react-start"
+import { getRequestHeader } from "@tanstack/react-start/server"
 import { attachApiError } from "@/lib/api-error"
 import { routeTree } from "./routeTree.gen"
 
@@ -52,6 +55,30 @@ const apiErrorLink = new ApolloLink((operation, forward) => {
   })
 })
 
+/**
+ * `credentials: "include"` on HttpLink only works in the browser — it tells
+ * the browser to attach cookies from its own cookie jar. During SSR there is
+ * no cookie jar, so without this link, every loader/SSR request goes out
+ * with zero cookies and looks logged-out even when the browser is signed in.
+ *
+ * Server: forward the incoming request's Cookie header onto the outgoing
+ * GraphQL request.
+ * Client: no-op — the browser already attaches cookies via credentials: "include".
+ */
+const authLink = createIsomorphicFn()
+  .server(() =>
+    new SetContextLink((prevContext) => {
+      const cookie = getRequestHeader("cookie")
+      return {
+        headers: {
+          ...prevContext.headers,
+          ...(cookie ? { cookie } : {}),
+        },
+      }
+    }),
+  )
+  .client(() => new SetContextLink((prevContext) => prevContext))()
+
 // `getRouter` runs on both server and client, so keep it environment-agnostic.
 export function getRouter() {
   const httpLink = new HttpLink({ uri: GRAPHQL_URL, credentials: "include" })
@@ -77,8 +104,9 @@ export function getRouter() {
 
   const apolloClient = new ApolloClient({
     cache: new InMemoryCache(),
-    // Prepend apiErrorLink so it runs for every operation (HTTP + WS paths)
-    link: concat(apiErrorLink, link),
+    // authLink first so its headers (cookie, on the server) are in context
+    // before the request hits apiErrorLink and the terminating link.
+    link: ApolloLink.from([authLink, apiErrorLink, link]),
   })
 
   const router = createTanStackRouter({
