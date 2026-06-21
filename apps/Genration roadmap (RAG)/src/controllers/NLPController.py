@@ -684,21 +684,31 @@ class NLPController(BaseController):
             return None, None, None
 
         # Build the prerequisite plan from Pass 1, aligned to sub-topic order.
-        # The streaming endpoint injects each node's `ref`/`dependsOn` by
-        # position, so the dependency graph stays deterministic regardless of
-        # how the Pass 2 (resource compilation) model formats its output.
+        # We normalise all refs to 1-based positional strings ("1", "2", …) so
+        # edge wiring stays deterministic regardless of what IDs the LLM chose.
+        #
+        # Step A – build a mapping from the LLM's raw id → positional ref.
+        llm_id_to_ref: dict = {}
+        for i, obj in enumerate(topic_objects):
+            positional_ref = str(i + 1)
+            raw_id = str(obj.get("id") or positional_ref)
+            llm_id_to_ref[raw_id] = positional_ref
+
+        # Step B – build the dependency plan using normalised refs.
         dependency_plan = []
         for i, obj in enumerate(topic_objects):
-            ref = str(obj.get("id") or (i + 1))
+            positional_ref = str(i + 1)
             raw_deps = obj.get("dependsOn")
             if raw_deps is None:
                 raw_deps = obj.get("depends_on") or []
-            deps = (
-                [str(d) for d in raw_deps if d is not None]
-                if isinstance(raw_deps, list)
-                else []
-            )
-            dependency_plan.append({"ref": ref, "dependsOn": deps})
+            deps = [
+                llm_id_to_ref.get(str(d), str(d))
+                for d in (raw_deps if isinstance(raw_deps, list) else [])
+                if d is not None
+            ]
+            # Remove self-references or any dep that points to itself
+            deps = [d for d in deps if d != positional_ref]
+            dependency_plan.append({"ref": positional_ref, "dependsOn": deps})
 
         # Step 2: Batch vector search with concise, sub-topic specific queries.
         search_queries = [

@@ -479,8 +479,16 @@ async def generate_roadmap_rag(request: Request, roadmap_request: RoadmapRequest
                         nodes.append(node)
                         yield _json_stream_event("node", {"node": node})
 
-            yield _json_stream_event("nodes", {"nodes": nodes})
-            yield _json_stream_event("done", {"signal": "success"})
+            # Build explicit edges list: {source: ref_that_depends, target: ref_it_depends_on}
+            edges = []
+            for n in nodes:
+                node_ref = n.get("ref")
+                for dep in (n.get("dependsOn") or []):
+                    if node_ref and dep:
+                        edges.append({"source": dep, "target": node_ref})
+
+            yield _json_stream_event("nodes", {"nodes": nodes, "edges": edges})
+            yield _json_stream_event("done", {"signal": "success", "edges": edges})
 
         except Exception as e:
             logger.error(f"Roadmap RAG streaming failed: {str(e)}")
