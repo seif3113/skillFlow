@@ -2,7 +2,7 @@ import { createAuthClient } from "better-auth/react"
 
 // Talks to the NestJS better-auth instance mounted at /api/auth on the API.
 const baseURL =
-  import.meta.env.VITE_BETTER_AUTH_URL ?? "http://localhost:3000"
+  import.meta.env.VITE_BETTER_AUTH_URL ?? "http://localhost:3001/api/auth"
 
 export const authClient = createAuthClient({ baseURL })
 
