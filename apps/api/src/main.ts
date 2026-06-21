@@ -20,6 +20,8 @@ try {
   // Ignored: this is only used for static analysis tracing by Vercel
 }
 
+const allowedOrigins = [process.env.WEB_URL, process.env.BETTER_AUTH_URL];
+
 let cachedServer: any;
 
 async function bootstrap(): Promise<NestFastifyApplication> {
@@ -31,8 +33,13 @@ async function bootstrap(): Promise<NestFastifyApplication> {
     { bodyParser: false },
   );
 
+  if (process.env.WEB_URL)
+    allowedOrigins.push(process.env.WEB_URL.replace(/\/$/, ''));
+  if (process.env.FRONTEND_URL)
+    allowedOrigins.push(process.env.FRONTEND_URL.replace(/\/$/, ''));
+
   adapter.enableCors({
-    origin: [process.env.FRONTEND_URL!],
+    origin: allowedOrigins,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
     credentials: true,
@@ -51,7 +58,15 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 export default async (req: any, res: any) => {
-  const allowedOrigin = process.env.FRONTEND_URL!;
+  if (process.env.WEB_URL)
+    allowedOrigins.push(process.env.WEB_URL.replace(/\/$/, ''));
+  if (process.env.FRONTEND_URL)
+    allowedOrigins.push(process.env.FRONTEND_URL.replace(/\/$/, ''));
+
+  const origin = req.headers.origin;
+  const allowedOrigin = allowedOrigins.includes(origin)
+    ? origin
+    : process.env.WEB_URL?.replace(/\/$/, '') || 'http://localhost:3000';
 
   // Apply CORS headers manually — Fastify's middleware pipeline is bypassed on Vercel
   res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
