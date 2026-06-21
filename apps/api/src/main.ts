@@ -58,6 +58,10 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 export default async (req: any, res: any) => {
+  console.log('--- incoming request ---');
+  console.log('method:', req.method, 'url:', req.url);
+  console.log('cookie header:', req.headers.cookie ?? '(none)');
+  console.log('origin header:', req.headers.origin ?? '(none)');
   if (process.env.WEB_URL)
     allowedOrigins.push(process.env.WEB_URL.replace(/\/$/, ''));
   if (process.env.FRONTEND_URL)
