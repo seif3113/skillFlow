@@ -7,7 +7,9 @@ import {
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 
-async function bootstrap() {
+let cachedServer: any;
+
+async function bootstrap(): Promise<NestFastifyApplication> {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter(),
@@ -21,6 +23,24 @@ async function bootstrap() {
     credentials: true,
   });
 
-  await app.listen(process.env.PORT || 3001);
+  return app;
 }
-bootstrap();
+
+if (process.env.NODE_ENV !== 'production') {
+  bootstrap().then(async (app) => {
+    const port = process.env.PORT || 3001;
+    await app.listen(port);
+    console.log(`Server running on port ${port}`);
+  });
+}
+
+// Vercel Serverless Function Handler
+export default async (req: any, res: any) => {
+  if (!cachedServer) {
+    const app = await bootstrap();
+    await app.init();
+    cachedServer = app.getHttpAdapter().getInstance();
+  }
+  await cachedServer.ready();
+  cachedServer.server.emit('request', req, res);
+};
