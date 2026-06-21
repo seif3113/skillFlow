@@ -16,7 +16,8 @@ export function AuthPage() {
     try {
       await authClient.signIn.social({
         provider: "google",
-        callbackURL: `${window.location.origin}/`,
+        callbackURL: import.meta.env.VITE_APP_URL,
+        errorCallbackURL: import.meta.env.VITE_APP_URL,
       })
       // Success redirects the browser to Google, so keep the spinner until then.
     } catch {
