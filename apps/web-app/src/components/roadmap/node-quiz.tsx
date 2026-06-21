@@ -182,6 +182,7 @@ export function QuizResults({
       {quiz.questions.map((q, qi) => {
         const r = byId.get(q.id)
         const choices = toChoices(q.choices)
+
         return (
           <div key={q.id} className="flex flex-col gap-1.5">
             <p className="text-sm font-medium">
@@ -191,15 +192,22 @@ export function QuizResults({
               {choices.map((choice, ci) => {
                 const isCorrect = r?.correctAnswer === ci
                 const isPicked = answers[q.id] === ci
+
+                // Passed → reveal correct answer (green) and wrong pick (red)
+                // Failed → only colour what the user picked: green if right, red if wrong
+                //          never highlight unpicked choices (hides correct answer)
+                const highlightGreen =
+                  (result.passed && isCorrect) ||
+                  (!result.passed && isPicked && isCorrect)
+                const highlightRed = isPicked && !isCorrect
+
                 return (
                   <div
                     key={ci}
                     className={cn(
                       "flex items-center gap-3 rounded-lg border px-3 py-1.5 text-sm",
-                      isCorrect && "border-primary/50 bg-primary/10",
-                      isPicked &&
-                        !isCorrect &&
-                        "border-destructive/50 bg-destructive/10"
+                      highlightGreen && "border-primary/50 bg-primary/10",
+                      highlightRed && "border-destructive/50 bg-destructive/10"
                     )}
                   >
                     <span className="flex size-5 shrink-0 items-center justify-center rounded border bg-muted/60 text-xs font-medium text-muted-foreground">
@@ -210,7 +218,7 @@ export function QuizResults({
                 )
               })}
             </div>
-            {r?.explanation ? (
+            {result.passed && r?.explanation ? (
               <p className="text-xs text-muted-foreground">{r.explanation}</p>
             ) : null}
           </div>
