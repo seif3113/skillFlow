@@ -1,4 +1,6 @@
 import '../env';
+import { join } from 'path';
+import { readFileSync } from 'fs';
 import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app.module';
@@ -6,6 +8,17 @@ import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
+
+// Force Vercel Node File Trace (NFT) to bundle the GraphQL schema files
+try {
+  readFileSync(join(__dirname, './graphql/common.graphql'), 'utf8');
+  readFileSync(join(__dirname, './modules/node/node.graphql'), 'utf8');
+  readFileSync(join(__dirname, './modules/quiz/quiz.graphql'), 'utf8');
+  readFileSync(join(__dirname, './modules/roadmap/roadmap.graphql'), 'utf8');
+  readFileSync(join(__dirname, './modules/user/user.graphql'), 'utf8');
+} catch (e) {
+  // Ignored: this is only used for static analysis tracing by Vercel
+}
 
 let cachedServer: any;
 

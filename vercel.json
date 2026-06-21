@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "apps/api/src/main.ts": {
+      "includeFiles": "apps/api/src/**/*.graphql"
+    }
+  }
+}
