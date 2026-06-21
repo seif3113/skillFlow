@@ -1,4 +1,7 @@
-import { InternalServerErrorException } from '@nestjs/common';
+import {
+  InternalServerErrorException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { tryCatch } from './try-catch';
 
 interface FetchOptions extends RequestInit {
@@ -31,9 +34,18 @@ export async function genericFetch<T>(
   }
 
   if (!res.ok) {
-    const body = await res.text().catch(() => '');
+    const body = await res.json().catch(() => '');
+
+    if (
+      (body as { signal: 'unsupported_domain' | 'error'; message: string })
+        .signal === 'unsupported_domain'
+    ) {
+      throw new UnprocessableEntityException(body.message);
+    }
+
     throw new InternalServerErrorException(
       `External service returned ${res.status}: ${body || res.statusText}`,
+      
     );
   }
 
