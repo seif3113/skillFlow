@@ -31,10 +31,19 @@ export const Route =
           content: "width=device-width, initial-scale=1",
         },
         {
-          title: "TanStack Start Starter",
+          title: "SkillFlow",
+        },
+        {
+          name: "description",
+          content: "Build AI-powered skill roadmaps and reach your goals.",
         },
       ],
       links: [
+        {
+          rel: "icon",
+          type: "image/svg+xml",
+          href: "/logo.svg",
+        },
         {
           rel: "stylesheet",
           href: appCss,
