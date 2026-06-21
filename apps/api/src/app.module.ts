@@ -83,7 +83,7 @@ import { GqlHttpExceptionFilter } from './graphql/gql-http-exception.filter';
     NodeModule,
     QuizModule,
     UserModule,
-    AuthModule.forRoot({ auth }),
+    AuthModule.forRoot({ auth, disableTrustedOriginsCors: true }),
   ],
   providers: [ScalarsResolver, {
     provide: APP_FILTER,
