@@ -707,16 +707,19 @@ class NLPController(BaseController):
 
             if raw_deps is None:
                 raw_deps = []
-            elif isinstance(raw_deps, str) or isinstance(raw_deps, int):
+            elif isinstance(raw_deps, (str, int)):
                 # LLM sometimes returns a single string/int instead of an array
                 raw_deps = [raw_deps]
-                
-            deps = (
-                [str(d) for d in raw_deps if d is not None]
-                if isinstance(raw_deps, list)
-                else []
-            )
-            dependency_plan.append({"ref": ref, "dependsOn": deps})
+
+            deps = [
+                llm_id_to_ref.get(str(d), str(d))
+                for d in (raw_deps if isinstance(raw_deps, list) else [])
+                if d is not None
+            ]
+            # Remove self-references
+            deps = [d for d in deps if d != positional_ref]
+            dependency_plan.append({"ref": positional_ref, "dependsOn": deps})
+
 
         # Step 2: Batch vector search with concise, sub-topic specific queries.
         search_queries = [
