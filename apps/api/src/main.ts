@@ -24,7 +24,7 @@ let cachedServer: any;
 
 async function bootstrap(): Promise<NestFastifyApplication> {
   const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule,
+    AppModule, 
     new FastifyAdapter(),
     {
       bodyParser: false,
