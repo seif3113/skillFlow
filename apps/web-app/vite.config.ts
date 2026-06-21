@@ -5,7 +5,7 @@ import viteReact from "@vitejs/plugin-react"
 import tailwindcss from "@tailwindcss/vite"
 import { nitro } from "nitro/vite"
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? "https://skill-flow-api.vercel.app"
+const SERVER_URL = process.env.VITE_SERVER_URL ?? "https://skill-flow-api.vercel.app"
 
 // Use the Vercel Nitro preset in CI/production so the build outputs to
 // .vercel/output/ (Vercel Build Output API). Locally keep the default.
