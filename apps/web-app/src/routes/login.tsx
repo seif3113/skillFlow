@@ -26,12 +26,12 @@ export function Login() {
   const continueWithGoogle = async () => {
     setLoading(true)
     try {
-      console.log(process.env.APP_URL );
-      
+      console.log(process.env.APP_URL)
+
       await authClient.signIn.social({
         provider: "google",
-        callbackURL: process.env.APP_URL ,
-        errorCallbackURL: process.env.APP_URL ,
+        callbackURL: process.env.APP_URL,
+        errorCallbackURL: process.env.APP_URL,
       })
       // Success redirects the browser to Google, so keep the spinner until then.
     } catch {
@@ -48,7 +48,7 @@ export function Login() {
             <Logo className="h-8" />
           </a>
           <div className="space-y-1">
-            <h1 className="font-semibold text-xl tracking-wide">
+            <h1 className="text-xl font-semibold tracking-wide">
               Hey, welcome!
             </h1>
             <p className="text-base text-muted-foreground">
@@ -75,7 +75,7 @@ export function Login() {
                 data-icon="inline-start"
               />
             ) : (
-              <div className="size-4 flex items-center justify-center overflow-hidden">
+              <div className="flex size-4 items-center justify-center overflow-hidden">
                 <img
                   src="/google-logo.svg"
                   alt="Google Logo"
@@ -90,7 +90,7 @@ export function Login() {
           <FullWidthDivider position="bottom" />
         </div>
 
-        <p className="text-center text-muted-foreground text-sm">
+        <p className="text-center text-sm text-muted-foreground">
           By continuing you agree to our{" "}
           <a
             className="underline underline-offset-4 hover:text-primary"
