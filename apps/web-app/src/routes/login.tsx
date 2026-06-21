@@ -28,7 +28,9 @@ export function Login() {
     try {
       const baseURL =
         import.meta.env.VITE_BETTER_AUTH_URL ?? "http://localhost:3001/api/auth"
-      console.log(import.meta.env.APP_URL)
+      const appURL =
+        import.meta.env.APP_URL ?? "failed"
+      console.log(appURL)
       console.log(baseURL)
 
       await authClient.signIn.social({
