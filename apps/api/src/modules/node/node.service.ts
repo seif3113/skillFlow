@@ -16,7 +16,7 @@ import {
 } from './types/node.types';
 import { CreateNodeInput } from './dto/create-node.input';
 import { UpdateNodeInput } from './dto/update-node.input';
-import { genericFetch } from '@/utils/fetch';
+import { genericFetch } from '../../utils/fetch';
 
 @Injectable()
 export class NodeService {

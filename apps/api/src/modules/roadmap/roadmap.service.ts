@@ -15,7 +15,7 @@ import {
   UpdatedRoadmapResult,
 } from './types/roadmap.types';
 import { RoadmapRow } from './roadmap.schema';
-import { genericFetch } from '@/utils/fetch';
+import { genericFetch } from '../../utils/fetch';
 import { NodeRepository } from '../node/node.repository';
 import { NodeService } from '../node/node.service';
 import { NodeType } from '../node/types/node.types';

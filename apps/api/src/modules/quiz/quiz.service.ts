@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import { genericFetch } from '@/utils/fetch';
+import { genericFetch } from '../../utils/fetch';
 import { NodeRepository } from '../node/node.repository';
 import { NodeService } from '../node/node.service';
 import { RoadmapRepository } from '../roadmap/roadmap.repository';
