@@ -92,6 +92,10 @@ export default async (req: any, res: any) => {
     await cachedServer.init();
   }
 
+  console.log(process.env.WEB_URL);
+  console.log(process.env.BETTER_AUTH_CALLBACK_URL);
+  console.log(process.env.BETTER_AUTH_URL);
+  
   const instance = cachedServer.getHttpAdapter().getInstance();
   await instance.ready();
   instance.server.emit('request', req, res);
