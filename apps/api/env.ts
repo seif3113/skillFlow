@@ -20,6 +20,8 @@ const envSchema = z.object({
 
   // App
   PORT: z.string(),
+
+  NODE_ENV: z.string(),
 });
 
 declare global {
