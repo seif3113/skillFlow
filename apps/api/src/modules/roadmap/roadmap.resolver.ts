@@ -170,7 +170,10 @@ export class RoadmapResolver {
   ) {
     // Only the roadmap's owner may generate into it.
     await this.roadmapService.assertOwner(roadmapId, Number(session.user.id));
-    const ragUri = (process.env.RAG_URI || 'http://localhost:8000').replace(/\/$/, '');
+    const ragUri = (process.env.RAG_URI || 'http://localhost:8000').replace(
+      /\/$/,
+      '',
+    );
     let targetUrl = '';
     if (ragUri.endsWith('/api/v1')) {
       targetUrl = `${ragUri}/nlp/generate-roadmap-rag`;
@@ -278,6 +281,22 @@ export class RoadmapResolver {
         });
 
         if (!response.ok || !response.body) {
+          if (response.status === 422) {
+            const body = await response.json().catch(() => null);
+            if (
+              body &&
+              typeof body === 'object' &&
+              (body as any).signal === 'unsupported_domain'
+            ) {
+              throw new Error(
+                (body as any).message ||
+                  "We don't support this domain at this time.",
+              );
+            }
+            throw new Error(
+              'You are out of free trials. It will reset every 24 hours.',
+            );
+          }
           throw new Error(
             `Failed to fetch from RAG service. Status: ${response.status}`,
           );

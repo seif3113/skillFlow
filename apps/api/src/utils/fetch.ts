@@ -36,16 +36,23 @@ export async function genericFetch<T>(
   if (!res.ok) {
     const body = await res.json().catch(() => '');
 
-    if (
-      (body as { signal: 'unsupported_domain' | 'error'; message: string })
-        .signal === 'unsupported_domain'
-    ) {
-      throw new UnprocessableEntityException(body.message);
+    if (res.status === 422) {
+      if (
+        body &&
+        typeof body === 'object' &&
+        (body as any).signal === 'unsupported_domain'
+      ) {
+        throw new UnprocessableEntityException(
+          (body as any).message || "We don't support this domain at this time.",
+        );
+      }
+      throw new UnprocessableEntityException(
+        'You are out of free trials. It will reset every 24 hours.',
+      );
     }
 
     throw new InternalServerErrorException(
       `External service returned ${res.status}: ${body || res.statusText}`,
-      
     );
   }
 
