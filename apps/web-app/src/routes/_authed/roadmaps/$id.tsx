@@ -25,7 +25,7 @@ function RoadmapViewPage() {
     void navigate({
       to: "/roadmaps/$id",
       params: { id },
-      search: {},
+      search: { topic: undefined },
       replace: true,
     })
   }, [navigate, id])

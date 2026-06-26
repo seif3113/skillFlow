@@ -50,9 +50,10 @@ export function RoadmapViewProvider({
 }) {
   // While generating, poll the persisted roadmap as a progressive-reveal safety
   // net alongside the live subscription.
-  const { data, loading, refetch } = useQuery(GetRoadmapDocument, {
+  const { data, loading, refetch, networkStatus } = useQuery(GetRoadmapDocument, {
     variables: { id: roadmapId },
     pollInterval: generating ? 1000 : 0,
+    notifyOnNetworkStatusChange: true,
   })
 
   // Domain graph — source of truth; the xyflow flow state is derived from it.
@@ -74,7 +75,7 @@ export function RoadmapViewProvider({
       if (nodes.length > 0 && stableRef.current.ticks >= 4)
         onGenerationSettled()
     }
-  }, [data, generating, onGenerationSettled])
+  }, [data, generating, onGenerationSettled, networkStatus])
 
   // xyflow-owned state so nodes are draggable; positions live here, not in the
   // domain. Re-run the dagre layout only when the graph *structure* changes.
