@@ -17,7 +17,7 @@ export const Route = createFileRoute("/_authed/roadmaps/$id")({
 
 function RoadmapViewPage() {
   const { id } = Route.useParams()
-  const { topic } = Route.useSearch()
+  const { topic } = Route.useSearch() 
   const navigate = useNavigate()
   const [assistantOpen, setAssistantOpen] = useState(false)
 
